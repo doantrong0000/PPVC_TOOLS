@@ -30,8 +30,7 @@ namespace TeklaApp.Views
         private void BtnAddAssembly_Click(object sender, RoutedEventArgs e)
         {
             txtCurrentTool.Text = "Assembly Joiner";
-            string result = _viewModel.JoinAssembly();
-            MessageBox.Show(result, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            MainContentControl.Content = new JoinAssemblyPage();
         }
 
 
