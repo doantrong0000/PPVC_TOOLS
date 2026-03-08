@@ -10,6 +10,7 @@
     <Color x:Key="TextDarkColor">#1A1A1A</Color>
     <Color x:Key="SidebarColor">#252526</Color>
     <Color x:Key="SidebarHoverColor">#37373D</Color>
+    <Color x:Key="PrimaryButtonColor">#FF1E90FF</Color>
 
     <SolidColorBrush x:Key="PrimaryBlueBrush" Color="{StaticResource PrimaryBlueColor}"/>
     <SolidColorBrush x:Key="BackgroundWhiteBrush" Color="{StaticResource BackgroundWhiteColor}"/>
@@ -18,11 +19,11 @@
     <SolidColorBrush x:Key="TextDarkBrush" Color="{StaticResource TextDarkColor}"/>
     <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SidebarColor}"/>
     <SolidColorBrush x:Key="SidebarHoverBrush" Color="{StaticResource SidebarHoverColor}"/>
+    <SolidColorBrush x:Key="SecondaryBlueBrush" Color="{StaticResource SecondaryBlueColor}"/>
 
     <!-- Global Text Style -->
     <Style TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI, Roboto, sans-serif"/>
-        <Setter Property="Foreground" Value="{StaticResource TextDarkBrush}"/>
         <Setter Property="FontSize" Value="13"/>
     </Style>
 
@@ -57,7 +58,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}" 
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -84,7 +85,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border Name="Border" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter VerticalAlignment="Center"/>
+                        <ContentPresenter VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -110,11 +111,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border Name="Border" CornerRadius="4" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Border" Property="Background" Value="{StaticResource SecondaryBlueColor}"/>
+                            <Setter TargetName="Border" Property="Background" Value="{StaticResource SecondaryBlueBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

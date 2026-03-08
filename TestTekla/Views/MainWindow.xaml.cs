@@ -34,12 +34,7 @@ namespace TeklaApp.Views
             MessageBox.Show(result, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void BtnRemoveDuplicates_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Duplicate Remover";
-            string result = _viewModel.RemoveDuplicateCuts();
-            MessageBox.Show(result, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+
 
         private void BtnStepTag_Click(object sender, RoutedEventArgs e)
         {

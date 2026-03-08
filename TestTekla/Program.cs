@@ -30,18 +30,7 @@ namespace TeklaApp
         static void RunUI()
         {
             var app = new System.Windows.Application();
-            
-            // Load Styles
-            try
-            {
-                var dict = new System.Windows.ResourceDictionary();
-                dict.Source = new Uri("pack://application:,,,/Views/Styles/ModernTheme.xaml", UriKind.Absolute);
-                app.Resources.MergedDictionaries.Add(dict);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine("Error loading styles: " + ex.Message);
-            }
+           
 
             app.Run(new MainWindow());
         }
