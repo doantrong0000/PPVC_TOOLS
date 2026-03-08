@@ -53,6 +53,7 @@ namespace TeklaApp.Views
                     {
                         txtTextHeight.Text = settings.TextHeight.ToString();
                         txtFontName.Text = settings.FontName;
+                        SetComboBoxText(cmbTextColor, settings.TextColor);
                         txtSurfLen.Text = settings.SurfLen.ToString();
                         txtStepHeight.Text = settings.StepHeight.ToString();
                         txtHatchSpc.Text = settings.HatchSpc.ToString();
@@ -73,6 +74,7 @@ namespace TeklaApp.Views
                 {
                     TextHeight = V(txtTextHeight, 3.5),
                     FontName = txtFontName.Text,
+                    TextColor = GetComboBoxText(cmbTextColor),
                     SurfLen = V(txtSurfLen, 15),
                     StepHeight = V(txtStepHeight, 10),
                     HatchSpc = V(txtHatchSpc, 3),
@@ -199,7 +201,7 @@ namespace TeklaApp.Views
             {
                 Text = ((int)stepH).ToString(),
                 FontSize = textSize,
-                Foreground = Brushes.Green,
+                Foreground = GetWpfBrush(GetComboBoxText(cmbTextColor)),
                 FontWeight = FontWeights.Bold
             };
             
@@ -246,6 +248,34 @@ namespace TeklaApp.Views
             return double.TryParse(tb.Text, out double v) ? v : fallback;
         }
 
+        private string GetComboBoxText(ComboBox cb)
+        {
+            if (cb.SelectedItem is ComboBoxItem item) return item.Content.ToString();
+            return "Green";
+        }
+
+        private void SetComboBoxText(ComboBox cb, string text)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            foreach (ComboBoxItem item in cb.Items)
+            {
+                if (item.Content.ToString() == text)
+                {
+                    cb.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private Brush GetWpfBrush(string colorName)
+        {
+            try
+            {
+                return (Brush)new BrushConverter().ConvertFromString(colorName);
+            }
+            catch { return Brushes.Green; }
+        }
+
         private void BtnRun_Click(object sender, RoutedEventArgs e)
         {
             Window parentWindow = Window.GetWindow(this);
@@ -254,10 +284,11 @@ namespace TeklaApp.Views
             {
                 bool useRectFill = chkUseRectFill?.IsChecked ?? false;
                 string fillName = txtFillName?.Text ?? "ANSI31_13";
+                string textColor = GetComboBoxText(cmbTextColor);
 
                 string result = _viewModel.CreateStepTag(
-                    V(txtTextHeight, 3.5), txtFontName.Text,
-                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12));
+                    V(txtTextHeight, 3.5), txtFontName.Text, textColor,
+                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12), useRectFill, fillName);
                 txtStatus.Text = result;
             }
             finally
@@ -271,6 +302,7 @@ namespace TeklaApp.Views
     {
         public double TextHeight { get; set; }
         public string FontName { get; set; }
+        public string TextColor { get; set; }
         public double SurfLen { get; set; }
         public double StepHeight { get; set; }
         public double HatchSpc { get; set; }

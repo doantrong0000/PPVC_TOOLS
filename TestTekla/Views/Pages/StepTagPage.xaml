@@ -26,6 +26,18 @@
                     <TextBlock Text="Font Name:" Style="{StaticResource LabelTextStyle}"/>
                     <TextBox Name="txtFontName" Text="Arial" Margin="0,0,0,12"/>
 
+                    <TextBlock Text="Font Color:" Style="{StaticResource LabelTextStyle}"/>
+                    <ComboBox x:Name="cmbTextColor" Margin="0,0,0,12" SelectionChanged="OnSettingChanged">
+                        <ComboBoxItem Content="Black"/>
+                        <ComboBoxItem Content="White"/>
+                        <ComboBoxItem Content="Red"/>
+                        <ComboBoxItem Content="Green" IsSelected="True"/>
+                        <ComboBoxItem Content="Blue"/>
+                        <ComboBoxItem Content="Cyan"/>
+                        <ComboBoxItem Content="Magenta"/>
+                        <ComboBoxItem Content="Yellow"/>
+                    </ComboBox>
+
                     <TextBlock Text="GEOMETRY PARAMETERS" FontWeight="Bold" Foreground="#999" FontSize="10" Margin="0,10,0,8"/>
 
                     <TextBlock Text="Surface Length (mm):" Style="{StaticResource LabelTextStyle}"/>

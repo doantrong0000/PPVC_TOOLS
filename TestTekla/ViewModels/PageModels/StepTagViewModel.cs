@@ -15,7 +15,7 @@ namespace TeklaApp.ViewModels
         /// Tạo ký hiệu giật cấp tại vị trí giao nhau giữa các cấu kiện.
         /// Logic đã được tách biệt cho phương dọc và phương ngang để đảm bảo hiển thị đúng thị giác.
         /// </summary>
-        public string CreateStepTag(double textHeight, string fontName, double surfLen, double stepHeight, double hatchSpc, double hatchLen, bool useRectFill = false, string fillName = "ANSI31_13")
+        public string CreateStepTag(double textHeight, string fontName, string textColor, double surfLen, double stepHeight, double hatchSpc, double hatchLen, bool useRectFill = false, string fillName = "ANSI31_13")
         {
             DrawingHandler dh = new DrawingHandler();
             if (dh.GetActiveDrawing() == null)
@@ -111,69 +111,25 @@ namespace TeklaApp.ViewModels
 
                         if (isJointHorizontal)
                         {
-                            // 1. Mối nối ngang: Ưu tiên đọc từ Trái sang Phải
                             vAlong = new Vector(1, 0, 0);
-                            Vector vPerpLocal = new Vector(0, 1, 0); // Phương đứng
-                                                                     // 1. Lấy tâm của Sàn 1 và Sàn 2 trong tọa độ View
-                            Point center1 = new Point((v1MinX + v1MaxX) / 2.0, (v1MinY + v1MaxY) / 2.0, 0);
-                            Point center2 = new Point((v2MinX + v2MaxX) / 2.0, (v2MinY + v2MaxY) / 2.0, 0);
+                            Vector vUp = new Vector(0, 1, 0);
+                            bool isPart1Above = center1_view.Y > pJ.Y;
 
-                            // 2. Tạo vector nối từ Sàn 2 sang Sàn 1
-                            // Vector này sẽ chỉ rõ hướng tương đối giữa hai sàn
-                            Vector vTwoToOne = new Vector(center1.X - center2.X, center1.Y - center2.Y, 0);
+                            vHigh = isPart1High ? (isPart1Above ? vUp : Neg(vUp)) : (isPart1Above ? Neg(vUp) : vUp);
+                            vLow = Neg(vHigh);
 
-                            // 3. Tính toán lại dot product dựa trên hướng ranh giới (vPerpLocal)
-                            // vPerpLocal là hướng vuông góc với mối nối (ví dụ: hướng sang phải)
-                            double dot = vTwoToOne.Dot(vPerpLocal);
-
-                            // 4. Xác định vHigh
-                            // Bây giờ 'dot' chắc chắn sẽ âm nếu Sàn 1 nằm bên trái Sàn 2 (khi vPerpLocal hướng phải)
-                            if (isPart1High)
-                            {
-                                vHigh = (dot > 0) ? vPerpLocal : vPerpLocal * -1.0;
-                            }
-                            else
-                            {
-                                vHigh = (dot > 0) ? vPerpLocal * -1.0 : vPerpLocal;
-                            }
-                            vLow = vHigh * -1.0;
-
-                            // Nếu sàn Cao ở phía dưới (Y < 0), đảo vAlong để chữ Z không bị ngược thị giác
-                            if (vHigh.Y > 0) vAlong = Neg(vAlong);
+                            //if (vHigh.Y > 0) vAlong = Neg(vAlong);
                         }
                         else
                         {
-                            // 2. Mối nối dọc: Ưu tiên đọc từ Dưới lên Trên
-                            vAlong = new Vector(0, 1, 0);
-                            Vector vPerpLocal = new Vector(1, 0, 0); // Phương ngang
+                            vAlong = new Vector(0, -1, 0);
+                            Vector vRight = new Vector(1, 0, 0);
+                            bool isPart1OnLeft = center1_view.X < pJ.X;
 
-                            // 1. Lấy tâm của Sàn 1 và Sàn 2 trong tọa độ View
-                            Point center1 = new Point((v1MinX + v1MaxX) / 2.0, (v1MinY + v1MaxY) / 2.0, 0);
-                            Point center2 = new Point((v2MinX + v2MaxX) / 2.0, (v2MinY + v2MaxY) / 2.0, 0);
+                            vHigh = isPart1High ? (isPart1OnLeft ? Neg(vRight) : vRight) : (isPart1OnLeft ? vRight : Neg(vRight));
+                            vLow = Neg(vHigh);
 
-                            // 2. Tạo vector nối từ Sàn 2 sang Sàn 1
-                            // Vector này sẽ chỉ rõ hướng tương đối giữa hai sàn
-                            Vector vTwoToOne = new Vector(center1.X - center2.X, center1.Y - center2.Y, 0);
-
-                            // 3. Tính toán lại dot product dựa trên hướng ranh giới (vPerpLocal)
-                            // vPerpLocal là hướng vuông góc với mối nối (ví dụ: hướng sang phải)
-                            double dot = vTwoToOne.Dot(vPerpLocal);
-
-                            // 4. Xác định vHigh
-                            // Bây giờ 'dot' chắc chắn sẽ âm nếu Sàn 1 nằm bên trái Sàn 2 (khi vPerpLocal hướng phải)
-                            if (isPart1High)
-                            {
-                                vHigh = (dot > 0) ? vPerpLocal : vPerpLocal * -1.0;
-                            }
-                            else
-                            {
-                                vHigh = (dot > 0) ? vPerpLocal * -1.0 : vPerpLocal;
-                            }
-                            vLow = vHigh * -1.0;
-
-                            // NÂNG CẤP QUAN TRỌNG: Nếu sàn cao ở bên PHẢI (X > 0), 
-                            // đảo vAlong xuống dưới để pLowJ nằm thấp hơn pJ -> tạo hình bậc thang đi lên.
-                            if (vHigh.X > 0) vAlong = Neg(vAlong);
+                            //if (vHigh.X > 0) vAlong = Neg(vAlong);
                         }
 
                         double sSurf = surfLen * scale;
@@ -238,7 +194,7 @@ namespace TeklaApp.ViewModels
                         text.Placing = new PointPlacing();
                         text.Attributes.Font.Height = textHeight;
                         text.Attributes.Font.Name = fontName;
-                        text.Attributes.Font.Color = DrawingColors.Green;
+                        text.Attributes.Font.Color = GetDrawingColor(textColor);
 
                         Vector vPerp = new Vector(vAlong.Y, -vAlong.X, 0);
                         double angleDeg = Math.Atan2(vPerp.Y, vPerp.X) * 180.0 / Math.PI;
@@ -263,6 +219,15 @@ namespace TeklaApp.ViewModels
                 return "Error: " + ex.Message;
             }
         }
+
+        private DrawingColors GetDrawingColor(string colorName)
+        {
+            if (Enum.TryParse(colorName, out DrawingColors color))
+                return color;
+            return DrawingColors.Green; // Default
+        }
+
+
 
         private void DrawHatchAlongLine(ViewBase view, Point from, Point to, Vector hatchDir, double spacing, double len)
         {
