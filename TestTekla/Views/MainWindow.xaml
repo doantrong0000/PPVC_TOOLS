@@ -1,0 +1,63 @@
+<Window x:Class="TeklaApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Tekla Tools 2025" Height="600" Width="1000" 
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource BackgroundLightGreyBrush}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Sidebar Navigation -->
+        <Border Grid.Column="0" Background="{StaticResource SidebarBrush}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Sidebar Header -->
+                <StackPanel Grid.Row="0" Margin="20,30,20,30">
+                    <TextBlock Text="TEKLA TOOLS" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                    <TextBlock Text="Version 2025.1.0" Foreground="#888888" FontSize="11" Margin="2,5,0,0"/>
+                </StackPanel>
+
+                <!-- Navigation Buttons -->
+                <StackPanel Grid.Row="1">
+                    <Button Name="btnReadParams" Content="1. Read Parameters" Style="{StaticResource SideMenuButtonStyle}" Click="BtnReadParams_Click"/>
+                    <Button Name="btnDeleteCut" Content="2. Delete PartCuts" Style="{StaticResource SideMenuButtonStyle}" Click="BtnDeleteCut_Click"/>
+                    <Button Name="btnAddAssembly" Content="3. Join Assembly" Style="{StaticResource SideMenuButtonStyle}" Click="BtnAddAssembly_Click"/>
+                    <Button Name="btnRemoveDuplicates" Content="4. Remove Duplicates" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRemoveDuplicates_Click"/>
+                    <Button Name="btnStepTag" Content="5. Step Tag (Beams &amp; Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click"/>
+                </StackPanel>
+
+                <!-- Sidebar Footer -->
+                <Border Grid.Row="2" Background="#1E1E1E" Padding="15">
+                    <TextBlock Text="Ready for Tekla Structures" Foreground="#666666" FontSize="10" HorizontalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Header -->
+            <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="25,0">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="txtCurrentTool" Text="Dashboard" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Page Content Container -->
+            <ContentControl Grid.Row="1" x:Name="MainContentControl" Margin="25"/>
+        </Grid>
+
+    </Grid>
+</Window>

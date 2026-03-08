@@ -52,3 +52,9 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+*.vsidx
+*.v2
+*.db-shm
+/TestTekla/.vs
+/TestTekla/.vscode
+TestTekla/output.txt
