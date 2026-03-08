@@ -257,7 +257,7 @@ namespace TeklaApp.Views
 
                 string result = _viewModel.CreateStepTag(
                     V(txtTextHeight, 3.5), txtFontName.Text,
-                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12), useRectFill, fillName);
+                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12));
                 txtStatus.Text = result;
             }
             finally

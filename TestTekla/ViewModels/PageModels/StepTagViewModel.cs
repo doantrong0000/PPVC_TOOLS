@@ -97,6 +97,8 @@ namespace TeklaApp.ViewModels
                         double overLenX = overMaxX - overMinX;
                         double overLenY = overMaxY - overMinY;
 
+                        if ( overLenX + overLenY < 10) continue;
+
                         Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
 
                         // --- TÁCH BIỆT LOGIC PHƯƠNG DỌC VÀ NGANG ---
@@ -112,10 +114,29 @@ namespace TeklaApp.ViewModels
                             // 1. Mối nối ngang: Ưu tiên đọc từ Trái sang Phải
                             vAlong = new Vector(1, 0, 0);
                             Vector vPerpLocal = new Vector(0, 1, 0); // Phương đứng
-                            double dot = vecToC1.Dot(vPerpLocal);
+                                                                     // 1. Lấy tâm của Sàn 1 và Sàn 2 trong tọa độ View
+                            Point center1 = new Point((v1MinX + v1MaxX) / 2.0, (v1MinY + v1MaxY) / 2.0, 0);
+                            Point center2 = new Point((v2MinX + v2MaxX) / 2.0, (v2MinY + v2MaxY) / 2.0, 0);
 
-                            vHigh = isPart1High ? (dot > 0 ? vPerpLocal : Neg(vPerpLocal)) : (dot > 0 ? Neg(vPerpLocal) : vPerpLocal);
-                            vLow = Neg(vHigh);
+                            // 2. Tạo vector nối từ Sàn 2 sang Sàn 1
+                            // Vector này sẽ chỉ rõ hướng tương đối giữa hai sàn
+                            Vector vTwoToOne = new Vector(center1.X - center2.X, center1.Y - center2.Y, 0);
+
+                            // 3. Tính toán lại dot product dựa trên hướng ranh giới (vPerpLocal)
+                            // vPerpLocal là hướng vuông góc với mối nối (ví dụ: hướng sang phải)
+                            double dot = vTwoToOne.Dot(vPerpLocal);
+
+                            // 4. Xác định vHigh
+                            // Bây giờ 'dot' chắc chắn sẽ âm nếu Sàn 1 nằm bên trái Sàn 2 (khi vPerpLocal hướng phải)
+                            if (isPart1High)
+                            {
+                                vHigh = (dot > 0) ? vPerpLocal : vPerpLocal * -1.0;
+                            }
+                            else
+                            {
+                                vHigh = (dot > 0) ? vPerpLocal * -1.0 : vPerpLocal;
+                            }
+                            vLow = vHigh * -1.0;
 
                             // Nếu sàn Cao ở phía dưới (Y < 0), đảo vAlong để chữ Z không bị ngược thị giác
                             if (vHigh.Y > 0) vAlong = Neg(vAlong);
@@ -125,10 +146,30 @@ namespace TeklaApp.ViewModels
                             // 2. Mối nối dọc: Ưu tiên đọc từ Dưới lên Trên
                             vAlong = new Vector(0, 1, 0);
                             Vector vPerpLocal = new Vector(1, 0, 0); // Phương ngang
-                            double dot = vecToC1.Dot(vPerpLocal);
 
-                            vHigh = isPart1High ? (dot > 0 ? vPerpLocal : Neg(vPerpLocal)) : (dot > 0 ? Neg(vPerpLocal) : vPerpLocal);
-                            vLow = Neg(vHigh);
+                            // 1. Lấy tâm của Sàn 1 và Sàn 2 trong tọa độ View
+                            Point center1 = new Point((v1MinX + v1MaxX) / 2.0, (v1MinY + v1MaxY) / 2.0, 0);
+                            Point center2 = new Point((v2MinX + v2MaxX) / 2.0, (v2MinY + v2MaxY) / 2.0, 0);
+
+                            // 2. Tạo vector nối từ Sàn 2 sang Sàn 1
+                            // Vector này sẽ chỉ rõ hướng tương đối giữa hai sàn
+                            Vector vTwoToOne = new Vector(center1.X - center2.X, center1.Y - center2.Y, 0);
+
+                            // 3. Tính toán lại dot product dựa trên hướng ranh giới (vPerpLocal)
+                            // vPerpLocal là hướng vuông góc với mối nối (ví dụ: hướng sang phải)
+                            double dot = vTwoToOne.Dot(vPerpLocal);
+
+                            // 4. Xác định vHigh
+                            // Bây giờ 'dot' chắc chắn sẽ âm nếu Sàn 1 nằm bên trái Sàn 2 (khi vPerpLocal hướng phải)
+                            if (isPart1High)
+                            {
+                                vHigh = (dot > 0) ? vPerpLocal : vPerpLocal * -1.0;
+                            }
+                            else
+                            {
+                                vHigh = (dot > 0) ? vPerpLocal * -1.0 : vPerpLocal;
+                            }
+                            vLow = vHigh * -1.0;
 
                             // NÂNG CẤP QUAN TRỌNG: Nếu sàn cao ở bên PHẢI (X > 0), 
                             // đảo vAlong xuống dưới để pLowJ nằm thấp hơn pJ -> tạo hình bậc thang đi lên.
