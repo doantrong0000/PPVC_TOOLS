@@ -97,7 +97,7 @@ namespace TeklaApp.ViewModels
                         double overLenX = overMaxX - overMinX;
                         double overLenY = overMaxY - overMinY;
 
-                        if ( overLenX + overLenY < 10) continue;
+                        if (overLenX + overLenY < 10) continue;
 
                         Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
 
@@ -140,7 +140,7 @@ namespace TeklaApp.ViewModels
                         Point pLowJ = new Point(pJ.X + vAlong.X * sStep, pJ.Y + vAlong.Y * sStep, 0);
                         Point pLowEnd = new Point(pLowJ.X + vLow.X * sSurf, pLowJ.Y + vLow.Y * sSurf, 0);
 
-                      
+
                         // ======== Hatching ========
                         if (!useRectFill)
                         {

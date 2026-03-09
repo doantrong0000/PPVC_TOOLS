@@ -38,6 +38,7 @@
                 <StackPanel Grid.Row="1">
                     <TextBlock Text="INSTANT ACTIONS" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,10,0,5"/>
                     <Button Name="btnDeleteCut" Content="Delete PartCuts" Style="{StaticResource SideMenuButtonStyle}" Click="BtnDeleteCut_Click" Foreground="White"/>
+                    <Button Name="btnQuickDim" Content="Quick Dimension (Drawing)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnQuickDim_Click" Foreground="White"/>
                   
 
                     <TextBlock Text="TOOLS WITH VIEW" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,20,0,5"/>

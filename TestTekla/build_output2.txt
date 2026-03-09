@@ -1,0 +1,17 @@
+﻿  Determining projects to restore...
+  All projects are up-to-date for restore.
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(126,33): error CS7036: There is no argument given that corresponds to the required parameter 'pickedView' of 'Picker.PickPoint(string, out Point, out ViewBase)' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(127,33): error CS7036: There is no argument given that corresponds to the required parameter 'pickedView' of 'Picker.PickPoint(string, out Point, out ViewBase)' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(134,33): error CS7036: There is no argument given that corresponds to the required parameter 'pickedView' of 'Picker.PickPoint(string, out Point, out ViewBase)' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(242,110): error CS1503: Argument 1: cannot convert from 'Tekla.Structures.Drawing.ViewBase' to 'string' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+
+Build FAILED.
+
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(126,33): error CS7036: There is no argument given that corresponds to the required parameter 'pickedView' of 'Picker.PickPoint(string, out Point, out ViewBase)' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(127,33): error CS7036: There is no argument given that corresponds to the required parameter 'pickedView' of 'Picker.PickPoint(string, out Point, out ViewBase)' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(134,33): error CS7036: There is no argument given that corresponds to the required parameter 'pickedView' of 'Picker.PickPoint(string, out Point, out ViewBase)' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+E:\0.CODE\TeklaTest\TestTekla\ViewModels\MainViewModel.cs(242,110): error CS1503: Argument 1: cannot convert from 'Tekla.Structures.Drawing.ViewBase' to 'string' [E:\0.CODE\TeklaTest\TestTekla\TestTekla.csproj]
+    0 Warning(s)
+    4 Error(s)
+
+Time Elapsed 00:00:01.25

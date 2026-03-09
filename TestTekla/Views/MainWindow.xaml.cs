@@ -24,7 +24,12 @@ namespace TeklaApp.Views
         {
             txtCurrentTool.Text = "PartCuts Manager";
             string result = _viewModel.DeletePartCuts();
-            MessageBox.Show(result, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void BtnQuickDim_Click(object sender, RoutedEventArgs e)
+        {
+            txtCurrentTool.Text = "Quick Dimension";
+            _viewModel.QuickDim();
         }
 
         private void BtnAddAssembly_Click(object sender, RoutedEventArgs e)
