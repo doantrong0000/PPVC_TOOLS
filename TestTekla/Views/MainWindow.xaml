@@ -25,10 +25,8 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
-                <Button Name="btnQuickDim" Content="Quick Dimension (Drawing)" Margin="0,0,10,0" Click="BtnQuickDim_Click"/>
                 <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,10,0" Click="BtnReverseRebar_Click"/>
                 <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,10,0" Click="BtnRepickRebarRange_Click"/>
-                <Button Name="btnAdjustRebarLeg" Content="Measure Rebar Leg" Margin="0,0,10,0" Click="BtnAdjustRebarLeg_Click"/>
                 <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,0,0" Click="BtnSelectRebarsOfPart_Click"/>
             </StackPanel>
         </Border>

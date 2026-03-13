@@ -27,11 +27,6 @@ namespace TeklaApp.Views
             string result = _viewModel.DeletePartCuts();
         }
 
-        private void BtnQuickDim_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Quick Dimension";
-            _viewModel.QuickDim();
-        }
 
         private void BtnReverseRebar_Click(object sender, RoutedEventArgs e)
         {
@@ -45,11 +40,6 @@ namespace TeklaApp.Views
             _viewModel.RepickRebarRange();
         }
 
-        private void BtnAdjustRebarLeg_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Measure Rebar Leg";
-            _viewModel.CheckLap();
-        }
 
         private void BtnSelectRebarsOfPart_Click(object sender, RoutedEventArgs e)
         {

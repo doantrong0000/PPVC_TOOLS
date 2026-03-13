@@ -32,6 +32,21 @@ namespace TeklaApp
         static void RunUI()
         {
             var app = new System.Windows.Application();
+            
+            // Rule: Check connection before opening app
+            var connCheck = new TeklaApp.Models.TeklaModelMng();
+            if (!connCheck.IsConnected())
+            {
+                MessageBox.Show(
+                    "❌ [COULD NOT CONNECT TO TEKLA]\n\n" + 
+                    "Reason: " + TeklaApp.Models.TeklaModelMng.LastError + "\n\n" +
+                    "Please OPEN a model in Tekla Structures first, then run this tool.", 
+                    "Tekla Connection Failed", 
+                    MessageBoxButtons.OK, 
+                    MessageBoxIcon.Error);
+                return; // Stop here, don't open the app
+            }
+
             app.Run(new MainWindow());
         }
 
