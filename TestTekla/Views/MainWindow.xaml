@@ -15,59 +15,74 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- Sidebar Navigation -->
-        <Border Grid.Column="0" Background="{StaticResource SidebarBrush}" TextElement.Foreground="White">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Sidebar Header -->
-                <StackPanel Grid.Row="0" Margin="20,30,20,30">
-                    <TextBlock Text="TEKLA TOOLS" Foreground="White" FontSize="20" FontWeight="Bold"/>
-                </StackPanel>
-
-                <!-- Navigation Buttons -->
-                <StackPanel Grid.Row="1">
-                    <TextBlock Text="INSTANT ACTIONS" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,10,0,5"/>
-                    <Button Name="btnDeleteCut" Content="Delete PartCuts" Style="{StaticResource SideMenuButtonStyle}" Click="BtnDeleteCut_Click" Foreground="White"/>
-                    <Button Name="btnQuickDim" Content="Quick Dimension (Drawing)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnQuickDim_Click" Foreground="White"/>
-                  
-
-                    <TextBlock Text="TOOLS WITH VIEW" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,20,0,5"/>
-                    <Button Name="btnReadParams" Content="Parameters Explorer" Style="{StaticResource SideMenuButtonStyle}" Click="BtnReadParams_Click" Foreground="White"/>
-                    <Button Name="btnAddAssembly" Content="Join Assembly" Style="{StaticResource SideMenuButtonStyle}" Click="BtnAddAssembly_Click" Foreground="White"/>
-                    <Button Name="btnStepTag" Content="Step Tag (Beams &amp; Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click" Foreground="White"/>
-                </StackPanel>
-
-         
-            </Grid>
+        <!-- Top Toolbar for INSTANT ACTIONS -->
+        <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="20,10">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
+                <Button Name="btnQuickDim" Content="Quick Dimension (Drawing)" Margin="0,0,10,0" Click="BtnQuickDim_Click"/>
+                <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,10,0" Click="BtnReverseRebar_Click"/>
+                <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,10,0" Click="BtnRepickRebarRange_Click"/>
+                <Button Name="btnAdjustRebarLeg" Content="Measure Rebar Leg" Margin="0,0,10,0" Click="BtnAdjustRebarLeg_Click"/>
+                <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,0,0" Click="BtnSelectRebarsOfPart_Click"/>
+            </StackPanel>
         </Border>
 
-        <!-- Main Content Area -->
-        <Grid Grid.Column="1" TextElement.Foreground="{StaticResource TextDarkBrush}">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="60"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+        <!-- Main Workspace -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- Top Header -->
-            <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="25,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock x:Name="txtCurrentTool" Text="Dashboard" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                </StackPanel>
+            <!-- Sidebar Navigation -->
+            <Border Grid.Column="0" Background="{StaticResource SidebarBrush}" TextElement.Foreground="White">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Sidebar Header -->
+                    <StackPanel Grid.Row="0" Margin="20,30,20,30">
+                        <TextBlock Text="TEKLA TOOLS" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                    </StackPanel>
+
+                    <!-- Navigation Buttons -->
+                    <StackPanel Grid.Row="1">
+                        <TextBlock Text="TOOLS WITH VIEW" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,0,0,5"/>
+                        <Button Name="btnReadParams" Content="Parameters Explorer" Style="{StaticResource SideMenuButtonStyle}" Click="BtnReadParams_Click" Foreground="White"/>
+                        <Button Name="btnAddAssembly" Content="Assembly Joiner" Style="{StaticResource SideMenuButtonStyle}" Click="BtnAddAssembly_Click" Foreground="White"/>
+                        <Button Name="btnStepTag" Content="Step Tag (Beams &amp; Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click" Foreground="White"/>
+                        <Button Name="btnRebarNumbering" Content="Rebar Numbering" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarNumbering_Click" Foreground="White"/>
+                        <Button Name="btnRebarInspector" Content="Rebar Inspector" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarInspector_Click" Foreground="White"/>
+                    </StackPanel>
+                </Grid>
             </Border>
 
-            <!-- Page Content Container -->
-            <ContentControl Grid.Row="1" x:Name="MainContentControl" Margin="10"/>
-        </Grid>
+            <!-- Main Content Area -->
+            <Grid Grid.Column="1" TextElement.Foreground="{StaticResource TextDarkBrush}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="60"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
+                <!-- Top Header -->
+                <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="25,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock x:Name="txtCurrentTool" Text="Dashboard" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Page Content Container -->
+                <ContentControl Grid.Row="1" x:Name="MainContentControl" Margin="10"/>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

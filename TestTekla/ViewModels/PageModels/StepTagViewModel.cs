@@ -15,7 +15,7 @@ namespace TeklaApp.ViewModels
         /// Tạo ký hiệu giật cấp tại vị trí giao nhau giữa các cấu kiện.
         /// Logic đã được tách biệt cho phương dọc và phương ngang để đảm bảo hiển thị đúng thị giác.
         /// </summary>
-        public string CreateStepTag(double textHeight, string fontName, string textColor, double surfLen, double stepHeight, double hatchSpc, double hatchLen, bool useRectFill = false, string fillName = "ANSI31_13")
+        public string CreateStepTag(double textHeight, string fontName, string textColor, double surfLen, double stepHeight, double hatchSpc, double hatchLen, bool useRectFill = false, string fillName = "ANSI31_13", double scaleX = 1.0, double scaleY = 1.0)
         {
             DrawingHandler dh = new DrawingHandler();
             if (dh.GetActiveDrawing() == null)
@@ -72,7 +72,8 @@ namespace TeklaApp.ViewModels
 
                         if (realView != null)
                         {
-                            scale = realView.Attributes.Scale;
+                            //scale = realView.Attributes.Scale;
+
                             CoordinateSystem sys = realView.DisplayCoordinateSystem;
                             toViewMatrix = MatrixFactory.ToCoordinateSystem(sys);
                         }
@@ -162,6 +163,8 @@ namespace TeklaApp.ViewModels
                             var hPoly = new Tekla.Structures.Drawing.Polygon(view, hPolyPts);
                             hPoly.Attributes.Hatch.Name = fillName;
                             hPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
+                            hPoly.Attributes.Hatch.ScaleX = scaleX;
+                            hPoly.Attributes.Hatch.ScaleY = scaleY;
                             hPoly.Attributes.Line.Color = DrawingColors.Invisible;
                             hPoly.Insert();
 
@@ -175,6 +178,8 @@ namespace TeklaApp.ViewModels
                             var lPoly = new Tekla.Structures.Drawing.Polygon(view, lPolyPts);
                             lPoly.Attributes.Hatch.Name = fillName;
                             lPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
+                            lPoly.Attributes.Hatch.ScaleX = scaleX ;
+                            lPoly.Attributes.Hatch.ScaleY = scaleY ;
                             lPoly.Attributes.Line.Color = DrawingColors.Invisible;
                             lPoly.Insert();
                         }
@@ -192,6 +197,7 @@ namespace TeklaApp.ViewModels
                         Text text = new Text(view, textPos, ((int)Math.Round(Math.Abs(z1 - z2))).ToString());
                         text.Attributes = new Text.TextAttributes();
                         text.Placing = new PointPlacing();
+                        text.Attributes.Frame = new Frame(FrameTypes.None, DrawingColors.Black);
                         text.Attributes.Font.Height = textHeight;
                         text.Attributes.Font.Name = fontName;
                         text.Attributes.Font.Color = GetDrawingColor(textColor);

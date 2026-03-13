@@ -60,8 +60,16 @@
 
                     <CheckBox Name="chkUseRectFill" Content="Use Rectangle Pattern Fill" Margin="0,5,0,10" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
 
-                    <TextBlock Text="Pattern Name (e.g. ANSI31_13):" Style="{StaticResource LabelTextStyle}"/>
-                    <TextBox Name="txtFillName" Text="ANSI31_13" Margin="0,0,0,15" TextChanged="OnSettingChanged"/>
+                    <StackPanel IsEnabled="{Binding Path=IsChecked, ElementName=chkUseRectFill}">
+                        <TextBlock Text="Pattern Name (e.g. ANSI31_13):" Style="{StaticResource LabelTextStyle}"/>
+                        <TextBox Name="txtFillName" Text="ANSI31_13" Margin="0,0,0,12" TextChanged="OnSettingChanged"/>
+
+                        <TextBlock Text="Scale X:" Style="{StaticResource LabelTextStyle}"/>
+                        <TextBox Name="txtScaleX" Text="1" Margin="0,0,0,12" TextChanged="OnSettingChanged"/>
+
+                        <TextBlock Text="Scale Y:" Style="{StaticResource LabelTextStyle}"/>
+                        <TextBox Name="txtScaleY" Text="1" Margin="0,0,0,15" TextChanged="OnSettingChanged"/>
+                    </StackPanel>
 
                   
 

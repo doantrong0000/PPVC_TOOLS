@@ -2,15 +2,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Color Palette -->
-    <Color x:Key="PrimaryBlueColor">#007ACC</Color>
-    <Color x:Key="SecondaryBlueColor">#1E90FF</Color>
+    <Color x:Key="PrimaryBlueColor">#333333</Color>
+    <Color x:Key="SecondaryBlueColor">#666666</Color>
     <Color x:Key="BackgroundWhiteColor">#FFFFFF</Color>
     <Color x:Key="BackgroundLightGreyColor">#F5F5F7</Color>
     <Color x:Key="BorderGreyColor">#E0E0E0</Color>
     <Color x:Key="TextDarkColor">#1A1A1A</Color>
     <Color x:Key="SidebarColor">#252526</Color>
     <Color x:Key="SidebarHoverColor">#37373D</Color>
-    <Color x:Key="PrimaryButtonColor">#FF1E90FF</Color>
+    <Color x:Key="PrimaryButtonColor">#FF333333</Color>
 
     <SolidColorBrush x:Key="PrimaryBlueBrush" Color="{StaticResource PrimaryBlueColor}"/>
     <SolidColorBrush x:Key="BackgroundWhiteBrush" Color="{StaticResource BackgroundWhiteColor}"/>

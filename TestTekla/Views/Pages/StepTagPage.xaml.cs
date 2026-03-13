@@ -60,6 +60,10 @@ namespace TeklaApp.Views
                         txtHatchLen.Text = settings.HatchLen.ToString();
                         chkUseRectFill.IsChecked = settings.UseRectFill;
                         txtFillName.Text = settings.FillName;
+                        if (settings.ScaleX == 0) settings.ScaleX = 1.0;
+                        if (settings.ScaleY == 0) settings.ScaleY = 1.0;
+                        txtScaleX.Text = settings.ScaleX.ToString();
+                        txtScaleY.Text = settings.ScaleY.ToString();
                     }
                 }
             }
@@ -80,7 +84,9 @@ namespace TeklaApp.Views
                     HatchSpc = V(txtHatchSpc, 3),
                     HatchLen = V(txtHatchLen, 12),
                     UseRectFill = chkUseRectFill.IsChecked ?? false,
-                    FillName = txtFillName.Text
+                    FillName = txtFillName.Text,
+                    ScaleX = V(txtScaleX, 1.0),
+                    ScaleY = V(txtScaleY, 1.0)
                 };
                 string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
                 File.WriteAllText(GetSettingsPath(), json);
@@ -248,6 +254,8 @@ namespace TeklaApp.Views
             return double.TryParse(tb.Text, out double v) ? v : fallback;
         }
 
+
+
         private string GetComboBoxText(ComboBox cb)
         {
             if (cb.SelectedItem is ComboBoxItem item) return item.Content.ToString();
@@ -288,7 +296,7 @@ namespace TeklaApp.Views
 
                 string result = _viewModel.CreateStepTag(
                     V(txtTextHeight, 3.5), txtFontName.Text, textColor,
-                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12), useRectFill, fillName);
+                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12), useRectFill, fillName, V(txtScaleX, 1.0), V(txtScaleY, 1.0));
                 txtStatus.Text = result;
             }
             finally
@@ -309,5 +317,7 @@ namespace TeklaApp.Views
         public double HatchLen { get; set; }
         public bool UseRectFill { get; set; }
         public string FillName { get; set; }
+        public double ScaleX { get; set; }
+        public double ScaleY { get; set; }
     }
 }

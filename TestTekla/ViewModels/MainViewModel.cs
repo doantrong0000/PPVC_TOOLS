@@ -1,6 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Tekla.Structures.Geometry3d;
+using Tekla.Structures.Model;
+using Tekla.Structures.Model.UI;
 using TeklaApp.Models;
+using ModelObjectSelector = Tekla.Structures.Model.UI.ModelObjectSelector;
 
 namespace TeklaApp.ViewModels
 {
@@ -11,6 +16,80 @@ namespace TeklaApp.ViewModels
         public MainViewModel()
         {
             _teklaModel = new TeklaModelMng();
+        }
+
+        public void SelectRebarsOfPart()
+        {
+            if (!_teklaModel.IsConnected()) return;
+
+            try
+            {
+                Tekla.Structures.Model.ModelObject pickedObject = null;
+                
+                // 1. Try to get current selection first
+                Tekla.Structures.Model.UI.ModelObjectSelector currentSelector = new Tekla.Structures.Model.UI.ModelObjectSelector();
+                Tekla.Structures.Model.ModelObjectEnumerator selectedObjects = currentSelector.GetSelectedObjects();
+                
+                while (selectedObjects.MoveNext())
+                {
+                    if (selectedObjects.Current is Tekla.Structures.Model.Part)
+                    {
+                        pickedObject = selectedObjects.Current;
+                        break; // Use the first part found in selection
+                    }
+                }
+
+                // 2. If no part is selected, fallback to Picker
+                if (pickedObject == null)
+                {
+                    Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
+                    pickedObject = picker.PickObject(Tekla.Structures.Model.UI.Picker.PickObjectEnum.PICK_ONE_PART, "Select a Part/Beam to select its rebars");
+                }
+
+                if (pickedObject is Tekla.Structures.Model.Part part)
+                {
+                    System.Collections.ArrayList rebarsToSelect = new System.Collections.ArrayList();
+
+                    // 1. Check direct children
+                    Tekla.Structures.Model.ModelObjectEnumerator children = part.GetChildren();
+                    while (children.MoveNext())
+                    {
+                        if (children.Current is Tekla.Structures.Model.Reinforcement rebar)
+                        {
+                            rebarsToSelect.Add(rebar);
+                        }
+                    }
+
+                    // 2. If nothing found, check Assembly/CastUnit content
+                    if (rebarsToSelect.Count == 0)
+                    {
+                        var assembly = part.GetAssembly();
+                        if (assembly != null)
+                        {
+                            System.Collections.ArrayList members = assembly.GetSecondaries();
+                            foreach (var member in members)
+                            {
+                                if (member is Tekla.Structures.Model.Reinforcement rebar)
+                                {
+                                    rebarsToSelect.Add(rebar);
+                                }
+                            }
+                        }
+                    }
+
+                    if (rebarsToSelect.Count > 0)
+                    {
+                        Tekla.Structures.Model.UI.ModelObjectSelector selector = new Tekla.Structures.Model.UI.ModelObjectSelector();
+                        selector.Select(rebarsToSelect);
+                        Tekla.Structures.Model.Operations.Operation.DisplayPrompt($"[SELECT] Found {rebarsToSelect.Count} rebars for part: {part.Name}");
+                    }
+                    else
+                    {
+                        Tekla.Structures.Model.Operations.Operation.DisplayPrompt("[SELECT] No rebars found associated with this part.");
+                    }
+                }
+            }
+            catch { }
         }
 
         public string DeletePartCuts()
@@ -108,6 +187,194 @@ namespace TeklaApp.ViewModels
             {
                 return "Cancelled or error occurred: " + ex.Message;
             }
+        }
+
+        public void ReverseRebarDistribution()
+        {
+            if (!_teklaModel.IsConnected())
+            {
+                return;
+            }
+
+            try
+            {
+                Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
+
+                while (true)
+                {
+                    Tekla.Structures.Model.ModelObject pickedObject = picker.PickObject(Tekla.Structures.Model.UI.Picker.PickObjectEnum.PICK_ONE_REINFORCEMENT, "Please select a rebar group to reverse distribution (Press Esc to stop)");
+                    
+                    if (pickedObject is Tekla.Structures.Model.RebarGroup rebarGroup)
+                    {
+                        var tempPoint = new Tekla.Structures.Geometry3d.Point(rebarGroup.StartPoint);
+                        rebarGroup.StartPoint = new Tekla.Structures.Geometry3d.Point(rebarGroup.EndPoint);
+                        rebarGroup.EndPoint = tempPoint;
+
+                        // Reverse the spacing array to preserve exact physical locations
+                        if (rebarGroup.Spacings.Count > 1) 
+                        {
+                            var reversedSpacings = new System.Collections.ArrayList();
+                            for (int i = rebarGroup.Spacings.Count - 1; i >= 0; i--)
+                            {
+                                reversedSpacings.Add(rebarGroup.Spacings[i]);
+                            }
+                            rebarGroup.Spacings = reversedSpacings;
+                        }
+
+                        if (rebarGroup.Modify())
+                        {
+                            _teklaModel.Commit();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        public void RepickRebarRange()
+        {
+            if (!_teklaModel.IsConnected())
+            {
+                return;
+            }
+
+            try
+            {
+                Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
+
+                while (true)
+                {
+                    Tekla.Structures.Model.ModelObject pickedObject = picker.PickObject(Tekla.Structures.Model.UI.Picker.PickObjectEnum.PICK_ONE_REINFORCEMENT, "Please select a rebar group to modify its range (Press Esc to stop)");
+                    
+                    if (pickedObject is Tekla.Structures.Model.RebarGroup rebarGroup)
+                    {
+                        var startPoint = picker.PickPoint("Pick new Start Point of distribution");
+                        var endPoint = picker.PickPoint("Pick new End Point of distribution");
+
+                        rebarGroup.StartPoint = startPoint;
+                        rebarGroup.EndPoint = endPoint;
+
+                        if (rebarGroup.Modify())
+                        {
+                            _teklaModel.Commit();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                return;
+            }
+        }
+
+        public void CheckLap()
+        {
+            if (!_teklaModel.IsConnected()) return;
+
+            try
+            {
+                Picker picker = new Picker();
+                Reinforcement pickedRebar = null;
+
+                // 1. KIỂM TRA THÉP ĐÃ CHỌN TRƯỚC (Pre-selection)
+                ModelObjectSelector selector = new ModelObjectSelector();
+                IEnumerator selectedObjects = selector.GetSelectedObjects();
+
+                while (selectedObjects.MoveNext())
+                {
+                    // Trong Tekla API, class cha của RebarGroup và SingleRebar là Reinforcement
+                    if (selectedObjects.Current is Reinforcement)
+                    {
+                        pickedRebar = selectedObjects.Current as Reinforcement;
+                        break;
+                    }
+                }
+
+                // Nếu chưa chọn thì yêu cầu người dùng pick
+                if (pickedRebar == null)
+                {
+                    pickedRebar = picker.PickObject(Picker.PickObjectEnum.PICK_ONE_REINFORCEMENT, "Select Rebar to check anchorage") as Reinforcement;
+                }
+
+                if (pickedRebar == null) return;
+
+                // 2. LẤY THÔNG TIN HÌNH HỌC VÀ ĐƯỜNG KÍNH
+                ArrayList points = null;
+                double diameter = 0;
+
+                if (pickedRebar is RebarGroup group)
+                {
+                    points = (group.Polygons[0] as Polygon).Points;
+                    diameter = group.Name.Contains("d") || group.Name.Contains("D") ? ExtractDiameter(group.Size) : 20; // Default hoặc lấy từ thuộc tính
+                }
+                else if (pickedRebar is SingleRebar single)
+                {
+                    points = single.Polygon.Points;
+                    diameter = ExtractDiameter(single.Size);
+                }
+
+                if (points == null || points.Count < 2) return;
+
+                // 3. CHỌN ĐIỂM MỐC TÍNH NEO
+                Point pClick = picker.PickPoint("Pick exact start position of anchorage (Face of concrete)");
+
+                // 4. THUẬT TOÁN CHIẾU ĐIỂM VÀ TÍNH CHIỀU DÀI DỌC THÂN
+                Point projectedPoint = null;
+                int segmentIndex = -1;
+                double minDoc = double.MaxValue;
+
+                for (int i = 0; i < points.Count - 1; i++)
+                {
+                    Point p1 = points[i] as Point;
+                    Point p2 = points[i + 1] as Point;
+
+                    // Chiếu điểm lên đường thẳng chứa phân đoạn thép
+                    Line line = new Line(p1, new Vector(p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z));
+                    Point proj = Projection.PointToLine(pClick, line);
+
+                    double d = Distance.PointToPoint(pClick, proj);
+                    if (d < minDoc)
+                    {
+                        minDoc = d;
+                        projectedPoint = proj;
+                        segmentIndex = i;
+                    }
+                }
+
+                if (projectedPoint != null)
+                {
+                    // Tính tổng chiều dài từ điểm chiếu về hai đầu
+                    double distToStart = Distance.PointToPoint(projectedPoint, points[segmentIndex] as Point);
+                    for (int i = segmentIndex; i > 0; i--)
+                        distToStart += Distance.PointToPoint(points[i] as Point, points[i - 1] as Point);
+
+                    double distToEnd = Distance.PointToPoint(projectedPoint, points[segmentIndex + 1] as Point);
+                    for (int i = segmentIndex + 1; i < points.Count - 1; i++)
+                        distToEnd += Distance.PointToPoint(points[i] as Point, points[i + 1] as Point);
+
+                    // 5. HIỂN THỊ KẾT QUẢ THEO SỐ LẦN ĐƯỜNG KÍNH (nD)
+                    // Giả sử đường kính lấy từ thuộc tính Size (ví dụ "D20" -> 20)
+                    double dActual = diameter > 0 ? diameter : 1.0;
+                    string result = $"[ANCHORAGE CHECK]\n" +
+                                    $"Start side: {Math.Round(distToStart, 1)} mm ({Math.Round(distToStart / dActual, 1)}d)\n" +
+                                    $"End side: {Math.Round(distToEnd, 1)} mm ({Math.Round(distToEnd / dActual, 1)}d)";
+
+                    Tekla.Structures.Model.Operations.Operation.DisplayPrompt(result.Replace("\n", " | "));
+                    System.Windows.Forms.MessageBox.Show(result, "Anchor Result (D" + dActual + ")");
+                }
+            }
+            catch { }
+        }
+
+        // Hàm bổ trợ lấy số từ chuỗi Size (ví dụ "D25" -> 25.0)
+        private double ExtractDiameter(string size)
+        {
+            string res = System.Text.RegularExpressions.Regex.Match(size, @"\d+").Value;
+            double d;
+            return double.TryParse(res, out d) ? d : 0;
         }
 
         public void QuickDim()
