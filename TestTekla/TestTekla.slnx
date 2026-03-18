@@ -2,9 +2,8 @@
   <Configurations>
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
-    <BuildType Name="Release T20" />
+    <BuildType Name="ReleaseC" />
+    <BuildType Name="ReleaseD" />
   </Configurations>
-  <Project Path="TestTekla.csproj">
-    <BuildType Solution="Release T20|*" Project="Release2020" />
-  </Project>
+  <Project Path="TestTekla.csproj" />
 </Solution>
