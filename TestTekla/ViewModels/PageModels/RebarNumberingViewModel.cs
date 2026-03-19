@@ -17,6 +17,10 @@ namespace TeklaApp.ViewModels
         private int _startingNumber = 1;
         private bool _isAutoPrefixEnabled = true;
 
+        private string _slabKeywords = "SLAB,SÀN,FLOOR";
+        private string _beamKeywords = "TB,DẦM,BEAM";
+        private string _wallKeywords = "TW,SW,VÁCH,WALL";
+
         public string StatusMessage
         {
             get => _statusMessage;
@@ -33,6 +37,24 @@ namespace TeklaApp.ViewModels
         {
             get => _isAutoPrefixEnabled;
             set { _isAutoPrefixEnabled = value; OnPropertyChanged(); }
+        }
+
+        public string SlabKeywords
+        {
+            get => _slabKeywords;
+            set { _slabKeywords = value; OnPropertyChanged(); }
+        }
+
+        public string BeamKeywords
+        {
+            get => _beamKeywords;
+            set { _beamKeywords = value; OnPropertyChanged(); }
+        }
+
+        public string WallKeywords
+        {
+            get => _wallKeywords;
+            set { _wallKeywords = value; OnPropertyChanged(); }
         }
 
         public RebarNumberingViewModel()
@@ -83,7 +105,7 @@ namespace TeklaApp.ViewModels
                     List<Reinforcement> partRebars = GetRebarsOfPart(part);
                     foreach (var rebar in partRebars)
                     {
-                        _logicModel.AutoAssignPrefix(rebar, part);
+                        _logicModel.AutoAssignPrefix(rebar, part, SlabKeywords, BeamKeywords, WallKeywords);
                         totalRebarsProcessed++;
                     }
                 }

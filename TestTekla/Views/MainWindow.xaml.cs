@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using TeklaApp.ViewModels;
+using TeklaApp.ViewModels.PageModels;
 using TeklaApp.Views.Pages;
 
 namespace TeklaApp.Views
@@ -15,37 +16,12 @@ namespace TeklaApp.Views
             _viewModel = new MainViewModel();
         }
 
-        private void BtnReadParams_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Parameters Explorer";
-            MainContentControl.Content = new ParameterPage();
-        }
-
         private void BtnDeleteCut_Click(object sender, RoutedEventArgs e)
         {
             txtCurrentTool.Text = "PartCuts Manager";
             string result = _viewModel.DeletePartCuts();
         }
 
-
-        private void BtnReverseRebar_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Reverse Rebar Distribution";
-            _viewModel.ReverseRebarDistribution();
-        }
-
-        private void BtnRepickRebarRange_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Repick Rebar Range";
-            _viewModel.RepickRebarRange();
-        }
-
-
-        private void BtnSelectRebarsOfPart_Click(object sender, RoutedEventArgs e)
-        {
-            txtCurrentTool.Text = "Select Part's Rebars";
-            _viewModel.SelectRebarsOfPart();
-        }
 
         private void BtnAddAssembly_Click(object sender, RoutedEventArgs e)
         {
@@ -61,16 +37,18 @@ namespace TeklaApp.Views
             MainContentControl.Content = new StepTagPage();
         }
 
-        private void BtnRebarNumbering_Click(object sender, RoutedEventArgs e)
+        private void BtnRebarTools_Click(object sender, RoutedEventArgs e)
         {
-            txtCurrentTool.Text = "Rebar Numbering";
-            MainContentControl.Content = new RebarNumberingPage();
+            txtCurrentTool.Text = "Rebar Tools 🌟";
+            MainContentControl.Content = new RebarToolsPage();
         }
 
-        private void BtnRebarInspector_Click(object sender, RoutedEventArgs e)
+        private void BtnViewAlign_Click(object sender, RoutedEventArgs e)
         {
-            txtCurrentTool.Text = "Rebar Inspector";
-            MainContentControl.Content = new RebarInspectorPage();
+            txtCurrentTool.Text = "View Align";
+            MainContentControl.Content = new ViewAlignPage();
         }
+
+
     }
 }

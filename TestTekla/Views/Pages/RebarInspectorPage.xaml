@@ -22,7 +22,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Margin="20,20,20,10" Style="{StaticResource CardStyle}">
+        <Border Grid.Row="0" Margin="10,10,10,5" Style="{StaticResource CardStyle}">
             <StackPanel>
                 <TextBlock Text="REBAR INSPECTOR" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
@@ -34,7 +34,7 @@
         </Border>
 
         <!-- Main Content -->
-        <Border Grid.Row="1" Margin="20,10,20,10" Style="{StaticResource CardStyle}">
+        <Border Grid.Row="1" Margin="10,5,10,10" Style="{StaticResource CardStyle}">
             <Grid>
                 <DataGrid x:Name="dgRebars" 
                           AutoGenerateColumns="False" 
@@ -44,7 +44,7 @@
                           GridLinesVisibility="Horizontal"
                           Background="Transparent"
                           BorderThickness="0"
-                          RowHeight="35"
+                          RowHeight="28"
                           FontSize="12"
                           MouseDoubleClick="DgRebars_MouseDoubleClick">
                     <DataGrid.Resources>
@@ -79,7 +79,7 @@
         </Border>
 
         <!-- Footer / Action Bar -->
-        <Border Grid.Row="2" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="20,15">
+        <Border Grid.Row="2" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

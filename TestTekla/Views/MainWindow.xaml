@@ -3,7 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Tekla Tools 2025" 
         SizeToContent="WidthAndHeight"
-        MinWidth="800" MinHeight="500"
+        MinWidth="1000" MinHeight="500"
+        MaxHeight="1080" MaxWidth="1920"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundLightGreyBrush}">
 
@@ -25,9 +26,6 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
-                <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,10,0" Click="BtnReverseRebar_Click"/>
-                <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,10,0" Click="BtnRepickRebarRange_Click"/>
-                <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,0,0" Click="BtnSelectRebarsOfPart_Click"/>
             </StackPanel>
         </Border>
 
@@ -55,11 +53,10 @@
                     <!-- Navigation Buttons -->
                     <StackPanel Grid.Row="1">
                         <TextBlock Text="TOOLS WITH VIEW" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,0,0,5"/>
-                        <Button Name="btnReadParams" Content="Parameters Explorer" Style="{StaticResource SideMenuButtonStyle}" Click="BtnReadParams_Click" Foreground="White"/>
                         <Button Name="btnAddAssembly" Content="Assembly Joiner" Style="{StaticResource SideMenuButtonStyle}" Click="BtnAddAssembly_Click" Foreground="White"/>
                         <Button Name="btnStepTag" Content="Step Tag (Beams &amp; Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click" Foreground="White"/>
-                        <Button Name="btnRebarNumbering" Content="Rebar Numbering" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarNumbering_Click" Foreground="White"/>
-                        <Button Name="btnRebarInspector" Content="Rebar Inspector" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarInspector_Click" Foreground="White"/>
+                        <Button Name="btnRebarTools" Content="Rebar Tools 🌟" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTools_Click" Foreground="White"/>
+                        <Button Name="btnViewAlign" Content="View Align" Style="{StaticResource SideMenuButtonStyle}" Click="BtnViewAlign_Click" Foreground="White"/>
                     </StackPanel>
                 </Grid>
             </Border>

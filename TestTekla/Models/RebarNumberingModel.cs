@@ -32,30 +32,37 @@ namespace TeklaApp.Models
             return $"{name}|{size}|{lengthStr}|{shapeKey}|{hookKey}";
         }
 
-        public void AutoAssignPrefix(Reinforcement rebar, Part hostPart)
+        public void AutoAssignPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
         {
             string prefix = "";
             
             if (hostPart != null)
             {
                 string hostName = (hostPart.Name ?? "").ToUpper();
-                bool isSlab = hostName.Contains("SLAB") || hostName.Contains("FLOOR") || hostName.Contains("SÀN") || hostPart is ContourPlate;
+                bool isSlab = MatchesKeywords(hostName, slabKeys) || hostPart is ContourPlate;
+                bool isWall = MatchesKeywords(hostName, wallKeys);
+                bool isBeam = MatchesKeywords(hostName, beamKeys);
 
                 if (isSlab)
                 {
                     // For Slabs: Prefix depends on the REBAR orientation
-                    prefix = GetRebarDirectionPrefix(rebar);
+                    prefix = GetRebarDirectionPrefix(rebar, false);
+                }
+                else if (isWall)
+                {
+                    // For Walls: Prefix depends on REBAR orientation (Z=V, X/Y=H)
+                    prefix = GetRebarDirectionPrefix(rebar, true);
                 }
                 else
                 {
-                    // For Beams/Walls: Prefix depends on the HOST orientation
+                    // For Beams and others fallback: Prefix depends on the HOST orientation
                     prefix = GetPartDirectionPrefix(hostPart);
                 }
             }
             else
             {
                 // Fallback to rebar orientation if no host provided
-                prefix = GetRebarDirectionPrefix(rebar);
+                prefix = GetRebarDirectionPrefix(rebar, false);
             }
 
             if (!string.IsNullOrEmpty(prefix))
@@ -68,21 +75,41 @@ namespace TeklaApp.Models
             }
         }
 
-        private string GetDirectionFromVector(Vector vec)
+        private bool MatchesKeywords(string name, string keywords)
+        {
+            if (string.IsNullOrWhiteSpace(keywords)) return false;
+            var keys = keywords.Split(',').Select(k => k.Trim().ToUpper()).Where(k => !string.IsNullOrEmpty(k));
+            foreach (var key in keys)
+            {
+                if (name.Contains(key)) return true;
+            }
+            return false;
+        }
+
+        private string GetDirectionFromVector(Vector vec, bool isWall = false)
         {
             vec.Normalize();
             double absX = Math.Abs(vec.X);
             double absY = Math.Abs(vec.Y);
+            double absZ = Math.Abs(vec.Z);
 
             // Tolerance: approx 10 degrees (cos(10deg) ~ 0.98)
-            if (absX > 0.98) return "H"; // Parallel to X
-            if (absY > 0.98) return "V"; // Parallel to Y
+            if (isWall)
+            {
+                if (absZ > 0.98) return "V"; // Parallel to Z
+                if (absX > 0.98 || absY > 0.98) return "H"; // Parallel to X or Y
+            }
+            else
+            {
+                if (absX > 0.98) return "H"; // Parallel to X
+                if (absY > 0.98) return "V"; // Parallel to Y
+            }
 
             // Diagonal or slanted -> Flag with "X" as requested
             return "X"; 
         }
 
-        private string GetRebarDirectionPrefix(Reinforcement rebar)
+        private string GetRebarDirectionPrefix(Reinforcement rebar, bool isWall)
         {
             Polygon poly = null;
             if (rebar is RebarGroup group && group.Polygons.Count > 0) poly = group.Polygons[0] as Polygon;
@@ -90,12 +117,25 @@ namespace TeklaApp.Models
 
             if (poly == null || poly.Points.Count < 2) return "";
 
-            Point p1 = poly.Points[0] as Point;
-            Point p2 = poly.Points[poly.Points.Count - 1] as Point;
-            Vector vec = new Vector(p2.X - p1.X, p2.Y - p1.Y, 0);
+            double maxLength = -1;
+            Vector bestVec = null;
 
-            if (vec.GetLength() < 0.1) return "";
-            return GetDirectionFromVector(vec);
+            for (int i = 0; i < poly.Points.Count - 1; i++)
+            {
+                if (poly.Points[i] is Point pA && poly.Points[i + 1] is Point pB)
+                {
+                    Vector currentVec = new Vector(pB.X - pA.X, pB.Y - pA.Y, pB.Z - pA.Z);
+                    double len = currentVec.GetLength();
+                    if (len > maxLength)
+                    {
+                        maxLength = len;
+                        bestVec = currentVec;
+                    }
+                }
+            }
+
+            if (bestVec == null || maxLength < 0.1) return "";
+            return GetDirectionFromVector(bestVec, isWall);
         }
 
         private string GetPartDirectionPrefix(Part part)

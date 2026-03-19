@@ -14,37 +14,37 @@
         </ResourceDictionary>
     </UserControl.Resources>
     
-    <Grid Margin="20">
+    <Grid Margin="10">
         <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" Width="360" Padding="10">
             <StackPanel>
                 <!-- Category 1: Physical Parts -->
                 <TextBlock Text="1. PHYSICAL PARTS (BOM)" FontWeight="Bold" Foreground="#222" FontSize="11" Margin="0,0,0,10"/>
-                <StackPanel Margin="10,0,0,15">
-                    <CheckBox x:Name="chkSteel" Content="Secondary Steel (Beams, Plates)" IsChecked="True" Margin="0,0,0,8"/>
-                    <CheckBox x:Name="chkEmbed" Content="Embedded Parts (Embeds)" IsChecked="True" Margin="0,0,0,8"/>
+                <StackPanel Margin="10,0,0,10">
+                    <CheckBox x:Name="chkSteel" Content="Secondary Steel (Beams, Plates)" IsChecked="True" Margin="0,0,0,5"/>
+                    <CheckBox x:Name="chkEmbed" Content="Embedded Parts (Embeds)" IsChecked="True" Margin="0,0,0,5"/>
                     <CheckBox x:Name="chkRebar" Content="Reinforcement (Rebar, Mesh)" IsChecked="True"/>
                 </StackPanel>
 
-                <Border BorderBrush="#EEE" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
+                <Border BorderBrush="#EEE" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
                 <!-- Category 2: Connectors -->
                 <TextBlock Text="2. CONNECTORS" FontWeight="Bold" Foreground="#222" FontSize="11" Margin="0,0,0,10"/>
-                <StackPanel Margin="10,0,0,15">
-                    <CheckBox x:Name="chkBolt" Content="Bolts (Bolt Groups)" IsChecked="True" Margin="0,0,0,8"/>
+                <StackPanel Margin="10,0,0,10">
+                    <CheckBox x:Name="chkBolt" Content="Bolts (Bolt Groups)" IsChecked="True" Margin="0,0,0,5"/>
                     <CheckBox x:Name="chkWeld" Content="Welds (Manual Selection)" IsChecked="False"/>
                 </StackPanel>
 
-                <Border BorderBrush="#EEE" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
+                <Border BorderBrush="#EEE" BorderThickness="0,0,0,1" Margin="0,0,0,10"/>
 
                 <!-- Category 3: Features -->
                 <TextBlock Text="3. FEATURES &amp; TREATMENT" FontWeight="Bold" Foreground="#222" FontSize="11" Margin="0,0,0,10"/>
-                <StackPanel Margin="10,0,0,20">
-                    <CheckBox x:Name="chkSurface" Content="Surface Treatment" IsChecked="True" Margin="0,0,0,8"/>
+                <StackPanel Margin="10,0,0,15">
+                    <CheckBox x:Name="chkSurface" Content="Surface Treatment" IsChecked="True" Margin="0,0,0,5"/>
                     <CheckBox x:Name="chkFeatures" Content="Cuts &amp; Fittings" IsChecked="False"/>
                 </StackPanel>
 
                 <Button Content="RUN JOIN ASSEMBLY" Click="BtnJoin_Click" 
-                        Style="{StaticResource PrimaryButtonStyle}" Height="50" FontSize="14"/>
+                        Style="{StaticResource PrimaryButtonStyle}" Height="45" FontSize="14"/>
 
                 <Border Background="#FAFAFA" CornerRadius="4" Margin="0,15,0,0" Padding="10">
                     <TextBlock x:Name="txtStatus" Text="Ready: Pick main part then sweep select." 

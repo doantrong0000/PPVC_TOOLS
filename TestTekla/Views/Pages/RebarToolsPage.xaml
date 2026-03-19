@@ -1,0 +1,101 @@
+<UserControl x:Class="TeklaApp.Views.Pages.RebarToolsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="White">
+    <Grid>
+        <!-- Use ScrollViewer to prevent overflow if window is small -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+            <!-- MaxWidth limits the width of the main view when page is too wide -->
+            <StackPanel MaxWidth="1000" HorizontalAlignment="Left" Margin="10" Width="1000">
+                
+                <TextBlock Text="REBAR INSTANT ACTIONS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
+                
+                <!-- INSTRUCTION ENCYCLOPEDIA -->
+                <Expander Header="📖 Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
+                    <StackPanel Margin="10,5,10,10">
+                        <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
+                            <Run Text="Allows you to distribute continuous rebar across multiple segments with voids in a single operation." />
+                            <Run Text="The result is a single "/> <Run FontWeight="Bold" Text="Unified Rebar Group"/> 
+                            <Run Text=" containing all gaps, which is easy to adjust without relying on risky merge macros." />
+                        </TextBlock>
+
+                        <TextBlock Text="TEKLA OPERATION INSTRUCTIONS:" FontWeight="Bold" Foreground="#107C41" FontSize="13" Margin="0,0,0,2"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                            <Run FontWeight="Bold" Text="1. Enter Parameters:" />
+                            <Run Text=" Fill the Cover and Spacing values in the tool UI (Start Cover, End Cover, and exact Spacing target) before clicking the button."/> 
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                            <Run FontWeight="Bold" Text="2. Pick Part:" />
+                            <Run Text=" Click over the concrete Part you want to reinforce. Purpose: Associates the rebar exactly with this Part's cast unit."/>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                            <Run FontWeight="Bold" Text="3. Pick Shape Points:" />
+                            <Run Text=" Click points to define the physical cross-section geometry of the rebar. Press Middle Mouse Button to finish. Purpose: Defines the rebar shape."/>
+                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
+                            <Run FontWeight="Bold" Text="4. Pick Distribution Points:" />
+                            <Run Text=" Click pairs of points: [P1, P2] for segment A, [P3, P4] for segment B, etc. Press Middle Mouse Button to finish. Purpose: Tells Tekla exactly where the rebar segments exist and leaves a void between P2 and P3."/>
+                        </TextBlock>
+
+                        <TextBlock Text="COVER ADJUSTMENT RULES:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
+                        <TextBlock TextWrapping="Wrap" Foreground="#333333">
+                            <Run Text="- "/> <Run FontWeight="SemiBold" Text="From Plane (Start/End):"/> 
+                            <Run Text=" Adjusts the very first point (i=0) and the very last point of distribution mathematically, preventing Tekla's EXACT_SPACINGS from breaking the voids' positions."/>
+                        </TextBlock>
+                    </StackPanel>
+                </Expander>
+                
+                <!-- Buttons for instant actions -->
+                <WrapPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,5,5">
+                            <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,5" Width="150" Height="35" Click="BtnReverseRebar_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
+                            <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,5,5" Width="150" Height="35" Click="BtnRepickRebarRange_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
+                            <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,5" Width="150" Height="35" Click="BtnSelectRebarsOfPart_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,5,5">
+                            <TextBlock Text="From plane (Start):" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="12"/>
+                            <TextBox x:Name="txtStartCover" Text="25" Width="35" Margin="0,0,10,0" VerticalContentAlignment="Center" TextAlignment="Center" Height="32"/>
+
+                            <TextBlock Text="From plane (End):" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="12"/>
+                            <TextBox x:Name="txtEndCover" Text="25" Width="35" Margin="0,0,10,0" VerticalContentAlignment="Center" TextAlignment="Center" Height="32"/>
+
+                            <TextBlock Text="Spacing:" VerticalAlignment="Center" Margin="0,0,5,0" FontSize="12"/>
+                            <TextBox x:Name="txtQuickRebarSpacing" Text="200" Width="40" Margin="0,0,10,0" VerticalContentAlignment="Center" TextAlignment="Center" Height="32"/>
+
+                            <Button Name="btnQuickRebarMulti" Content="Multi-Pt Rebar" Width="120" Height="35" Click="BtnQuickRebarMulti_Click" Background="#0078D7" Foreground="White" BorderThickness="0" ToolTip="Create multi-segment rebars with voids"/>
+                        </StackPanel>
+                    </StackPanel>
+                  
+         
+                </WrapPanel>
+
+                <Separator Margin="0,0,0,10"/>
+
+                <TextBlock Text="ADVANCED REBAR VIEWS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
+                
+                <!-- Buttons to load sub-pages -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Name="btnShowRebarInspector" Content="Open Rebar Inspector" Margin="0,0,5,0" Width="170" Height="35" Click="BtnShowRebarInspector_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                    <Button Name="btnShowRebarNumbering" Content="Open Rebar Numbering" Margin="0,0,5,0" Width="170" Height="35" Click="BtnShowRebarNumbering_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                    <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,0" Width="150" Height="35" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
+                </StackPanel>
+
+                <!-- Sub View Container -->
+                <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="0" MinHeight="350" Background="#FDFDFD">
+                    <Grid>
+                        <TextBlock x:Name="txtEmptyState" Text="Select an advanced tool to display it here" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AAAAAA" FontSize="13" FontStyle="Italic"/>
+                        <ContentControl x:Name="RebarSubContent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </Border>
+                
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

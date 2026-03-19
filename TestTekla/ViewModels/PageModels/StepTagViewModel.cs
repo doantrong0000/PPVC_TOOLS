@@ -100,8 +100,9 @@ namespace TeklaApp.ViewModels
 
                         if (overLenX + overLenY < 10) continue;
 
-                        Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
+                        //Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
 
+                        Point pJ = new Point(overMaxX, (overMinY + overMaxY) / 2.0, 0);
                         // --- TÁCH BIỆT LOGIC PHƯƠNG DỌC VÀ NGANG ---
                         Vector vAlong;
                         Vector vHigh, vLow;
