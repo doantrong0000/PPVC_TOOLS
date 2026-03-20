@@ -52,12 +52,26 @@ namespace TeklaApp.Views.Pages
             }
         }
 
-        private void DgRebars_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        private void DgRebars_Click(object sender, SelectionChangedEventArgs e)
         {
             if (dgRebars.SelectedItem is RebarInfoItem selectedRebar)
             {
                 _viewModel.SelectRebarInTekla(selectedRebar.Id);
                 this.txtStatus.Text = "Selected rebar ID: " + selectedRebar.Id;
+            }
+        }
+
+        private void ToggleCol_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox chk && chk.Tag != null)
+            {
+                string colName = chk.Tag.ToString();
+                var column = this.dgRebars.FindName(colName) as DataGridColumn;
+                
+                if (column != null)
+                {
+                    column.Visibility = chk.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+                }
             }
         }
     }

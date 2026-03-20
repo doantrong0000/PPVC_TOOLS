@@ -22,59 +22,95 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Margin="10,10,10,5" Style="{StaticResource CardStyle}">
-            <StackPanel>
-                <TextBlock Text="REBAR INSPECTOR" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
-                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                    <TextBlock Text="Selected Object: " FontSize="12" Foreground="#888888"/>
-                    <TextBlock x:Name="txtSelectedPart" Text="None" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}"/>
+        <Border Grid.Row="0" Margin="10,10,10,5"  Style="{StaticResource CardStyle}">
+            <DockPanel LastChildFill="True">
+                <Button DockPanel.Dock="Right" 
+            Content="PICK PART" 
+            Click="BtnPickPart_Click"
+            Style="{StaticResource PrimaryButtonStyle}"
+            Width="120" Height="36"/>
+
+                <StackPanel>
+                    <TextBlock Text="REBAR INSPECTOR" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                        <TextBlock Text="Selected Object: " FontSize="12" Foreground="#888888"/>
+                        <TextBlock x:Name="txtSelectedPart" Text="None" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="Check rebar names and diameters assigned to a part." FontSize="11" Foreground="#AAAAAA" Margin="0,2,0,0"/>
                 </StackPanel>
-                <TextBlock Text="Check rebar names and diameters assigned to a part." FontSize="11" Foreground="#AAAAAA" Margin="0,2,0,0"/>
-            </StackPanel>
+            </DockPanel>
+
         </Border>
 
-        <!-- Main Content -->
-        <Border Grid.Row="1" Margin="10,5,10,10" Style="{StaticResource CardStyle}">
+        <!-- Main Content Area with Side Visibility Panel -->
+        <Border Grid.Row="1" Margin="10,5,10,10" Padding="0" Style="{StaticResource CardStyle}">
             <Grid>
-                <DataGrid x:Name="dgRebars" 
-                          AutoGenerateColumns="False" 
-                          IsReadOnly="True" 
-                          SelectionMode="Single"
-                          HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal"
-                          Background="Transparent"
-                          BorderThickness="0"
-                          RowHeight="28"
-                          FontSize="12"
-                          MouseDoubleClick="DgRebars_MouseDoubleClick">
-                    <DataGrid.Resources>
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#F0F0F0"/>
-                            <Setter Property="Foreground" Value="#333333"/>
-                            <Setter Property="FontWeight" Value="SemiBold"/>
-                            <Setter Property="Padding" Value="10,8"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="#E0E0E0"/>
-                        </Style>
-                    </DataGrid.Resources>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Mark/Pos" Binding="{Binding Position}" Width="80"/>
-                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="200"/>
-                        <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="80"/>
-                        <DataGridTextColumn Header="Grade" Binding="{Binding Grade}" Width="80"/>
-                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50"/>
-                        <DataGridTextColumn Header="Object ID" Binding="{Binding Id}" Width="100"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-                
-                <TextBlock x:Name="txtNoData" 
-                           Text="No part selected. Click 'PICK PART' to start." 
-                           VerticalAlignment="Center" 
-                           HorizontalAlignment="Center" 
-                           Foreground="#999999" 
-                           FontSize="14"
-                           Visibility="Visible"/>
+                <!-- DataGrid Panel -->
+                <Grid Grid.Column="0" Margin="0">
+                    <DataGrid x:Name="dgRebars" 
+                              AutoGenerateColumns="False" 
+                              IsReadOnly="True" 
+                              SelectionMode="Single"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              RowHeight="32"
+                              FontSize="12"
+                              SelectionChanged="DgRebars_Click">
+                        <DataGrid.Resources>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#F8F8F8"/>
+                                <Setter Property="Foreground" Value="#666666"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Padding" Value="12,10"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Setter Property="BorderBrush" Value="#E5E5E5"/>
+                            </Style>
+                        </DataGrid.Resources>
+
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:Name="colMark" Header="Mark/Pos" Binding="{Binding Position}" Width="90"/>
+                            <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name}" Width="150"/>
+                            <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size}" Width="70"/>
+                            <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade}" Width="70"/>
+                            <DataGridTextColumn x:Name="colSpacing" Header="Spacing" Binding="{Binding TargetSpacing}" Width="80"/>
+                            <DataGridTextColumn x:Name="colQty" Header="Qty" Binding="{Binding Quantity}" Width="50"/>
+                            <DataGridTextColumn x:Name="colId" Header="Object ID" Binding="{Binding Id}" Width="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock x:Name="txtNoData" 
+                               Text="No part selected. Click 'PICK PART' to start." 
+                               VerticalAlignment="Center" 
+                               HorizontalAlignment="Center" 
+                               Foreground="#CCCCCC" 
+                               FontSize="14"
+                               Visibility="Visible"/>
+                </Grid>
+
+                <!-- Column Visibility Sidebar -->
+                <Border Grid.Column="1" Width="160" Background="#FBFBFB" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="1,0,0,0">
+                    <StackPanel Margin="15,15,10,15">
+                        <TextBlock Text="VISIBLE COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,0,15"/>
+                        
+                        <CheckBox Content="Mark/Position" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colMark" Margin="0,0,0,10"/>
+                        <CheckBox Content="Name" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colName" Margin="0,0,0,10"/>
+                        <CheckBox Content="Size" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSize" Margin="0,0,0,10"/>
+                        <CheckBox Content="Grade" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colGrade" Margin="0,0,0,10"/>
+                        <CheckBox Content="Spacing" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSpacing" Margin="0,0,0,10"/>
+                        <CheckBox Content="Quantity" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colQty" Margin="0,0,0,10"/>
+                        <CheckBox Content="Object ID" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colId" Margin="0,0,0,10"/>
+                        
+                        <Separator Margin="0,10" Background="#EEEEEE"/>
+                        <TextBlock Text="Tips: Toggle columns to reduce horizontal clutter." FontSize="10" Foreground="#AAAAAA" TextWrapping="Wrap" FontStyle="Italic"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
@@ -85,17 +121,13 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                
+
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="Status:" Foreground="#999" Margin="0,0,10,0" VerticalAlignment="Center"/>
                     <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryBlueBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
-                
-                <Button Grid.Column="1" 
-                        Content="PICK PART" 
-                        Click="BtnPickPart_Click"
-                        Style="{StaticResource PrimaryButtonStyle}"
-                        Width="120" Height="36"/>
+
+
             </Grid>
         </Border>
     </Grid>

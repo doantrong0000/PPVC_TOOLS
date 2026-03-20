@@ -3,7 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Tekla.Structures.Geometry3d;
-using Tekla.Structures.Model;
+using TSM = Tekla.Structures.Model;
+using TSD = Tekla.Structures.Drawing;
+using TSDUI = Tekla.Structures.Drawing.UI;
 using Tekla.Structures.Model.UI;
 using TeklaApp.Models;
 
@@ -25,7 +27,8 @@ namespace TeklaApp.ViewModels
     public enum AlignTarget
     {
         Points,     // Dùng Picker pick các điểm polygon của object
-        Objects     // Dùng Picker pick objects rồi move toàn bộ
+        Objects,    // Dùng Picker pick objects rồi move toàn bộ
+        DrawingViews // Căn chỉnh các View trong bản vẽ
     }
 
     /// <summary>
@@ -49,9 +52,6 @@ namespace TeklaApp.ViewModels
         /// Workflow:
         ///   1. Pick 1 điểm mốc (Reference) → lấy tọa độ trục cần align
         ///   2. Pick 1 rebar/object để xác định đối tượng cần chỉnh
-        ///   3. Lặp: Pick từng điểm gần handle → snap tới polygon point gần nhất → align
-        ///   4. Esc để kết thúc
-        /// </summary>
         public string AlignObjectPoints(AlignAxis axis, out int alignedCount)
         {
             alignedCount = 0;
@@ -72,7 +72,7 @@ namespace TeklaApp.ViewModels
                 double refValue = GetAxisValue(refPoint, axis);
 
                 // Step 2: Pick the rebar object to edit
-                ModelObject pickedObj = picker.PickObject(
+                TSM.ModelObject pickedObj = picker.PickObject(
                     Picker.PickObjectEnum.PICK_ONE_OBJECT,
                     $"Pick rebar/object to edit points → align {axis} = {refValue:F1}");
 
@@ -105,9 +105,9 @@ namespace TeklaApp.ViewModels
                                 pointsAligned++;
 
                                 // Modify ngay sau mỗi lần pick để user thấy kết quả realtime
-                                if (pickedObj is RebarGroup rg) rg.Modify();
-                                else if (pickedObj is SingleRebar sr) sr.Modify();
-                                else if (pickedObj is Part pt) pt.Modify();
+                                if (pickedObj is TSM.RebarGroup rg) rg.Modify();
+                                else if (pickedObj is TSM.SingleRebar sr) sr.Modify();
+                                else if (pickedObj is TSM.Part pt) pt.Modify();
 
                                 _teklaModel.Commit();
 
@@ -151,15 +151,15 @@ namespace TeklaApp.ViewModels
         /// <summary>
         /// Lấy tất cả polygon points từ object (dạng reference, modify trực tiếp sẽ thay đổi object)
         /// </summary>
-        private ArrayList GetAllPolygonPoints(ModelObject obj)
+        private ArrayList GetAllPolygonPoints(TSM.ModelObject obj)
         {
             ArrayList points = new ArrayList();
 
-            if (obj is RebarGroup rebarGroup)
+            if (obj is TSM.RebarGroup rebarGroup)
             {
                 if (rebarGroup.Polygons != null)
                 {
-                    foreach (Polygon polygon in rebarGroup.Polygons)
+                    foreach (TSM.Polygon polygon in rebarGroup.Polygons)
                     {
                         foreach (Point pt in polygon.Points)
                         {
@@ -168,7 +168,7 @@ namespace TeklaApp.ViewModels
                     }
                 }
             }
-            else if (obj is SingleRebar singleRebar)
+            else if (obj is TSM.SingleRebar singleRebar)
             {
                 if (singleRebar.Polygon != null)
                 {
@@ -238,7 +238,7 @@ namespace TeklaApp.ViewModels
                 double refValue = GetAxisValue(refPoint, axis);
 
                 // Step 2: Pick objects to move
-                ModelObjectEnumerator selectedObjects = picker.PickObjects(
+                TSM.ModelObjectEnumerator selectedObjects = picker.PickObjects(
                     Picker.PickObjectsEnum.PICK_N_OBJECTS,
                     $"Pick objects to MOVE to {axis} = {refValue:F1}  (Middle click to finish)");
 
@@ -249,19 +249,19 @@ namespace TeklaApp.ViewModels
 
                 while (selectedObjects.MoveNext())
                 {
-                    ModelObject obj = selectedObjects.Current;
+                    TSM.ModelObject obj = selectedObjects.Current as TSM.ModelObject;
 
-                    if (obj is Part part)
+                    if (obj is TSM.Part part)
                     {
                         if (AlignPartByMoving(part, axis, refValue))
                             movedCount++;
                     }
-                    else if (obj is RebarGroup rebarGroup)
+                    else if (obj is TSM.RebarGroup rebarGroup)
                     {
                         if (AlignRebarGroupByMoving(rebarGroup, axis, refValue))
                             movedCount++;
                     }
-                    else if (obj is SingleRebar singleRebar)
+                    else if (obj is TSM.SingleRebar singleRebar)
                     {
                         if (AlignSingleRebarByMoving(singleRebar, axis, refValue))
                             movedCount++;
@@ -287,70 +287,16 @@ namespace TeklaApp.ViewModels
             }
         }
 
-        #region Private Methods - Align by editing polygon points
-
-        /// <summary>
-        /// Align tất cả polygon points của RebarGroup về cùng tọa độ trục
-        /// </summary>
-        private bool AlignRebarGroupPoints(RebarGroup rebarGroup, AlignAxis axis, double refValue)
-        {
-            if (rebarGroup.Polygons == null || rebarGroup.Polygons.Count == 0)
-                return false;
-
-            bool anyChanged = false;
-
-            foreach (Polygon polygon in rebarGroup.Polygons)
-            {
-                foreach (Point pt in polygon.Points)
-                {
-                    if (SetAxisValue(pt, axis, refValue))
-                        anyChanged = true;
-                }
-            }
-
-            if (anyChanged)
-            {
-                return rebarGroup.Modify();
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Align tất cả polygon points của SingleRebar về cùng tọa độ trục
-        /// </summary>
-        private bool AlignSingleRebarPoints(SingleRebar singleRebar, AlignAxis axis, double refValue)
-        {
-            if (singleRebar.Polygon == null || singleRebar.Polygon.Points.Count == 0)
-                return false;
-
-            bool anyChanged = false;
-
-            foreach (Point pt in singleRebar.Polygon.Points)
-            {
-                if (SetAxisValue(pt, axis, refValue))
-                    anyChanged = true;
-            }
-
-            if (anyChanged)
-            {
-                return singleRebar.Modify();
-            }
-
-            return false;
-        }
-
-        #endregion
 
         #region Private Methods - Align by moving entire object
 
         /// <summary>
         /// Move Part bằng cách dịch chuyển Start/EndPoint (chỉ hỗ trợ Beam và các Part có Start/EndPoint)
         /// </summary>
-        private bool AlignPartByMoving(Part part, AlignAxis axis, double refValue)
+        private bool AlignPartByMoving(TSM.Part part, AlignAxis axis, double refValue)
         {
             // Beam (Dầm, Cột, etc.) có StartPoint và EndPoint
-            if (part is Beam beam)
+            if (part is TSM.Beam beam)
             {
                 if (beam.StartPoint == null) return false;
 
@@ -367,13 +313,13 @@ namespace TeklaApp.ViewModels
             }
 
             // ContourPlate, Slab, etc. có Contour with Points
-            if (part is ContourPlate plate)
+            if (part is TSM.ContourPlate plate)
             {
                 if (plate.Contour == null || plate.Contour.ContourPoints.Count == 0)
                     return false;
 
                 // Lấy điểm đầu tiên để tính delta
-                ContourPoint firstCp = plate.Contour.ContourPoints[0] as ContourPoint;
+                TSM.ContourPoint firstCp = plate.Contour.ContourPoints[0] as TSM.ContourPoint;
                 if (firstCp == null) return false;
 
                 double currentValue = GetAxisValue(new Point(firstCp.X, firstCp.Y, firstCp.Z), axis);
@@ -381,7 +327,7 @@ namespace TeklaApp.ViewModels
 
                 if (Math.Abs(delta) < 0.01) return false;
 
-                foreach (ContourPoint cp in plate.Contour.ContourPoints)
+                foreach (TSM.ContourPoint cp in plate.Contour.ContourPoints)
                 {
                     Point tempPt = new Point(cp.X, cp.Y, cp.Z);
                     ApplyOffset(tempPt, axis, delta);
@@ -399,14 +345,14 @@ namespace TeklaApp.ViewModels
         /// <summary>
         /// Move RebarGroup bằng cách dịch chuyển toàn bộ polygon points cùng 1 offset
         /// </summary>
-        private bool AlignRebarGroupByMoving(RebarGroup rebarGroup, AlignAxis axis, double refValue)
+        private bool AlignRebarGroupByMoving(TSM.RebarGroup rebarGroup, AlignAxis axis, double refValue)
         {
             if (rebarGroup.Polygons == null || rebarGroup.Polygons.Count == 0)
                 return false;
 
             // Lấy điểm đầu tiên làm reference cho offset
             Point firstPoint = null;
-            foreach (Polygon polygon in rebarGroup.Polygons)
+            foreach (TSM.Polygon polygon in rebarGroup.Polygons)
             {
                 if (polygon.Points.Count > 0)
                 {
@@ -428,7 +374,7 @@ namespace TeklaApp.ViewModels
                 ApplyOffset(rebarGroup.EndPoint, axis, delta);
 
             // Offset all polygon points
-            foreach (Polygon polygon in rebarGroup.Polygons)
+            foreach (TSM.Polygon polygon in rebarGroup.Polygons)
             {
                 foreach (Point pt in polygon.Points)
                 {
@@ -442,7 +388,7 @@ namespace TeklaApp.ViewModels
         /// <summary>
         /// Move SingleRebar bằng cách dịch chuyển toàn bộ polygon points cùng 1 offset
         /// </summary>
-        private bool AlignSingleRebarByMoving(SingleRebar singleRebar, AlignAxis axis, double refValue)
+        private bool AlignSingleRebarByMoving(TSM.SingleRebar singleRebar, AlignAxis axis, double refValue)
         {
             if (singleRebar.Polygon == null || singleRebar.Polygon.Points.Count == 0)
                 return false;
@@ -461,6 +407,180 @@ namespace TeklaApp.ViewModels
             }
 
             return singleRebar.Modify();
+        }
+
+        /// <summary>
+        /// Căn chỉnh các View trong Drawing.
+        /// Có 2 chế độ:
+        ///   1. Align by Origin: Căn chỉnh theo điểm gốc (thường là góc dưới trái) của View.
+        ///   2. Align by COG: Căn chỉnh theo trọng tâm của các cấu kiện có trong View.
+        /// </summary>
+        public string AlignDrawingViews(AlignAxis axis, bool alignByCenter, out int alignedCount)
+        {
+            alignedCount = 0;
+            if (axis == AlignAxis.Z)
+                return "Error: Z-axis alignment is not supported for regular drawing views (2D layout).";
+
+            try
+            {
+                TSD.DrawingHandler drawingHandler = new TSD.DrawingHandler();
+                if (drawingHandler.GetActiveDrawing() == null)
+                    return "Error: No active drawing open.";
+
+                dynamic drawingPicker = drawingHandler.GetPicker();
+
+                // Step 1: Pick Reference Point
+                var pickPointResult = drawingPicker.PickPoint("VIEW ALIGN (Drawing): Pick Reference Point");
+                if (pickPointResult == null)
+                    return "Cancelled: No reference point picked.";
+
+                Point refPoint = pickPointResult.Item1;
+                ReferencePoint = refPoint;
+                double refValue = GetAxisValue(refPoint, axis);
+
+                // Cách tiếp cận mới: Ưu tiên lấy các đối tượng đang được chọn (Selected) trước
+                // Điều này tránh các vấn đề về phiên bản API Picker (inaccessible) trong Tekla 2024/2025
+                TSD.DrawingObjectEnumerator selectedObjects = drawingHandler.GetDrawingObjectSelector().GetSelected();
+
+                if (selectedObjects.GetSize() == 0)
+                {
+                    // Nếu không có gì được chọn trước, thử dùng Picker (có thể bị lỗi ở 2024/2025)
+                    try
+                    {
+                        var pickObjectsResult = drawingPicker.PickObjects("Pick views to align (Middle click to finish)");
+                        if (pickObjectsResult == null)
+                            return "Cancelled: No objects picked.";
+
+                        // Xử lý cả trường hợp Tuple và DrawingObjectEnumerator trực tiếp
+                        if (pickObjectsResult is TSD.DrawingObjectEnumerator enu)
+                            selectedObjects = enu;
+                        else
+                            selectedObjects = ((dynamic)pickObjectsResult).Item1;
+                    }
+                    catch (Exception ex)
+                    {
+                        return "Error in selection: Please select objects in drawing BEFORE running the tool if the picker fails. Error: " + ex.Message;
+                    }
+                }
+
+                if (selectedObjects.GetSize() == 0)
+                    return "No objects selected to align.";
+
+                int movedCount = 0;
+                while (selectedObjects.MoveNext())
+                {
+                    if (selectedObjects.Current is TSD.View currentView)
+                    {
+                        Point currentOrigin = currentView.Origin;
+                        double shiftValue = 0;
+
+                        if (alignByCenter)
+                        {
+                            Point contentCenter = GetViewProjectedCenter(currentView);
+                            if (contentCenter != null)
+                            {
+                                double currentCenterVal = GetAxisValue(contentCenter, axis);
+                                shiftValue = refValue - currentCenterVal;
+                            }
+                            else
+                            {
+                                // Fallback to origin if no objects found in view
+                                shiftValue = refValue - GetAxisValue(currentOrigin, axis);
+                            }
+                        }
+                        else
+                        {
+                            shiftValue = refValue - GetAxisValue(currentOrigin, axis);
+                        }
+
+                        if (Math.Abs(shiftValue) > 0.01)
+                        {
+                            Point newOrigin = new Point(currentOrigin.X, currentOrigin.Y, currentOrigin.Z);
+                            ApplyOffset(newOrigin, axis, shiftValue);
+                            currentView.Origin = newOrigin;
+                            if (currentView.Modify())
+                                movedCount++;
+                        }
+                    }
+                }
+
+                if (movedCount > 0)
+                {
+                    alignedCount = movedCount;
+                    return $"Done! Aligned {movedCount} drawing view(s) → {axis} = {refValue:F1}";
+                }
+                else
+                {
+                    return "No drawing views were moved.";
+                }
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("interrupt") || ex.GetType().Name.Contains("Picker"))
+                    return "Cancelled by user.";
+                return "Error: " + ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Tính toán trung tâm của tất cả các Part trong View (sau khi chiếu lên mặt phẳng View).
+        /// Trả về điểm ở hệ tọa độ Drawing (Sheet space).
+        /// </summary>
+        private Point GetViewProjectedCenter(TSD.View view)
+        {
+            var objects = view.GetObjects();
+            List<Point> modelCogs = new List<Point>();
+            TSM.Model model = new TSM.Model();
+
+            while (objects.MoveNext())
+            {
+                if (objects.Current is TSD.Part drawingPart)
+                {
+                    var modelObj = model.SelectModelObject(drawingPart.ModelIdentifier) as TSM.Part;
+                    if (modelObj != null)
+                    {
+                        // Lấy solid để lấy trung tâm bounding box chính xác hơn
+                        TSM.Solid solid = modelObj.GetSolid();
+                        if (solid != null)
+                        {
+                            Point center = new Point(
+                                (solid.MinimumPoint.X + solid.MaximumPoint.X) / 2.0,
+                                (solid.MinimumPoint.Y + solid.MaximumPoint.Y) / 2.0,
+                                (solid.MinimumPoint.Z + solid.MaximumPoint.Z) / 2.0
+                            );
+                            modelCogs.Add(center);
+                        }
+                        else
+                        {
+                            // Fallback if no solid (unlikely for parts with geometry)
+                            // or use part insertion points if beam
+                            if (modelObj is TSM.Beam beam)
+                            {
+                                modelCogs.Add(new Point(
+                                    (beam.StartPoint.X + beam.EndPoint.X) / 2.0,
+                                    (beam.StartPoint.Y + beam.EndPoint.Y) / 2.0,
+                                    (beam.StartPoint.Z + beam.EndPoint.Z) / 2.0
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (modelCogs.Count == 0) return null;
+
+            // Lấy trung tâm trung bình của các cấu kiện
+            Point avgModelCog = new Point(
+                modelCogs.Average(p => p.X),
+                modelCogs.Average(p => p.Y),
+                modelCogs.Average(p => p.Z)
+            );
+
+            // Chuyển đổi từ Model space sang Drawing View space
+            Matrix toView = MatrixFactory.ToCoordinateSystem(view.DisplayCoordinateSystem);
+            Point projectedCenter = toView.Transform(avgModelCog);
+
+            return projectedCenter;
         }
 
         #endregion

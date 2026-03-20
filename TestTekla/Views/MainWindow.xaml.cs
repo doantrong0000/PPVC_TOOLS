@@ -19,7 +19,7 @@ namespace TeklaApp.Views
         private void BtnDeleteCut_Click(object sender, RoutedEventArgs e)
         {
             txtCurrentTool.Text = "PartCuts Manager";
-            string result = _viewModel.DeletePartCuts();
+            _viewModel.DeletePartCuts();
         }
 
 

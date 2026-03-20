@@ -5,6 +5,8 @@ using System.Windows;
 using System.Windows.Controls;
 using Tekla.Structures.Model;
 using Tekla.Structures.Model.UI;
+using TeklaApp.Helpers;
+using TeklaApp.Models;
 
 namespace TeklaApp.Views
 {
@@ -16,10 +18,37 @@ namespace TeklaApp.Views
         {
             InitializeComponent();
             _model = new Model();
+            LoadPersistentSettings();
+        }
+
+        private void LoadPersistentSettings()
+        {
+            var settings = SettingsService.LoadSettings();
+            chkSteel.IsChecked = settings.JoinSteel;
+            chkEmbed.IsChecked = settings.JoinEmbed;
+            chkRebar.IsChecked = settings.JoinRebar;
+            chkBolt.IsChecked = settings.JoinBolt;
+            chkWeld.IsChecked = settings.JoinWeld;
+            chkSurface.IsChecked = settings.JoinSurface;
+            chkFeatures.IsChecked = settings.JoinFeatures;
+        }
+
+        private void SavePersistentSettings()
+        {
+            var settings = SettingsService.LoadSettings();
+            settings.JoinSteel = chkSteel.IsChecked ?? true;
+            settings.JoinEmbed = chkEmbed.IsChecked ?? true;
+            settings.JoinRebar = chkRebar.IsChecked ?? true;
+            settings.JoinBolt = chkBolt.IsChecked ?? true;
+            settings.JoinWeld = chkWeld.IsChecked ?? false;
+            settings.JoinSurface = chkSurface.IsChecked ?? true;
+            settings.JoinFeatures = chkFeatures.IsChecked ?? false;
+            SettingsService.SaveSettings(settings);
         }
 
         private void BtnJoin_Click(object sender, RoutedEventArgs e)
         {
+            SavePersistentSettings();
             if (!_model.GetConnectionStatus())
             {
                 txtStatus.Text = "Error: Tekla Structures is not running.";

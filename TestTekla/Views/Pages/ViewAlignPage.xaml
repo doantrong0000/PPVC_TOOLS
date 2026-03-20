@@ -11,6 +11,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Views/Styles/ModernTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -65,11 +66,25 @@
                         </RadioButton>
 
                         <RadioButton x:Name="rbModeMoveObject" GroupName="Mode" 
-                                     Margin="5,0,0,0" FontSize="12" VerticalContentAlignment="Top" Cursor="Hand">
+                                     Margin="5,0,0,8" FontSize="12" VerticalContentAlignment="Top" Cursor="Hand">
                             <StackPanel Margin="5,0,0,0">
-                                <TextBlock Text="Move Object – Move entire object" FontWeight="SemiBold"/>
+                                <TextBlock Text="Move Object – Move entire model object" FontWeight="SemiBold"/>
                                 <TextBlock Text="Moves the entire object (Part/Rebar) to the reference coordinate. Keeps shape intact, only changes placement." 
                                            FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </RadioButton>
+
+                        <RadioButton x:Name="rbModeDrawingView" GroupName="Mode" 
+                                     Margin="5,0,0,0" FontSize="12" VerticalContentAlignment="Top" Cursor="Hand">
+                            <StackPanel Margin="5,0,0,0">
+                                <TextBlock Text="Drawing View – Align views in Drawing" FontWeight="SemiBold"/>
+                                <TextBlock Text="Aligns drawing views by their Origins. Use in Drawing Editor to arrange views horizontally or vertically." 
+                                           FontSize="11" Foreground="#888" TextWrapping="Wrap" Margin="0,2,0,0"/>
+
+                                <CheckBox x:Name="chkAlignByCenter" Content="  Align by Center of Objects (COG)" 
+                                          Margin="0,8,0,0" FontSize="11" Foreground="#555" FontWeight="Normal"
+                                          IsChecked="True" Cursor="Hand"
+                                          Visibility="{Binding IsChecked, ElementName=rbModeDrawingView, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Hidden}"/>
                             </StackPanel>
                         </RadioButton>
                     </StackPanel>
@@ -90,7 +105,7 @@
                             </TextBlock>
                             <TextBlock FontSize="11" Foreground="#555" Margin="0,0,0,4">
                                 <Run FontWeight="SemiBold">Step 3:</Run>
-                                <Run> Pick objects (Rebar/Part) to align.</Run>
+                                <Run> Pick objects (Model) or Views (Drawing) to align.</Run>
                             </TextBlock>
                             <TextBlock FontSize="11" Foreground="#555" Margin="0,0,0,0">
                                 <Run FontWeight="SemiBold">Step 4:</Run>

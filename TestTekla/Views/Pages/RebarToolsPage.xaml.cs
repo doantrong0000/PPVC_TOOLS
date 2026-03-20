@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using TeklaApp.ViewModels;
 using TeklaApp.ViewModels.PageModels;
+using TeklaApp.Helpers;
+using TeklaApp.Models;
 
 namespace TeklaApp.Views.Pages
 {
@@ -14,6 +16,36 @@ namespace TeklaApp.Views.Pages
         {
             InitializeComponent();
             _viewModel = new MainViewModel();
+            LoadPersistentSettings();
+        }
+
+        private void LoadPersistentSettings()
+        {
+            var settings = SettingsService.LoadSettings();
+            txtQuickRebarSpacing.Text = settings.Spacing;
+            txtQuickRebarStart.Text = settings.StartOffset;
+            txtQuickRebarEnd.Text = settings.EndOffset;
+            txtQuickRebarOnPlane.Text = settings.OnPlaneOffset;
+            txtQuickRebarName.Text = settings.RebarName;
+            txtQuickRebarSize.Text = settings.RebarSize;
+            txtQuickRebarGrade.Text = settings.RebarGrade;
+            txtQuickRebarClass.Text = settings.RebarClass;
+            chkMergeGroups.IsChecked = settings.MergeGroups;
+        }
+
+        private void SavePersistentSettings()
+        {
+            var settings = SettingsService.LoadSettings();
+            settings.Spacing = txtQuickRebarSpacing.Text;
+            settings.StartOffset = txtQuickRebarStart.Text;
+            settings.EndOffset = txtQuickRebarEnd.Text;
+            settings.OnPlaneOffset = txtQuickRebarOnPlane.Text;
+            settings.RebarName = txtQuickRebarName.Text;
+            settings.RebarSize = txtQuickRebarSize.Text;
+            settings.RebarGrade = txtQuickRebarGrade.Text;
+            settings.RebarClass = txtQuickRebarClass.Text;
+            settings.MergeGroups = chkMergeGroups.IsChecked ?? true;
+            SettingsService.SaveSettings(settings);
         }
 
         private void BtnReverseRebar_Click(object sender, RoutedEventArgs e)
@@ -33,30 +65,26 @@ namespace TeklaApp.Views.Pages
 
         private void BtnQuickRebarMulti_Click(object sender, RoutedEventArgs e)
         {
-            double targetSpace;
-            if (!double.TryParse(txtQuickRebarSpacing.Text, out targetSpace) || targetSpace <= 0)
-            {
-                MessageBox.Show("Please enter a valid spacing!", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            double startCover = 0;
-            double.TryParse(txtStartCover.Text, out startCover);
-
-            double endCover = 0;
-            double.TryParse(txtEndCover.Text, out endCover);
+            SavePersistentSettings();
+            
+            if (!double.TryParse(txtQuickRebarSpacing.Text, out double targetSpace) || targetSpace <= 0) return;
+            if (!double.TryParse(txtQuickRebarStart.Text, out double startOffset)) startOffset = 0;
+            if (!double.TryParse(txtQuickRebarEnd.Text, out double endOffset)) endOffset = 0;
+            if (!double.TryParse(txtQuickRebarOnPlane.Text, out double onPlaneOffset)) onPlaneOffset = 0;
+            if (!int.TryParse(txtQuickRebarClass.Text, out int rebarClass)) rebarClass = 2;
 
             var vm = new CreateRebarViewModel();
-            int zoneCount;
-            string result = vm.CreateRebarWithMultiPoints(targetSpace, startCover, endCover, out zoneCount);
-            
-            if (!string.IsNullOrEmpty(result))
-            {
-                if (result.Contains("Error") || result.Contains("Cancelled"))
-                    MessageBox.Show(result, "Multi-Pt Rebar", MessageBoxButton.OK, MessageBoxImage.Warning);
-                else
-                    MessageBox.Show(result, "Multi-Pt Rebar", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
+            vm.CreateRebarWithMultiPoints(
+                targetSpace, 
+                startOffset, 
+                endOffset, 
+                onPlaneOffset,
+                txtQuickRebarName.Text,
+                txtQuickRebarSize.Text,
+                txtQuickRebarGrade.Text,
+                rebarClass,
+                chkMergeGroups.IsChecked ?? true
+            );
         }
 
         private void BtnShowRebarInspector_Click(object sender, RoutedEventArgs e)

@@ -95,11 +95,11 @@ namespace TeklaApp.ViewModels
             catch { }
         }
 
-        public string DeletePartCuts()
+        public void DeletePartCuts()
         {
             if (!_teklaModel.IsConnected())
             {
-                return "Error: Tekla Structures is not running.";
+                return;
             }
 
             try
@@ -124,29 +124,20 @@ namespace TeklaApp.ViewModels
                     if (cutCount > 0)
                     {
                         _teklaModel.Commit();
-                        return $"Successfully deleted {cutCount} PartCuts.";
                     }
-                    else
-                    {
-                        return "This part has no PartCuts.";
-                    }
-                }
-                else
-                {
-                    return "Invalid object selected.";
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return "Cancelled or error occurred: " + ex.Message;
+                return;
             }
         }
 
-        public string JoinAssembly()
+        public void JoinAssembly()
         {
             if (!_teklaModel.IsConnected())
             {
-                return "Error: Tekla Structures is not running.";
+                return;
             }
 
             try
@@ -174,21 +165,12 @@ namespace TeklaApp.ViewModels
                     {
                         assembly.Modify();
                         _teklaModel.Commit();
-                        return $"Done!\r\nSuccessfully added {count} secondary parts to the Assembly/CastUnit of the main part (Profile: {mainPart.Profile.ProfileString}).";
                     }
-                    else
-                    {
-                        return "No valid secondary parts were selected.";
-                    }
-                }
-                else
-                {
-                    return "Selected main object is invalid (Not a Part).";
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return "Cancelled or error occurred: " + ex.Message;
+                return;
             }
         }
 

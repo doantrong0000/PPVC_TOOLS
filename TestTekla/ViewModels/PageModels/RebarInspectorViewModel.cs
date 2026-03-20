@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -85,10 +85,44 @@ namespace TeklaApp.ViewModels
                         string size = ""; r.GetReportProperty("SIZE", ref size);
                         string grade = ""; r.GetReportProperty("GRADE", ref grade);
                         string pos = ""; r.GetReportProperty("REBAR_POS", ref pos);
+                        string spacing = "---";
                         int qty = 1;
-                        if (r is RebarGroup group) { double dQty = 0; group.GetReportProperty("NUMBER", ref dQty); qty = (int)dQty; }
+                        
+                        if (r is RebarGroup group) 
+                        {
+                            // 1. Lấy số lượng
+                            double dQty = 0;
+                            group.GetReportProperty("NUMBER", ref dQty);
+                            qty = (int)dQty;
 
-                        results.Add(new RebarInfoItem { Name = name, Size = size, Grade = grade, Position = pos, Quantity = qty, Id = r.Identifier.ID.ToString() });
+                            // 2. Lấy khoảng cách xuất hiện nhiều nhất (Mode)
+                            if (group.Spacings != null && group.Spacings.Count > 0)
+                            {
+                                // Chuyển ArrayList sang List<double>, làm tròn để dễ so sánh
+                                var spacingList = group.Spacings.Cast<double>()
+                                                               .Select(s => Math.Round(s, 0))
+                                                               .ToList();
+
+                                // Dùng LINQ để tìm giá trị xuất hiện nhiều nhất
+                                var mostFrequentSpacing = spacingList.GroupBy(s => s)
+                                                                     .OrderByDescending(g => g.Count())
+                                                                     .First()
+                                                                     .Key;
+
+                                spacing = mostFrequentSpacing.ToString();
+                            }
+                        }
+
+                        results.Add(new RebarInfoItem 
+                        { 
+                            Name = name, 
+                            Size = size, 
+                            Grade = grade, 
+                            Position = pos, 
+                            Quantity = qty, 
+                            Id = r.Identifier.ID.ToString(),
+                            TargetSpacing = spacing
+                        });
                     }
 
                     status = $"Showing {results.Count} rebar entries.";
@@ -124,5 +158,6 @@ namespace TeklaApp.ViewModels
         public string Position { get; set; }
         public int Quantity { get; set; }
         public string Id { get; set; }
+        public string TargetSpacing { get; set; }
     }
 }

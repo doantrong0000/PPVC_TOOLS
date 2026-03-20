@@ -4,9 +4,8 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using TeklaApp.ViewModels;
-using Newtonsoft.Json;
-using System.IO;
-using System.Reflection;
+using TeklaApp.Helpers;
+using TeklaApp.Models;
 
 namespace TeklaApp.Views
 {
@@ -19,7 +18,7 @@ namespace TeklaApp.Views
         {
             InitializeComponent();
             _viewModel = new StepTagViewModel();
-            LoadSettings();
+            LoadPersistentSettings();
             _initialized = true;
             DrawPreview();
         }
@@ -28,68 +27,49 @@ namespace TeklaApp.Views
         {
             if (_initialized)
             {
-                SaveSettings();
+                SavePersistentSettings();
                 DrawPreview();
             }
         }
 
-        private string GetSettingsPath()
-        {
-            string assemblyPath = Assembly.GetExecutingAssembly().Location;
-            string assemblyDir = System.IO.Path.GetDirectoryName(assemblyPath);
-            return System.IO.Path.Combine(assemblyDir, "StepTagSettings.json");
-        }
-
-        private void LoadSettings()
+        private void LoadPersistentSettings()
         {
             try
             {
-                string path = GetSettingsPath();
-                if (File.Exists(path))
-                {
-                    string json = File.ReadAllText(path);
-                    var settings = JsonConvert.DeserializeObject<StepTagSettings>(json);
-                    if (settings != null)
-                    {
-                        txtTextHeight.Text = settings.TextHeight.ToString();
-                        txtFontName.Text = settings.FontName;
-                        SetComboBoxText(cmbTextColor, settings.TextColor);
-                        txtSurfLen.Text = settings.SurfLen.ToString();
-                        txtStepHeight.Text = settings.StepHeight.ToString();
-                        txtHatchSpc.Text = settings.HatchSpc.ToString();
-                        txtHatchLen.Text = settings.HatchLen.ToString();
-                        chkUseRectFill.IsChecked = settings.UseRectFill;
-                        txtFillName.Text = settings.FillName;
-                        if (settings.ScaleX == 0) settings.ScaleX = 1.0;
-                        if (settings.ScaleY == 0) settings.ScaleY = 1.0;
-                        txtScaleX.Text = settings.ScaleX.ToString();
-                        txtScaleY.Text = settings.ScaleY.ToString();
-                    }
-                }
+                var settings = SettingsService.LoadSettings();
+                txtTextHeight.Text = settings.StepTextHeight;
+                txtFontName.Text = settings.StepFontName;
+                SetComboBoxText(cmbTextColor, settings.StepTextColor);
+                txtSurfLen.Text = settings.StepSurfLen;
+                txtStepHeight.Text = settings.StepHeight;
+                txtHatchSpc.Text = settings.StepHatchSpc;
+                txtHatchLen.Text = settings.StepHatchLen;
+                chkUseRectFill.IsChecked = settings.StepUseRectFill;
+                txtFillName.Text = settings.StepFillName;
+                txtScaleX.Text = settings.StepScaleX;
+                txtScaleY.Text = settings.StepScaleY;
             }
             catch { }
         }
 
-        private void SaveSettings()
+        private void SavePersistentSettings()
         {
             try
             {
-                var settings = new StepTagSettings
-                {
-                    TextHeight = V(txtTextHeight, 3.5),
-                    FontName = txtFontName.Text,
-                    TextColor = GetComboBoxText(cmbTextColor),
-                    SurfLen = V(txtSurfLen, 15),
-                    StepHeight = V(txtStepHeight, 10),
-                    HatchSpc = V(txtHatchSpc, 3),
-                    HatchLen = V(txtHatchLen, 12),
-                    UseRectFill = chkUseRectFill.IsChecked ?? false,
-                    FillName = txtFillName.Text,
-                    ScaleX = V(txtScaleX, 1.0),
-                    ScaleY = V(txtScaleY, 1.0)
-                };
-                string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-                File.WriteAllText(GetSettingsPath(), json);
+                var settings = SettingsService.LoadSettings();
+                settings.StepTextHeight = txtTextHeight.Text;
+                settings.StepFontName = txtFontName.Text;
+                settings.StepTextColor = GetComboBoxText(cmbTextColor);
+                settings.StepSurfLen = txtSurfLen.Text;
+                settings.StepHeight = txtStepHeight.Text;
+                settings.StepHatchSpc = txtHatchSpc.Text;
+                settings.StepHatchLen = txtHatchLen.Text;
+                settings.StepUseRectFill = chkUseRectFill.IsChecked ?? false;
+                settings.StepFillName = txtFillName.Text;
+                settings.StepScaleX = txtScaleX.Text;
+                settings.StepScaleY = txtScaleY.Text;
+                
+                SettingsService.SaveSettings(settings);
             }
             catch { }
         }

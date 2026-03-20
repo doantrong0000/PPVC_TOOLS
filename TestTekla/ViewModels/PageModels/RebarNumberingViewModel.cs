@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Tekla.Structures.Model;
+using TeklaApp.Helpers;
 using TeklaApp.Models;
 
 namespace TeklaApp.ViewModels
@@ -30,37 +31,71 @@ namespace TeklaApp.ViewModels
         public int StartingNumber
         {
             get => _startingNumber;
-            set { _startingNumber = value; OnPropertyChanged(); }
+            set { _startingNumber = value; OnPropertyChanged(); SavePersistentSettings(); }
         }
 
         public bool IsAutoPrefixEnabled
         {
             get => _isAutoPrefixEnabled;
-            set { _isAutoPrefixEnabled = value; OnPropertyChanged(); }
+            set { _isAutoPrefixEnabled = value; OnPropertyChanged(); SavePersistentSettings(); }
         }
 
         public string SlabKeywords
         {
             get => _slabKeywords;
-            set { _slabKeywords = value; OnPropertyChanged(); }
+            set { _slabKeywords = value; OnPropertyChanged(); SavePersistentSettings(); }
         }
 
         public string BeamKeywords
         {
             get => _beamKeywords;
-            set { _beamKeywords = value; OnPropertyChanged(); }
+            set { _beamKeywords = value; OnPropertyChanged(); SavePersistentSettings(); }
         }
 
         public string WallKeywords
         {
             get => _wallKeywords;
-            set { _wallKeywords = value; OnPropertyChanged(); }
+            set { _wallKeywords = value; OnPropertyChanged(); SavePersistentSettings(); }
         }
 
         public RebarNumberingViewModel()
         {
             _teklaModel = new TeklaModelMng();
             _logicModel = new RebarNumberingModel();
+            LoadPersistentSettings();
+        }
+
+        private void LoadPersistentSettings()
+        {
+            try
+            {
+                var settings = SettingsService.LoadSettings();
+                _startingNumber = int.TryParse(settings.StartingNumber, out int n) ? n : 1;
+                _slabKeywords = settings.SlabKeywords;
+                _beamKeywords = settings.BeamKeywords;
+                _wallKeywords = settings.WallKeywords;
+                
+                // Refresh bindings
+                OnPropertyChanged(nameof(StartingNumber));
+                OnPropertyChanged(nameof(SlabKeywords));
+                OnPropertyChanged(nameof(BeamKeywords));
+                OnPropertyChanged(nameof(WallKeywords));
+            }
+            catch { }
+        }
+
+        private void SavePersistentSettings()
+        {
+            try
+            {
+                var settings = SettingsService.LoadSettings();
+                settings.StartingNumber = StartingNumber.ToString();
+                settings.SlabKeywords = SlabKeywords;
+                settings.BeamKeywords = BeamKeywords;
+                settings.WallKeywords = WallKeywords;
+                SettingsService.SaveSettings(settings);
+            }
+            catch { }
         }
 
         public void RunAutoPrefix()
