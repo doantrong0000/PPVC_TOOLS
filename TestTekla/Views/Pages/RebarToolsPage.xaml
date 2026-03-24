@@ -8,9 +8,9 @@
              Background="White">
     <Grid>
         <!-- Use ScrollViewer to prevent overflow if window is small -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <!-- MaxWidth limits the width of the main view when page is too wide -->
-            <StackPanel MaxWidth="1000" HorizontalAlignment="Left" Margin="10" Width="1000">
+            <StackPanel HorizontalAlignment="Stretch" Margin="10">
 
                 <TextBlock Text="REBAR INSTANT ACTIONS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
 

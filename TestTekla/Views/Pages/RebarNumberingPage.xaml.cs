@@ -24,5 +24,10 @@ namespace TeklaApp.Views.Pages
         {
             _viewModel.RunAutoPrefix();
         }
+
+        private void BtnColorBySize_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.RunColorBySize();
+        }
     }
 }

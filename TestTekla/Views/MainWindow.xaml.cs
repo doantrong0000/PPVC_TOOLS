@@ -50,5 +50,37 @@ namespace TeklaApp.Views
         }
 
 
+        private void BtnOpeningX_Click(object sender, RoutedEventArgs e)
+        {
+            this.Hide();
+            try
+            {
+                _viewModel.DrawOpeningDiagonal();
+            }
+            finally
+            {
+                this.Show();
+            }
+        }
+        private void BtnDeleteById_Click(object sender, RoutedEventArgs e)
+        {
+            string idInput = txtDeleteId.Text;
+            if (string.IsNullOrWhiteSpace(idInput))
+            {
+                MessageBox.Show("Please enter an ID or GUID to delete.");
+                return;
+            }
+
+            bool success = _viewModel.DeleteObjectById(idInput);
+            if (success)
+            {
+                MessageBox.Show($"Successfully deleted object: {idInput}");
+                txtDeleteId.Text = string.Empty;
+            }
+            else
+            {
+                MessageBox.Show($"Could not find or delete object with ID: {idInput}");
+            }
+        }
     }
 }

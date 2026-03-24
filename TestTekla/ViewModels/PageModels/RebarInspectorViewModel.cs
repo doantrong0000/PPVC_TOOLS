@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -27,111 +27,130 @@ namespace TeklaApp.ViewModels
             Picker picker = new Picker();
             try
             {
-                SelectedObjectName = "None";
-                ModelObject pickedObject = null;
-
-                // 1. Check for PRE-SELECTION (Rule #1)
+                List<ModelObject> targetObjects = new List<ModelObject>();
+                
+                // 1. Check for PRE-SELECTION
                 Tekla.Structures.Model.UI.ModelObjectSelector selector = new Tekla.Structures.Model.UI.ModelObjectSelector();
                 ModelObjectEnumerator selectedObjects = selector.GetSelectedObjects();
                 
-                // Check if exactly one Part is selected
-                if (selectedObjects != null)
+                while (selectedObjects.MoveNext())
                 {
-                    int count = 0;
-                    while (selectedObjects.MoveNext())
+                    if (selectedObjects.Current is Part || selectedObjects.Current is Reinforcement)
                     {
-                        count++;
-                        if (count == 1)
-                        {
-                            if (selectedObjects.Current is Part p) pickedObject = p;
-                        }
+                        targetObjects.Add(selectedObjects.Current);
                     }
-                    // Only use if exactly one was found (to match Rule #1 logic)
-                    if (count != 1) pickedObject = null;
                 }
 
-                // 2. If nothing selected, then PICK manually
-                if (pickedObject == null)
+                // 2. If nothing selected, then PICK manually (Multiple)
+                if (targetObjects.Count == 0)
                 {
-                    pickedObject = picker.PickObject(Picker.PickObjectEnum.PICK_ONE_PART, "Select a part to see its rebars");
+                    status = "Picking objects...";
+                    ModelObjectEnumerator pickedEnum = picker.PickObjects(Picker.PickObjectsEnum.PICK_N_PARTS, "Select parts or rebars to inspect (Esc to finish)");
+                    while (pickedEnum.MoveNext())
+                    {
+                        targetObjects.Add(pickedEnum.Current);
+                    }
                 }
 
-                if (pickedObject is Part part)
+                if (targetObjects.Count == 0)
                 {
-                    SelectedObjectName = string.IsNullOrEmpty(part.Name) ? part.Profile.ProfileString : part.Name;
-                    List<Reinforcement> rebarObjects = new List<Reinforcement>();
-
-                    // 1. Get direct children (hosted rebars)
-                    ModelObjectEnumerator children = part.GetChildren();
-                    while (children.MoveNext())
-                    {
-                        if (children.Current is Reinforcement rebar)
-                        {
-                            // Add only unique rebars
-                            if (!rebarObjects.Any(x => x.Identifier.ID == rebar.Identifier.ID))
-                                rebarObjects.Add(rebar);
-                        }
-                    }
-
-                    if (rebarObjects.Count == 0) 
-                    {
-                        status = "No rebars found for this part.";
-                        return results;
-                    }
-
-                    foreach (var r in rebarObjects)
-                    {
-                        string name = ""; r.GetReportProperty("NAME", ref name);
-                        string size = ""; r.GetReportProperty("SIZE", ref size);
-                        string grade = ""; r.GetReportProperty("GRADE", ref grade);
-                        string pos = ""; r.GetReportProperty("REBAR_POS", ref pos);
-                        string spacing = "---";
-                        int qty = 1;
-                        
-                        if (r is RebarGroup group) 
-                        {
-                            // 1. Lấy số lượng
-                            double dQty = 0;
-                            group.GetReportProperty("NUMBER", ref dQty);
-                            qty = (int)dQty;
-
-                            // 2. Lấy khoảng cách xuất hiện nhiều nhất (Mode)
-                            if (group.Spacings != null && group.Spacings.Count > 0)
-                            {
-                                // Chuyển ArrayList sang List<double>, làm tròn để dễ so sánh
-                                var spacingList = group.Spacings.Cast<double>()
-                                                               .Select(s => Math.Round(s, 0))
-                                                               .ToList();
-
-                                // Dùng LINQ để tìm giá trị xuất hiện nhiều nhất
-                                var mostFrequentSpacing = spacingList.GroupBy(s => s)
-                                                                     .OrderByDescending(g => g.Count())
-                                                                     .First()
-                                                                     .Key;
-
-                                spacing = mostFrequentSpacing.ToString();
-                            }
-                        }
-
-                        results.Add(new RebarInfoItem 
-                        { 
-                            Name = name, 
-                            Size = size, 
-                            Grade = grade, 
-                            Position = pos, 
-                            Quantity = qty, 
-                            Id = r.Identifier.ID.ToString(),
-                            TargetSpacing = spacing
-                        });
-                    }
-
-                    status = $"Showing {results.Count} rebar entries.";
+                    status = "No objects selected.";
                     return results;
                 }
-                status = "Invalid selection.";
+
+                // Update UI header with first object name or count
+                if (targetObjects.Count == 1)
+                {
+                    var first = targetObjects[0];
+                    SelectedObjectName = (first is Part p) ? (string.IsNullOrEmpty(p.Name) ? p.Profile.ProfileString : p.Name) : "Selected Rebar";
+                }
+                else
+                {
+                    SelectedObjectName = $"{targetObjects.Count} Objects Selected";
+                }
+
+                Dictionary<string, Reinforcement> uniqueRebars = new Dictionary<string, Reinforcement>();
+                Dictionary<string, string> rebarToHostMap = new Dictionary<string, string>();
+
+                foreach (var obj in targetObjects)
+                {
+                    if (obj is Part part)
+                    {
+                        ModelObjectEnumerator children = part.GetChildren();
+                        while (children.MoveNext())
+                        {
+                            if (children.Current is Reinforcement rebar)
+                            {
+                                string id = rebar.Identifier.ID.ToString();
+                                if (!uniqueRebars.ContainsKey(id))
+                                {
+                                    uniqueRebars[id] = rebar;
+                                    rebarToHostMap[id] = string.IsNullOrEmpty(part.Name) ? part.Profile.ProfileString : part.Name;
+                                }
+                            }
+                        }
+                    }
+                    else if (obj is Reinforcement rebar)
+                    {
+                        string id = rebar.Identifier.ID.ToString();
+                        if (!uniqueRebars.ContainsKey(id))
+                        {
+                            uniqueRebars[id] = rebar;
+                            
+                            // Try to find host part for direct rebar selection using Report Property
+                            string hostName = "Unknown";
+                            rebar.GetReportProperty("MAIN_PART.NAME", ref hostName);
+                            if (string.IsNullOrEmpty(hostName)) 
+                                rebar.GetReportProperty("FATHER.NAME", ref hostName);
+                            
+                            rebarToHostMap[id] = string.IsNullOrEmpty(hostName) ? "Unknown" : hostName;
+                        }
+                    }
+                }
+
+                foreach (var kvp in uniqueRebars)
+                {
+                    var r = kvp.Value;
+                    string id = kvp.Key;
+                    
+                    string name = ""; r.GetReportProperty("NAME", ref name);
+                    string size = ""; r.GetReportProperty("SIZE", ref size);
+                    string grade = ""; r.GetReportProperty("GRADE", ref grade);
+                    string pos = ""; r.GetReportProperty("REBAR_POS", ref pos);
+                    string spacing = "---";
+                    int qty = 1;
+                    
+                    if (r is RebarGroup group) 
+                    {
+                        double dQty = 0;
+                        group.GetReportProperty("NUMBER", ref dQty);
+                        qty = (int)dQty;
+
+                        if (group.Spacings != null && group.Spacings.Count > 0)
+                        {
+                            var spacingList = group.Spacings.Cast<double>().Where(s => s > 0).Select(s => Math.Round(s, 0)).ToList();
+                            if (spacingList.Count > 0)
+                                spacing = spacingList.GroupBy(s => s).OrderByDescending(g => g.Count()).First().Key.ToString();
+                        }
+                    }
+
+                    results.Add(new RebarInfoItem 
+                    { 
+                        Name = name, 
+                        Size = size, 
+                        Grade = grade, 
+                        Position = pos, 
+                        Quantity = qty, 
+                        Id = id,
+                        TargetSpacing = spacing,
+                        HostName = rebarToHostMap[id]
+                    });
+                }
+
+                status = $"Showing {results.Count} rebar entries from {targetObjects.Count} objects.";
                 return results;
             }
-            catch { status = "Pick cancelled."; return results; }
+            catch (Exception) { status = "Cancelled."; return results; }
         }
 
         public void SelectRebarInTekla(string idString)
@@ -159,5 +178,6 @@ namespace TeklaApp.ViewModels
         public int Quantity { get; set; }
         public string Id { get; set; }
         public string TargetSpacing { get; set; }
+        public string HostName { get; set; }
     }
 }

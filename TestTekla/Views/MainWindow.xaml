@@ -2,9 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Tekla Tools 2025" 
-        SizeToContent="WidthAndHeight"
+        WindowState="Maximized"
         MinWidth="1000" MinHeight="500"
-        MaxHeight="1080" MaxWidth="1920"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundLightGreyBrush}">
 
@@ -26,6 +25,13 @@
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
+                <Button Name="btnOpeningX" Content="Opening ✕" Margin="0,0,10,0" Click="BtnOpeningX_Click"/>
+                
+                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
+
+                <TextBlock Text="Delete by ID/GUID:" Foreground="#666" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBox x:Name="txtDeleteId" Width="100" Height="24" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
+                <Button Name="btnDeleteById" Content="Delete Object" Margin="0,0,10,0" Click="BtnDeleteById_Click" Background="#FF3D00" Foreground="White" BorderThickness="0"/>
             </StackPanel>
         </Border>
 
@@ -57,6 +63,9 @@
                         <Button Name="btnStepTag" Content="Step Tag (Beams &amp; Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click" Foreground="White"/>
                         <Button Name="btnRebarTools" Content="Rebar Tools 🌟" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTools_Click" Foreground="White"/>
                         <Button Name="btnViewAlign" Content="View Align" Style="{StaticResource SideMenuButtonStyle}" Click="BtnViewAlign_Click" Foreground="White"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Margin="20,0,20,30">
+                        <TextBlock Text="v1.0.0" Foreground="#666" FontSize="10" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>

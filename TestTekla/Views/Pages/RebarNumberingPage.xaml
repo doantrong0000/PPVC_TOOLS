@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
-             HorizontalAlignment="Center">
+             mc:Ignorable="d">
     
     <UserControl.Resources>
         <ResourceDictionary>
@@ -15,7 +14,7 @@
     </UserControl.Resources>
 
     <Grid Margin="10">
-        <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" Width="400" Padding="15">
+        <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top" HorizontalAlignment="Center" MaxWidth="600" Padding="15">
             <StackPanel>
                 <TextBlock Text="REBAR NUMBERING (REVIT STYLE)" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
                 
@@ -51,7 +50,23 @@
 
                 <Button Content="Auto-Assign H/V Prefix"  Style="{StaticResource PrimaryButtonStyle}" Height="30" Margin="0,0,0,15" Click="BtnAutoPrefix_Click" />
 
-                <TextBlock Text="2. Sequence Numbering" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Text="2. Assign Color (Class) by Size" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Text="Set rebar Class based on its diameter to manage visual representation." 
+                           TextWrapping="Wrap" Foreground="#666" FontSize="11" Margin="0,0,0,5"/>
+
+                <DataGrid ItemsSource="{Binding SizeColorTable}" AutoGenerateColumns="False" CanUserAddRows="True" 
+                          Height="120" Margin="0,5,0,10" Background="White" BorderBrush="#DDD"
+                          SelectionMode="Single" HeadersVisibility="Column" GridLinesVisibility="Horizontal">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Rebar Size" Binding="{Binding RebarSize}" Width="*"/>
+                        <DataGridTextColumn Header="Class (Color)" Binding="{Binding RebarClass}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <Button Content="Set Color by Size"  Style="{StaticResource PrimaryButtonStyle}" Height="30" Margin="0,0,0,15" Click="BtnColorBySize_Click" 
+                        Background="#28a745" BorderBrush="#28a745"/>
+
+                <TextBlock Text="3. Sequence Numbering" FontWeight="Bold" Margin="0,0,0,5"/>
                 <TextBlock Text="Group rebars by Shape, Size, Grade, and Prefix, then assign unique sequence numbers." 
                            TextWrapping="Wrap" Foreground="#666" FontSize="11" Margin="0,0,0,5"/>
 
@@ -74,7 +89,7 @@
                     </StackPanel>
                 </Border>
 
-                <TextBlock Text="Note: This writes to the 'REBAR_SEQUENCE_NUMBER' UDA." 
+                <TextBlock Text="Note: This writes to 'REBAR_SEQ_NO' (Numbering) and 'Class' (Color)." 
                            Foreground="#999" FontSize="10" Margin="0,15,0,0" FontStyle="Italic" HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>

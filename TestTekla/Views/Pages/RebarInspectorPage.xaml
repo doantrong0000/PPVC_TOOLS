@@ -81,6 +81,7 @@
                             <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade}" Width="70"/>
                             <DataGridTextColumn x:Name="colSpacing" Header="Spacing" Binding="{Binding TargetSpacing}" Width="80"/>
                             <DataGridTextColumn x:Name="colQty" Header="Qty" Binding="{Binding Quantity}" Width="50"/>
+                            <DataGridTextColumn x:Name="colHost" Header="Host Object" Binding="{Binding HostName}" Width="120"/>
                             <DataGridTextColumn x:Name="colId" Header="Object ID" Binding="{Binding Id}" Width="100"/>
                         </DataGrid.Columns>
                     </DataGrid>
@@ -105,6 +106,7 @@
                         <CheckBox Content="Grade" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colGrade" Margin="0,0,0,10"/>
                         <CheckBox Content="Spacing" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSpacing" Margin="0,0,0,10"/>
                         <CheckBox Content="Quantity" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colQty" Margin="0,0,0,10"/>
+                        <CheckBox Content="Host Object" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colHost" Margin="0,0,0,10"/>
                         <CheckBox Content="Object ID" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colId" Margin="0,0,0,10"/>
                         
                         <Separator Margin="0,10" Background="#EEEEEE"/>
