@@ -27,6 +27,7 @@
                     <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
                     <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
                     <Button Name="btnOpeningX" Content="Opening ✕" Margin="0,0,10,0" Click="BtnOpeningX_Click"/>
+                    <Button Name="btnAutoOpeningX" Content="Auto Opening ✕" Margin="0,0,10,0" Click="BtnAutoOpeningX_Click"/>
                     
                     <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
 
