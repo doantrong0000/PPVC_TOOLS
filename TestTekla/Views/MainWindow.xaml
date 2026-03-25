@@ -22,17 +22,19 @@
 
         <!-- Top Toolbar for INSTANT ACTIONS -->
         <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="20,10">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
-                <Button Name="btnOpeningX" Content="Opening ✕" Margin="0,0,10,0" Click="BtnOpeningX_Click"/>
-                
-                <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
+                    <Button Name="btnOpeningX" Content="Opening ✕" Margin="0,0,10,0" Click="BtnOpeningX_Click"/>
+                    
+                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
 
-                <TextBlock Text="Delete by ID/GUID:" Foreground="#666" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <TextBox x:Name="txtDeleteId" Width="100" Height="24" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
-                <Button Name="btnDeleteById" Content="Delete Object" Margin="0,0,10,0" Click="BtnDeleteById_Click" Background="#FF3D00" Foreground="White" BorderThickness="0"/>
-            </StackPanel>
+                    <TextBlock Text="Delete by ID/GUID:" Foreground="#666" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox x:Name="txtDeleteId" Width="100" Height="24" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
+                    <Button Name="btnDeleteById" Content="Delete Object" Margin="0,0,10,0" Click="BtnDeleteById_Click" Background="#FF3D00" Foreground="White" BorderThickness="0"/>
+                </StackPanel>
+            </ScrollViewer>
         </Border>
 
         <!-- Main Workspace -->

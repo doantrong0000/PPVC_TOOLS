@@ -3,8 +3,7 @@
    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-   mc:Ignorable="d" 
-             HorizontalAlignment="Center"
+   mc:Ignorable="d"
 >
     <UserControl.Resources>
         <ResourceDictionary>
@@ -15,7 +14,7 @@
     </UserControl.Resources>
     
     <Grid Margin="10">
-        <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top" HorizontalAlignment="Left" Width="360" Padding="10">
+        <Border Style="{StaticResource CardStyle}" VerticalAlignment="Top" HorizontalAlignment="Stretch" MaxWidth="500" Padding="10">
             <StackPanel>
                 <!-- Category 1: Physical Parts -->
                 <TextBlock Text="1. PHYSICAL PARTS (BOM)" FontWeight="Bold" Foreground="#222" FontSize="11" Margin="0,0,0,10"/>

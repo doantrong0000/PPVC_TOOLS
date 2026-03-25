@@ -75,14 +75,14 @@
                         </DataGrid.Resources>
 
                         <DataGrid.Columns>
-                            <DataGridTextColumn x:Name="colMark" Header="Mark/Pos" Binding="{Binding Position}" Width="90"/>
-                            <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name}" Width="150"/>
-                            <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size}" Width="70"/>
-                            <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade}" Width="70"/>
-                            <DataGridTextColumn x:Name="colSpacing" Header="Spacing" Binding="{Binding TargetSpacing}" Width="80"/>
-                            <DataGridTextColumn x:Name="colQty" Header="Qty" Binding="{Binding Quantity}" Width="50"/>
-                            <DataGridTextColumn x:Name="colHost" Header="Host Object" Binding="{Binding HostName}" Width="120"/>
-                            <DataGridTextColumn x:Name="colId" Header="Object ID" Binding="{Binding Id}" Width="100"/>
+                            <DataGridTextColumn x:Name="colMark" Header="Mark/Pos" Binding="{Binding Position}" Width="Auto" MinWidth="70"/>
+                            <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name}" Width="*" MinWidth="100"/>
+                            <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size}" Width="Auto" MinWidth="50"/>
+                            <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade}" Width="Auto" MinWidth="50"/>
+                            <DataGridTextColumn x:Name="colSpacing" Header="Spacing" Binding="{Binding TargetSpacing}" Width="Auto" MinWidth="60"/>
+                            <DataGridTextColumn x:Name="colQty" Header="Qty" Binding="{Binding Quantity}" Width="Auto" MinWidth="40"/>
+                            <DataGridTextColumn x:Name="colHost" Header="Host Object" Binding="{Binding HostName}" Width="*" MinWidth="80"/>
+                            <DataGridTextColumn x:Name="colId" Header="Object ID" Binding="{Binding Id}" Width="Auto" MinWidth="70"/>
                         </DataGrid.Columns>
                     </DataGrid>
 

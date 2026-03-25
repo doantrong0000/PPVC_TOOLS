@@ -100,9 +100,8 @@ namespace TeklaApp.ViewModels
 
                         if (overLenX + overLenY < 10) continue;
 
-                        //Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
+                        Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
 
-                        Point pJ = new Point(overMaxX, (overMinY + overMaxY) / 2.0, 0);
                         // --- TÁCH BIỆT LOGIC PHƯƠNG DỌC VÀ NGANG ---
                         Vector vAlong;
                         Vector vHigh, vLow;
@@ -179,8 +178,8 @@ namespace TeklaApp.ViewModels
                             var lPoly = new Tekla.Structures.Drawing.Polygon(view, lPolyPts);
                             lPoly.Attributes.Hatch.Name = fillName;
                             lPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
-                            lPoly.Attributes.Hatch.ScaleX = scaleX ;
-                            lPoly.Attributes.Hatch.ScaleY = scaleY ;
+                            lPoly.Attributes.Hatch.ScaleX = scaleX;
+                            lPoly.Attributes.Hatch.ScaleY = scaleY;
                             lPoly.Attributes.Line.Color = DrawingColors.Invisible;
                             lPoly.Insert();
                         }
@@ -191,9 +190,13 @@ namespace TeklaApp.ViewModels
                         new Line(view, pLowJ, pLowEnd).Insert();
 
                         // ======== Text ========
+                        double x = 0.5;
+                        if (textHeight < 2) x = 0.5;
+                        if (textHeight > 2.5) x = 0.7;
+
                         Point textPos = new Point(
-                            (pJ.X + pLowJ.X) / 2.0 + vLow.X * sSurf * 0.3,
-                            (pJ.Y + pLowJ.Y) / 2.0 + vLow.Y * sSurf * 0.3, 0);
+                            (pJ.X + pLowJ.X) / 2.0 + vLow.X * 150 * 0.5,
+                            (pJ.Y + pLowJ.Y) / 2.0 + vLow.Y * 150 * 0.5, 0);
 
                         Text text = new Text(view, textPos, ((int)Math.Round(Math.Abs(z1 - z2))).ToString());
                         text.Attributes = new Text.TextAttributes();

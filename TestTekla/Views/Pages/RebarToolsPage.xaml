@@ -9,13 +9,13 @@
     <Grid>
         <!-- Use ScrollViewer to prevent overflow if window is small -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <!-- MaxWidth limits the width of the main view when page is too wide -->
-            <StackPanel HorizontalAlignment="Stretch" Margin="10">
+            <!-- DockPanel allows sub-content to stretch -->
+            <DockPanel LastChildFill="True" Margin="10">
 
-                <TextBlock Text="REBAR INSTANT ACTIONS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
+                <TextBlock DockPanel.Dock="Top" Text="REBAR INSTANT ACTIONS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
 
                 <!-- INSTRUCTION ENCYCLOPEDIA -->
-                <Expander Header="📖 Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
+                <Expander DockPanel.Dock="Top" Header="📖 Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
                     <StackPanel Margin="10,5,10,10">
                         <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
                         <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
@@ -45,7 +45,7 @@
                 </Expander>
 
                 <!-- Buttons for instant actions -->
-                <WrapPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,5,5">
                             <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,5" Width="150" Height="35" Click="BtnReverseRebar_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
@@ -56,7 +56,7 @@
                         <!-- Unified Parameter Grid for Quick Rebar -->
                         <!-- Compact Single-Line Toolbar for Rebar Creation -->
                         <Border Background="#FDFDFD" BorderBrush="#E0E0E0" BorderThickness="1" Padding="4" Margin="0,0,0,15" CornerRadius="4" >
-                            <StackPanel Orientation="Horizontal">
+                            <WrapPanel Orientation="Horizontal">
                                 <TextBlock Text="CREATE REBAR:" FontSize="11"  FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
 
                                 <!-- Parameters -->
@@ -113,23 +113,23 @@
                                     </Button>
                                     <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
                                 </StackPanel>
-                            </StackPanel>
+                            </WrapPanel>
                         </Border>
                     </StackPanel>
 
 
                 </WrapPanel>
 
-                <Separator Margin="0,0,0,10"/>
+                <Separator DockPanel.Dock="Top" Margin="0,0,0,10"/>
 
-                <TextBlock Text="ADVANCED REBAR VIEWS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
+                <TextBlock DockPanel.Dock="Top" Text="ADVANCED REBAR VIEWS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
 
                 <!-- Buttons to load sub-pages -->
-                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                    <Button Name="btnShowRebarInspector" Content="Open Rebar Inspector" Margin="0,0,5,0" Width="170" Height="35" Click="BtnShowRebarInspector_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
-                    <Button Name="btnShowRebarNumbering" Content="Open Rebar Numbering" Margin="0,0,5,0" Width="170" Height="35" Click="BtnShowRebarNumbering_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
-                    <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,0" Width="150" Height="35" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
-                </StackPanel>
+                <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
+                    <Button Name="btnShowRebarInspector" Content="Open Rebar Inspector" Margin="0,0,5,5" Width="170" Height="35" Click="BtnShowRebarInspector_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                    <Button Name="btnShowRebarNumbering" Content="Open Rebar Numbering" Margin="0,0,5,5" Width="170" Height="35" Click="BtnShowRebarNumbering_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                    <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,5" Width="150" Height="35" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
+                </WrapPanel>
 
                 <!-- Sub View Container -->
                 <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="0" MinHeight="350" Background="#FDFDFD">
@@ -139,7 +139,7 @@
                     </Grid>
                 </Border>
 
-            </StackPanel>
+            </DockPanel>
         </ScrollViewer>
     </Grid>
 </UserControl>
