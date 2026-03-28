@@ -58,3 +58,4 @@ nunit-*.xml
 /TestTekla/.vs
 /TestTekla/.vscode
 TestTekla/output.txt
+*.slnx
