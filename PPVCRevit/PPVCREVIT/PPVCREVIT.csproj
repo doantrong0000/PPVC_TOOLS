@@ -22,8 +22,29 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Resource Include="Resources\Icons\RibbonIcon16.png"/>
-        <Resource Include="Resources\Icons\RibbonIcon32.png"/>
+        <!-- Model Panel Icons -->
+        <Resource Include="Resources\Icons\CreateModule16.png"/>
+        <Resource Include="Resources\Icons\CreateModule32.png"/>
+        <Resource Include="Resources\Icons\EditModule16.png"/>
+        <Resource Include="Resources\Icons\EditModule32.png"/>
+        <Resource Include="Resources\Icons\ModuleManager16.png"/>
+        <Resource Include="Resources\Icons\ModuleManager32.png"/>
+
+        <!-- Rebar Panel Icons -->
+        <Resource Include="Resources\Icons\PlaceRebar16.png"/>
+        <Resource Include="Resources\Icons\PlaceRebar32.png"/>
+        <Resource Include="Resources\Icons\RebarSchedule16.png"/>
+        <Resource Include="Resources\Icons\RebarSchedule32.png"/>
+        <Resource Include="Resources\Icons\RebarSettings16.png"/>
+        <Resource Include="Resources\Icons\RebarSettings32.png"/>
+
+        <!-- Drawing Panel Icons -->
+        <Resource Include="Resources\Icons\CreateDrawing16.png"/>
+        <Resource Include="Resources\Icons\CreateDrawing32.png"/>
+        <Resource Include="Resources\Icons\DrawingTemplate16.png"/>
+        <Resource Include="Resources\Icons\DrawingTemplate32.png"/>
+        <Resource Include="Resources\Icons\ExportDrawing16.png"/>
+        <Resource Include="Resources\Icons\ExportDrawing32.png"/>
     </ItemGroup>
 
 </Project>
