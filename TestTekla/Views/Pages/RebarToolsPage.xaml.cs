@@ -11,11 +11,14 @@ namespace TeklaApp.Views.Pages
     public partial class RebarToolsPage : UserControl
     {
         private MainViewModel _viewModel;
+        private CreateRebarViewModel _createVm;
 
         public RebarToolsPage()
         {
             InitializeComponent();
             _viewModel = new MainViewModel();
+            _createVm = new CreateRebarViewModel();
+            this.DataContext = _createVm;
             LoadPersistentSettings();
         }
 
@@ -73,8 +76,7 @@ namespace TeklaApp.Views.Pages
             if (!double.TryParse(txtQuickRebarOnPlane.Text, out double onPlaneOffset)) onPlaneOffset = 0;
             if (!int.TryParse(txtQuickRebarClass.Text, out int rebarClass)) rebarClass = 2;
 
-            var vm = new CreateRebarViewModel();
-            vm.CreateRebarWithMultiPoints(
+            _createVm.CreateRebarWithMultiPoints(
                 targetSpace, 
                 startOffset, 
                 endOffset, 
@@ -85,6 +87,19 @@ namespace TeklaApp.Views.Pages
                 rebarClass,
                 chkMergeGroups.IsChecked ?? true
             );
+        }
+
+        private void BtnFindRebar_Click(object sender, RoutedEventArgs e)
+        {
+            _createVm.RunFindRebar();
+        }
+
+        private void TxtFindSeq_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                _createVm.RunFindRebar();
+            }
         }
 
         private void BtnShowRebarInspector_Click(object sender, RoutedEventArgs e)

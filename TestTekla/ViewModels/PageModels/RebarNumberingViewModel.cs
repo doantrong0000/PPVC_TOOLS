@@ -83,7 +83,7 @@ namespace TeklaApp.ViewModels
                 _slabKeywords = settings.SlabKeywords;
                 _beamKeywords = settings.BeamKeywords;
                 _wallKeywords = settings.WallKeywords;
-                
+
                 // Parse SizeClassMapping
                 _sizeColorTable = new ObservableCollection<SizeColorItem>();
                 if (!string.IsNullOrEmpty(settings.SizeClassMapping))
@@ -98,7 +98,7 @@ namespace TeklaApp.ViewModels
                         }
                     }
                 }
-                
+
                 // Refresh bindings
                 OnPropertyChanged(nameof(StartingNumber));
                 OnPropertyChanged(nameof(SlabKeywords));
@@ -190,7 +190,7 @@ namespace TeklaApp.ViewModels
         private List<Reinforcement> GetRebarsOfPart(Part part)
         {
             List<Reinforcement> rebars = new List<Reinforcement>();
-            
+
             // 1. Direct children
             var children = part.GetChildren();
             while (children.MoveNext())
@@ -208,7 +208,7 @@ namespace TeklaApp.ViewModels
                     if (obj is Reinforcement rebar && !rebars.Contains(rebar)) rebars.Add(rebar);
                 }
             }
-            
+
             return rebars;
         }
 
@@ -224,11 +224,11 @@ namespace TeklaApp.ViewModels
             {
                 SavePersistentSettings();
                 Model model = _teklaModel.GetModel();
-                
+
                 // 1. Try to get current selection
                 Tekla.Structures.Model.UI.ModelObjectSelector selector = new Tekla.Structures.Model.UI.ModelObjectSelector();
                 var enumerator = selector.GetSelectedObjects();
-                
+
                 List<Reinforcement> selectedRebars = new List<Reinforcement>();
                 while (enumerator.MoveNext())
                 {
@@ -244,7 +244,7 @@ namespace TeklaApp.ViewModels
                     Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
                     StatusMessage = "No selection. Please sweep select rebars to number...";
                     var pickedEnum = picker.PickObjects(Tekla.Structures.Model.UI.Picker.PickObjectsEnum.PICK_N_REINFORCEMENTS, "Sweep select rebars to number");
-                    
+
                     while (pickedEnum.MoveNext())
                     {
                         if (pickedEnum.Current is Reinforcement rebar)
@@ -268,8 +268,8 @@ namespace TeklaApp.ViewModels
                 // 3. Assign numbers to groups
                 //    - If group has an existing number (>0), keep it (if not conflicted)
                 //    - Otherwise, assign next available number starting from StartingNumber
-                
-                var groupSets = selectedRebars.GroupBy(r => 
+
+                var groupSets = selectedRebars.GroupBy(r =>
                                      {
                                          string sig = _logicModel.GetRebarSignature(r);
                                          string prefix = r.NumberingSeries?.Prefix ?? "";
@@ -386,7 +386,7 @@ namespace TeklaApp.ViewModels
                 {
                     string size = "";
                     rebar.GetReportProperty("SIZE", ref size);
-                    
+
                     // Sizes might be like "10" or "D10" or "T10", we need to extract the number if possible or use a more robust matching
                     // For now, let's assume it matches the mapping strings or try to extract numerical part
                     string numericPart = new string(size.Where(char.IsDigit).ToArray());

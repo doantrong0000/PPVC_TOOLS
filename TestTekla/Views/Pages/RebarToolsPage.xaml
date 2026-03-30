@@ -115,6 +115,23 @@
                                 </StackPanel>
                             </WrapPanel>
                         </Border>
+
+                        <!-- FIND REBAR BY SEQ SECTION (Added) -->
+                        <Border Background="#F9FEFF" BorderBrush="#B2EBF2" BorderThickness="1" Padding="2" Margin="0,0,0,15" CornerRadius="4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="FIND REBAR BY SEQ:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                                <TextBlock Text="SEQ No:" FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="60" Height="30
+                                         " VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
+                                <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="26" Margin="10,0,0,0" Padding="12,0" Background="#0097A7" BorderThickness="0" ToolTip="Find and Select rebar in model by SEQ number">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🔍" FontSize="12" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
 

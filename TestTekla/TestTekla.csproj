@@ -1,60 +1,30 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net48</TargetFramework>
-    <PlatformTarget>x64</PlatformTarget>
-    <UseWPF>true</UseWPF>
-    <Configurations>Debug;Release;ReleaseC;ReleaseD</Configurations>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net48</TargetFramework>
+		<PlatformTarget>x64</PlatformTarget>
+		<UseWPF>true</UseWPF>
+		<Configurations>Debug;Release;</Configurations>
+	</PropertyGroup>
 
-  <!-- Cấu hình đường dẫn cho ổ C -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Release' Or '$(Configuration)' == 'ReleaseC'">
-    <TeklaBinPath>C:\Program Files\Tekla Structures\2025.0\bin\</TeklaBinPath>
-  </PropertyGroup>
+	<ItemGroup>
+		<Reference Include="System.Windows.Forms" />
+		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="Tekla.Structures">
+			<HintPath>D:\Tekla Structure\2020.0\nt\bin\plugins\Tekla.Structures.dll</HintPath>
+		</Reference>
+		<Reference Include="Tekla.Structures.Drawing">
+			<HintPath>D:\Tekla Structure\2020.0\nt\bin\plugins\Tekla.Structures.Drawing.dll</HintPath>
+		</Reference>
+		<Reference Include="Tekla.Structures.Model">
+			<HintPath>D:\Tekla Structure\2020.0\nt\bin\plugins\Tekla.Structures.Model.dll</HintPath>
+		</Reference>
+	</ItemGroup>
 
-  <!-- Cấu hình đường dẫn cho ổ D (Có fallback về C nếu D không tồn tại) -->
-  <PropertyGroup Condition="'$(Configuration)' == 'ReleaseD'">
-    <TeklaBinPath>D:\Tekla Structures\2025.0\bin\</TeklaBinPath>
-    <!-- Nếu ổ D không có Tekla, tự động quay về ổ C để build không bị lỗi -->
-    <TeklaBinPath Condition="!Exists('$(TeklaBinPath)')">C:\Program Files\Tekla Structures\2025.0\bin\</TeklaBinPath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="Tekla.Structures">
-      <HintPath>$(TeklaBinPath)Tekla.Structures.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Tekla.Structures.Drawing">
-      <HintPath>$(TeklaBinPath)Tekla.Structures.Drawing.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Tekla.Structures.Model">
-      <HintPath>$(TeklaBinPath)Tekla.Structures.Model.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Tekla.Structures.Geometry3d.Compatibility">
-      <HintPath>$(TeklaBinPath)Tekla.Structures.Geometry3d.Compatibility.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Tekla.Structures.Datatype">
-      <HintPath>$(TeklaBinPath)Tekla.Structures.Datatype.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <!--<PackageReference Include="Tekla.Structures" Version="2025.0.0" />
-    <PackageReference Include="Tekla.Structures.Catalogs" Version="2025.0.0" />
-    <PackageReference Include="Tekla.Structures.Datatype" Version="2025.0.0" />
-    <PackageReference Include="Tekla.Structures.Dialog" Version="2025.0.0" />
-    <PackageReference Include="Tekla.Structures.Drawing" Version="2025.0.0" />
-    <PackageReference Include="Tekla.Structures.Model" Version="2025.0.0" />
-    <PackageReference Include="Tekla.Structures.Plugins" Version="2025.0.0" />-->
-    <PackageReference Include="TeklaFusion" Version="4.1.32" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="TeklaFusion" Version="4.1.32" />
+	</ItemGroup>
 
 </Project>

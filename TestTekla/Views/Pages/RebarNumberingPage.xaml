@@ -81,7 +81,7 @@
                 </Grid>
 
                 <Button Content="RUN REBAR NUMBERING" Click="BtnRun_Click" 
-                        Style="{StaticResource PrimaryButtonStyle}" Height="36" FontSize="13"/>
+                        Style="{StaticResource PrimaryButtonStyle}" Height="36" FontSize="13" Margin="0,0,0,20"/>
 
                 <Border Background="#F0F7FF" CornerRadius="4" Margin="0,15,0,0" Padding="10">
                     <StackPanel>

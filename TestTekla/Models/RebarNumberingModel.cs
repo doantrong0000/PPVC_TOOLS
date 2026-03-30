@@ -35,7 +35,7 @@ namespace TeklaApp.Models
         public void AutoAssignPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
         {
             string prefix = "";
-            
+
             if (hostPart != null)
             {
                 string hostName = (hostPart.Name ?? "").ToUpper();
@@ -106,7 +106,7 @@ namespace TeklaApp.Models
             }
 
             // Diagonal or slanted -> Flag with "X" as requested
-            return "X"; 
+            return "X";
         }
 
         private string GetRebarDirectionPrefix(Reinforcement rebar, bool isWall)

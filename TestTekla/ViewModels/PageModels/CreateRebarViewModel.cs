@@ -7,16 +7,33 @@ using Tekla.Structures.Model;
 using Tekla.Structures.Model.Operations;
 using Tekla.Structures.Model.UI;
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace TeklaApp.ViewModels.PageModels
 {
-    public class CreateRebarViewModel
+    public class CreateRebarViewModel : INotifyPropertyChanged
     {
         private Model _model = new Model();
+        private string _findSeq = "";
+        private string _statusMessage = "Ready";
+
+        public string FindSeq
+        {
+            get => _findSeq;
+            set { _findSeq = value; OnPropertyChanged(); }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set { _statusMessage = value; OnPropertyChanged(); }
+        }
 
         public void CreateRebarWithMultiPoints(
-            double targetSpace, 
-            double startOffset, 
-            double endOffset, 
+            double targetSpace,
+            double startOffset,
+            double endOffset,
             double onPlaneOffset,
             string rebarName,
             string rebarSize,
@@ -125,7 +142,7 @@ namespace TeklaApp.ViewModels.PageModels
                     rg.SpacingType = BaseRebarGroup.RebarGroupSpacingTypeEnum.SPACING_TYPE_TARGET_SPACE;
                     rg.Spacings.Clear();
                     rg.Spacings.Add(targetSpace);
-                    
+
                     if (rg.Insert())
                     {
                         createdGroups.Add(rg);
@@ -158,14 +175,134 @@ namespace TeklaApp.ViewModels.PageModels
                 // Select the created groups in Tekla UI
                 if (objectsToSelect.Count > 0)
                 {
+                    StatusMessage = $"Created and merged {createdGroups.Count} rebar groups.";
                     Tekla.Structures.Model.UI.ModelObjectSelector selector = new Tekla.Structures.Model.UI.ModelObjectSelector();
                     selector.Select(objectsToSelect);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                StatusMessage = "Error creating rebar: " + ex.Message;
                 return;
             }
+        }
+
+        public void RunFindRebar()
+        {
+            if (!_model.GetConnectionStatus())
+            {
+                StatusMessage = "Error: Tekla not connected.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(FindSeq))
+            {
+                StatusMessage = "Please enter a SEQ number.";
+                return;
+            }
+
+            if (!int.TryParse(FindSeq.Trim(), out int targetSeq))
+            {
+                StatusMessage = "Invalid SEQ number. Please enter an integer.";
+                return;
+            }
+
+            StatusMessage = $"Searching for SEQ {targetSeq}...";
+
+            try
+            {
+                Model myModel = new Model();
+
+
+                // 1. Lấy toàn bộ đối tượng thép (Reinforcement) trong mô hình
+                ModelObjectEnumerator enumerator = myModel.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.REBARGROUP);
+                ArrayList foundObjects = new ArrayList();
+                ModelObjectEnumerator enumerator2 = myModel.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.SINGLEREBAR);
+
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.Current is Reinforcement rebar)
+                    {
+                        bool isMatch = false;
+
+                        // Try Method 1: Integer UDA
+                        int valInt = 0;
+                        if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt) && valInt == targetSeq)
+                        {
+                            isMatch = true;
+                        }
+
+                        // Try Method 2: String UDA fallback (common in custom configurations)
+                        if (!isMatch)
+                        {
+                            string valStr = "";
+                            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) &&
+                                int.TryParse(valStr, out int parsedStr) &&
+                                parsedStr == targetSeq)
+                            {
+                                isMatch = true;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            foundObjects.Add(rebar);
+                        }
+                    }
+                }
+
+                while (enumerator2.MoveNext())
+                {
+                    if (enumerator2.Current is Reinforcement rebar)
+                    {
+                        bool isMatch = false;
+
+                        // Try Method 1: Integer UDA
+                        int valInt = 0;
+                        if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt) && valInt == targetSeq)
+                        {
+                            isMatch = true;
+                        }
+
+                        // Try Method 2: String UDA fallback (common in custom configurations)
+                        if (!isMatch)
+                        {
+                            string valStr = "";
+                            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) &&
+                                int.TryParse(valStr, out int parsedStr) &&
+                                parsedStr == targetSeq)
+                            {
+                                isMatch = true;
+                            }
+                        }
+
+                        if (isMatch)
+                        {
+                            foundObjects.Add(rebar);
+                        }
+                    }
+                }
+
+                if (foundObjects.Count > 0)
+                {
+                    new Tekla.Structures.Model.UI.ModelObjectSelector().Select(foundObjects);
+                    StatusMessage = $"Found and selected {foundObjects.Count} rebar(s) with SEQ {targetSeq}.";
+                }
+                else
+                {
+                    StatusMessage = $"No rebar found with SEQ {targetSeq}.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "Search error: " + ex.Message;
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

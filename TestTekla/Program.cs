@@ -11,16 +11,19 @@ namespace TeklaApp
         [STAThread]
         static void Main(string[] args)
         {
-            // Tự động tìm đường dẫn cài đặt Tekla từ Registry
+            // Tự động tìm đường dẫn cài đặt Tekla từ Registry và thư mục cấu hình
             AppDomain.CurrentDomain.AssemblyResolve += (sender, eventArgs) =>
             {
                 string assemblyName = new System.Reflection.AssemblyName(eventArgs.Name).Name;
-                string teklaBin = GetTeklaBinPath();
-                
-                string assemblyPath = Path.Combine(teklaBin, assemblyName + ".dll");
-                if (File.Exists(assemblyPath))
+                string[] searchPaths = GetTeklaSearchPaths();
+
+                foreach (string path in searchPaths)
                 {
-                    return System.Reflection.Assembly.LoadFrom(assemblyPath);
+                    string assemblyPath = Path.Combine(path, assemblyName + ".dll");
+                    if (File.Exists(assemblyPath))
+                    {
+                        return System.Reflection.Assembly.LoadFrom(assemblyPath);
+                    }
                 }
                 return null;
             };
@@ -32,45 +35,54 @@ namespace TeklaApp
         static void RunUI()
         {
             var app = new System.Windows.Application();
-            
-            // Rule: Check connection before opening app
-            var connCheck = new TeklaApp.Models.TeklaModelMng();
-            if (!connCheck.IsConnected())
+
+            // Gọi một hàm trung gian thay vì khởi tạo trực tiếp ở đây
+            if (!CheckTeklaConnection())
             {
-                MessageBox.Show(
-                    "❌ [COULD NOT CONNECT TO TEKLA]\n\n" + 
-                    "Reason: " + TeklaApp.Models.TeklaModelMng.LastError + "\n\n" +
-                    "Please OPEN a model in Tekla Structures first, then run this tool.", 
-                    "Tekla Connection Failed", 
-                    MessageBoxButtons.OK, 
-                    MessageBoxIcon.Error);
-                return; // Stop here, don't open the app
+                return;
             }
 
             app.Run(new MainWindow());
         }
 
-        private static string GetTeklaBinPath()
+        static bool CheckTeklaConnection()
         {
+            var connCheck = new TeklaApp.Models.TeklaModelMng();
+            if (!connCheck.IsConnected())
+            {
+                MessageBox.Show("Vui lòng mở Tekla trước!");
+                return false;
+            }
+            return true;
+        }
+
+        private static string[] GetTeklaSearchPaths()
+        {
+            var paths = new System.Collections.Generic.List<string>();
+
+            // 1. Thêm đường dẫn từ csproj (Tekla 2020.0)
+            paths.Add(@"D:\Tekla Structure\2020.0\nt\bin\plugins");
+            paths.Add(@"D:\Tekla Structure\2020.0\nt\bin");
+
+            // 2. Tìm đường dẫn InstallDir từ Registry (Tekla 2020.0)
             try
             {
-                // Tìm đường dẫn InstallDir từ Registry (Tekla 2025.0)
-                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Tekla\Structures\2025.0\Setup"))
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Tekla\Structures\2020.0\setup"))
                 {
                     if (key != null)
                     {
                         string installDir = key.GetValue("InstallDir") as string;
                         if (!string.IsNullOrEmpty(installDir))
                         {
-                            return Path.Combine(installDir, "bin\\");
+                            paths.Add(Path.Combine(installDir, @"nt\bin\plugins"));
+                            paths.Add(Path.Combine(installDir, @"nt\bin"));
                         }
                     }
                 }
             }
             catch { }
 
-            // Fallback nếu không tìm thấy Registry (ví dụ cài bản portable hoặc registry bị lỗi)
-            return @"C:\Program Files\Tekla Structures\2025.0\bin\";
+            return paths.ToArray();
         }
     }
 }

@@ -62,26 +62,7 @@ namespace TeklaApp.Views
                 this.Show();
             }
         }
-        private void BtnAutoOpeningX_Click(object sender, RoutedEventArgs e)
-        {
-            this.Hide();
-            try
-            {
-                int count = _viewModel.AutoDrawOpeningDiagonals();
-                if (count > 0)
-                {
-                    System.Windows.MessageBox.Show($"Đã vẽ đường chéo cho {count} lỗ mở.", "Auto Opening ✕", MessageBoxButton.OK, MessageBoxImage.Information);
-                }
-                else
-                {
-                    System.Windows.MessageBox.Show("Không tìm thấy lỗ mở nào trong drawing hiện tại.", "Auto Opening ✕", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            }
-            finally
-            {
-                this.Show();
-            }
-        }
+
         private void BtnDeleteById_Click(object sender, RoutedEventArgs e)
         {
             string idInput = txtDeleteId.Text;
