@@ -67,21 +67,6 @@
                 <Button Content="Set Color by Size"  Style="{StaticResource PrimaryButtonStyle}" Height="30" Margin="0,0,0,15" Click="BtnColorBySize_Click" 
                         Background="#28a745" BorderBrush="#28a745"/>
 
-                <TextBlock Text="3. Sequence Numbering" FontWeight="Bold" Margin="0,0,0,5"/>
-                <TextBlock Text="Group rebars by Shape, Size, Grade, and Prefix, then assign unique sequence numbers." 
-                           TextWrapping="Wrap" Foreground="#666" FontSize="11" Margin="0,0,0,5"/>
-
-                <Grid Margin="0,0,0,15">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Start Number:" VerticalAlignment="Center" Width="90"/>
-                    <TextBox Grid.Column="1" Text="{Binding StartingNumber}" Height="30" VerticalContentAlignment="Center" Padding="5,0"/>
-                </Grid>
-
-                <Button Content="RUN REBAR NUMBERING" Click="BtnRun_Click" 
-                        Style="{StaticResource PrimaryButtonStyle}" Height="36" FontSize="13" Margin="0,0,0,20"/>
 
                 <Border Background="#F0F7FF" CornerRadius="4" Margin="0,15,0,0" Padding="10">
                     <StackPanel>

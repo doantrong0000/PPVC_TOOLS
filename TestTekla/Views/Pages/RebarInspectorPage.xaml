@@ -76,6 +76,7 @@
 
                         <DataGrid.Columns>
                             <DataGridTextColumn x:Name="colMark" Header="Mark/Pos" Binding="{Binding Position}" Width="Auto" MinWidth="70"/>
+                            <DataGridTextColumn x:Name="colSeq" Header="SEQ" Binding="{Binding Seq}" Width="Auto" MinWidth="40"/>
                             <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name}" Width="*" MinWidth="100"/>
                             <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size}" Width="Auto" MinWidth="50"/>
                             <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade}" Width="Auto" MinWidth="50"/>
@@ -98,9 +99,10 @@
                 <!-- Column Visibility Sidebar -->
                 <Border Grid.Column="1" Width="160" Background="#FBFBFB" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="1,0,0,0">
                     <StackPanel Margin="15,15,10,15">
-                        <TextBlock Text="VISIBLE COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,0,15"/>
+                        <TextBlock Text="VISIBLE COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,10,15"/>
                         
                         <CheckBox Content="Mark/Position" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colMark" Margin="0,0,0,10"/>
+                        <CheckBox Content="SEQ" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSeq" Margin="0,0,0,10"/>
                         <CheckBox Content="Name" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colName" Margin="0,0,0,10"/>
                         <CheckBox Content="Size" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSize" Margin="0,0,0,10"/>
                         <CheckBox Content="Grade" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colGrade" Margin="0,0,0,10"/>
@@ -129,7 +131,27 @@
                     <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryBlueBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
 
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="Start No:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="#555" FontWeight="SemiBold"/>
+                    <TextBox Text="{Binding StartingNumber, UpdateSourceTrigger=PropertyChanged}" Width="50" Height="36" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,10,0" BorderBrush="#CCC"/>
+                    
+                    <Button Content="ASSIGN NUMBERS" 
+                            Click="BtnRunNumbering_Click" 
+                            Style="{StaticResource PrimaryButtonStyle}" 
+                            Width="140" Height="36" Margin="0,0,10,0"/>
+                    
+                    <Button Content="REASSIGN ALL" 
+                            Click="BtnReassignAll_Click" 
+                            Style="{StaticResource PrimaryButtonStyle}" 
+                            Background="#FF9800" BorderBrush="#E68A00"
+                            Width="120" Height="36" Margin="0,0,15,0"/>
 
+                    <Button Content="EXPORT TO JSON" 
+                            Click="BtnExportJson_Click"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Background="#4CAF50" BorderBrush="#45a049"
+                            Width="130" Height="36"/>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

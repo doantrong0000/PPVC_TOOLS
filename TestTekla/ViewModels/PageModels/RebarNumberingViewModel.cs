@@ -17,7 +17,7 @@ namespace TeklaApp.ViewModels
         private TeklaModelMng _teklaModel;
         private RebarNumberingModel _logicModel;
         private string _statusMessage = "Ready to Number selected Rebars";
-        private int _startingNumber = 1;
+
         private bool _isAutoPrefixEnabled = true;
 
         private string _slabKeywords = "SLAB,SÀN,FLOOR";
@@ -31,11 +31,6 @@ namespace TeklaApp.ViewModels
             set { _statusMessage = value; OnPropertyChanged(); }
         }
 
-        public int StartingNumber
-        {
-            get => _startingNumber;
-            set { _startingNumber = value; OnPropertyChanged(); SavePersistentSettings(); }
-        }
 
         public bool IsAutoPrefixEnabled
         {
@@ -79,7 +74,7 @@ namespace TeklaApp.ViewModels
             try
             {
                 var settings = SettingsService.LoadSettings();
-                _startingNumber = int.TryParse(settings.StartingNumber, out int n) ? n : 1;
+
                 _slabKeywords = settings.SlabKeywords;
                 _beamKeywords = settings.BeamKeywords;
                 _wallKeywords = settings.WallKeywords;
@@ -100,7 +95,7 @@ namespace TeklaApp.ViewModels
                 }
 
                 // Refresh bindings
-                OnPropertyChanged(nameof(StartingNumber));
+
                 OnPropertyChanged(nameof(SlabKeywords));
                 OnPropertyChanged(nameof(BeamKeywords));
                 OnPropertyChanged(nameof(WallKeywords));
@@ -114,7 +109,7 @@ namespace TeklaApp.ViewModels
             try
             {
                 var settings = SettingsService.LoadSettings();
-                settings.StartingNumber = StartingNumber.ToString();
+
                 settings.SlabKeywords = SlabKeywords;
                 settings.BeamKeywords = BeamKeywords;
                 settings.WallKeywords = WallKeywords;
@@ -212,137 +207,6 @@ namespace TeklaApp.ViewModels
             return rebars;
         }
 
-        public void RunNumbering()
-        {
-            if (!_teklaModel.IsConnected())
-            {
-                StatusMessage = "Error: Tekla not connected.";
-                return;
-            }
-
-            try
-            {
-                SavePersistentSettings();
-                Model model = _teklaModel.GetModel();
-
-                // 1. Try to get current selection
-                Tekla.Structures.Model.UI.ModelObjectSelector selector = new Tekla.Structures.Model.UI.ModelObjectSelector();
-                var enumerator = selector.GetSelectedObjects();
-
-                List<Reinforcement> selectedRebars = new List<Reinforcement>();
-                while (enumerator.MoveNext())
-                {
-                    if (enumerator.Current is Reinforcement rebar)
-                    {
-                        selectedRebars.Add(rebar);
-                    }
-                }
-
-                // 2. If nothing was selected, fallback to Picker
-                if (selectedRebars.Count == 0)
-                {
-                    Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
-                    StatusMessage = "No selection. Please sweep select rebars to number...";
-                    var pickedEnum = picker.PickObjects(Tekla.Structures.Model.UI.Picker.PickObjectsEnum.PICK_N_REINFORCEMENTS, "Sweep select rebars to number");
-
-                    while (pickedEnum.MoveNext())
-                    {
-                        if (pickedEnum.Current is Reinforcement rebar)
-                        {
-                            selectedRebars.Add(rebar);
-                        }
-                    }
-                }
-
-                if (selectedRebars.Count == 0)
-                {
-                    StatusMessage = "No rebar objects selected.";
-                    return;
-                }
-
-                StatusMessage = $"Numbering {selectedRebars.Count} selected rebars...";
-
-                // Logic: 
-                // 1. Group rebar by Signature (shape/size/hooks) + Prefix
-                // 2. Identify existing numbers in the selection
-                // 3. Assign numbers to groups
-                //    - If group has an existing number (>0), keep it (if not conflicted)
-                //    - Otherwise, assign next available number starting from StartingNumber
-
-                var groupSets = selectedRebars.GroupBy(r =>
-                                     {
-                                         string sig = _logicModel.GetRebarSignature(r);
-                                         string prefix = r.NumberingSeries?.Prefix ?? "";
-                                         return $"{sig}|{prefix}";
-                                     })
-                                     .ToList();
-
-                Dictionary<string, int> groupToNumberMap = new Dictionary<string, int>();
-                HashSet<int> usedNumbers = new HashSet<int>();
-
-                // First pass: Collect groups that already have a number
-                foreach (var group in groupSets)
-                {
-                    int existingNum = 0;
-                    foreach (var rebar in group)
-                    {
-                        int val = 0;
-                        rebar.GetUserProperty("REBAR_SEQ_NO", ref val);
-                        if (val > 0)
-                        {
-                            existingNum = val;
-                            break; // Take the first non-zero number found in the group
-                        }
-                    }
-
-                    if (existingNum > 0 && !usedNumbers.Contains(existingNum))
-                    {
-                        groupToNumberMap[group.Key] = existingNum;
-                        usedNumbers.Add(existingNum);
-                    }
-                    else
-                    {
-                        groupToNumberMap[group.Key] = 0; // Mark for re-numbering
-                    }
-                }
-
-                // Second pass: Assign numbers to group with 0 (new bars or conflicted bars)
-                int nextNum = StartingNumber;
-                foreach (var groupKey in groupSets.Select(g => g.Key))
-                {
-                    if (groupToNumberMap[groupKey] == 0)
-                    {
-                        // Find next available number
-                        while (usedNumbers.Contains(nextNum))
-                        {
-                            nextNum++;
-                        }
-                        groupToNumberMap[groupKey] = nextNum;
-                        usedNumbers.Add(nextNum);
-                    }
-                }
-
-                // Apply changes to rebars
-                int updatedCount = 0;
-                foreach (var group in groupSets)
-                {
-                    int finalNum = groupToNumberMap[group.Key];
-                    foreach (var rebar in group)
-                    {
-                        rebar.SetUserProperty("REBAR_SEQ_NO", finalNum);
-                        rebar.Modify();
-                        updatedCount++;
-                    }
-                }
-
-                model.CommitChanges();
-                StatusMessage = $"Success! Numbered {selectedRebars.Count} rebars into {groupSets.Count} unique groups.";
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = "Error: " + ex.Message;
-            }
-        }
 
         public void RunColorBySize()
         {

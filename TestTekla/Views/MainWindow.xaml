@@ -1,8 +1,8 @@
 <Window x:Class="TeklaApp.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Tekla Tools 2025" 
-        WindowState="Maximized"
+        Title="Tekla Tools 2025"
+        WindowState="Normal"
         MinWidth="1000" MinHeight="500"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundLightGreyBrush}">
@@ -20,27 +20,18 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Toolbar for INSTANT ACTIONS -->
-        <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="20,10">
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="⚡ INSTANT ACTIONS:" Foreground="{StaticResource PrimaryBlueBrush}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                    <Button Name="btnDeleteCut" Content="Delete PartCuts" Margin="0,0,10,0" Click="BtnDeleteCut_Click"/>
-                    <Button Name="btnOpeningX" Content="Opening" Margin="0,0,10,0" Click="BtnOpeningX_Click"/>
-                    
-                    <Separator Style="{StaticResource {x:Static ToolBar.SeparatorStyleKey}}" Margin="10,0"/>
-
-                    <TextBlock Text="Delete by ID/GUID:" Foreground="#666" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBox x:Name="txtDeleteId" Width="100" Height="24" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
-                    <Button Name="btnDeleteById" Content="Delete Object" Margin="0,0,10,0" Click="BtnDeleteById_Click" Background="#FF3D00" Foreground="White" BorderThickness="0"/>
-                </StackPanel>
-            </ScrollViewer>
+        <!-- Top Toggle Bar -->
+        <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <RadioButton x:Name="rbModel" Content="MODEL VIEW" Style="{StaticResource ToggleTabButtonStyle}" IsChecked="True" Checked="Mode_Checked"/>
+                <RadioButton x:Name="rbDrawing" Content="DRAWING VIEW" Style="{StaticResource ToggleTabButtonStyle}" Checked="Mode_Checked"/>
+            </StackPanel>
         </Border>
 
         <!-- Main Workspace -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -55,39 +46,64 @@
 
                     <!-- Sidebar Header -->
                     <StackPanel Grid.Row="0" Margin="20,30,20,30">
-                        <TextBlock Text="TEKLA TOOLS" Foreground="White" FontSize="20" FontWeight="Bold"/>
+                        <TextBlock Text="TEKLA TOOLS" Foreground="White" FontSize="22" FontWeight="Bold"/>
+                        <TextBlock Text="Minimalist Edition" Foreground="#888888" FontSize="12" Margin="0,5,0,0"/>
                     </StackPanel>
 
-                    <!-- Navigation Buttons -->
-                    <StackPanel Grid.Row="1">
-                        <TextBlock Text="TOOLS WITH VIEW" Foreground="#AAAAAA" FontSize="10" FontWeight="Bold" Margin="15,0,0,5"/>
-                        <Button Name="btnAddAssembly" Content="Assembly Joiner" Style="{StaticResource SideMenuButtonStyle}" Click="BtnAddAssembly_Click" Foreground="White"/>
-                        <Button Name="btnStepTag" Content="Step Tag (Beams &amp; Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click" Foreground="White"/>
-                        <Button Name="btnRebarTools" Content="Rebar Tools 🌟" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTools_Click" Foreground="White"/>
-                        <Button Name="btnViewAlign" Content="View Align" Style="{StaticResource SideMenuButtonStyle}" Click="BtnViewAlign_Click" Foreground="White"/>
+                    <!-- MODEL MENU -->
+                    <StackPanel x:Name="pnlModelMenu" Grid.Row="1">
+                        <!-- Model Features (Views) -->
+                        <TextBlock Text="MODEL FEATURES" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,0,0,10"/>
+                        <Button Name="btnRebarTools" Content="Rebar Tools" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTools_Click"/>
+
+
+                        <!-- Model Actions (Instant) -->
+                        <TextBlock Text="QUICK ACTIONS" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,20,0,10"/>
+
+                        <StackPanel Margin="20,10,20,0">
+                            <TextBlock Text="Delete by ID/GUID:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,5"/>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox x:Name="txtDeleteId" Width="140" Height="28" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
+                                <Button Name="btnDeleteById" Content="Delete" Click="BtnDeleteById_Click" Background="White" Foreground="Black" BorderThickness="0" Padding="15,0" FontWeight="Bold"/>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
+
+                    <!-- DRAWING MENU -->
+                    <StackPanel x:Name="pnlDrawingMenu" Grid.Row="1" Visibility="Collapsed">
+                        <!-- Drawing Features (Views) -->
+                        <TextBlock Text="DRAWING FEATURES" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,0,0,10"/>
+                        <Button Name="btnStepTag" Content="Step Tag (Beams/Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click"/>
+                        <Button Name="btnRebarTagScanner" Content="Rebar Tag Scanner" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTagScanner_Click"/>
+
+                        <!-- Drawing Actions (Instant) -->
+                        <TextBlock Text="QUICK ACTIONS" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,20,0,10"/>
+                        <Button Name="btnOpeningX" Content="Opening Mark" Style="{StaticResource SideMenuButtonStyle}" Click="BtnOpeningX_Click"/>
+                    </StackPanel>
+
+                    <!-- Footer -->
                     <StackPanel Grid.Row="2" Margin="20,0,20,30">
-                        <TextBlock Text="v1.0.0" Foreground="#666" FontSize="10" HorizontalAlignment="Center"/>
+                        <TextBlock Text="v1.1.0 - Minimalist" Foreground="#666" FontSize="12" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Main Content Area -->
-            <Grid Grid.Column="1" TextElement.Foreground="{StaticResource TextDarkBrush}">
+            <Grid Grid.Column="1" Background="White">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="60"/>
+                    <RowDefinition Height="70"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
                 <!-- Top Header -->
-                <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="25,0">
+                <Border Grid.Row="0" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="30,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="txtCurrentTool" Text="Dashboard" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtCurrentTool" Text="Welcome" FontSize="24" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Page Content Container -->
-                <ContentControl Grid.Row="1" x:Name="MainContentControl" Margin="10"/>
+                <ContentControl Grid.Row="1" x:Name="MainContentControl" Margin="20"/>
             </Grid>
         </Grid>
     </Grid>

@@ -25,7 +25,7 @@
                     <TextBlock Text="TEXT PARAMETERS" FontWeight="Bold" Foreground="#999" FontSize="10" Margin="0,10,0,8"/>
 
                     <TextBlock Text="Font Height:" Style="{StaticResource LabelTextStyle}"/>
-                    <TextBox Name="txtTextHeight" Text="3.5" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
+                    <TextBox Name="txtTextHeight" Text="2" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
 
                     <TextBlock Text="Font Name:" Style="{StaticResource LabelTextStyle}"/>
                     <TextBox Name="txtFontName" Text="Arial" Margin="0,0,0,8"/>
@@ -45,33 +45,26 @@
                     <TextBlock Text="GEOMETRY PARAMETERS" FontWeight="Bold" Foreground="#999" FontSize="10" Margin="0,10,0,8"/>
 
                     <TextBlock Text="Surface Length (mm):" Style="{StaticResource LabelTextStyle}"/>
-                    <TextBox Name="txtSurfLen" Text="15" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
+                    <TextBox Name="txtSurfLen" Text="150" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
 
                     <TextBlock Text="Step Height (mm):" Style="{StaticResource LabelTextStyle}"/>
-                    <TextBox Name="txtStepHeight" Text="10" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
+                    <TextBox Name="txtStepHeight" Text="70" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
 
                     <TextBlock Text="HATCH PARAMETERS" FontWeight="Bold" Foreground="#999" FontSize="10" Margin="0,10,0,8"/>
 
-                    <TextBlock Text="Spacing:" Style="{StaticResource LabelTextStyle}"/>
-                    <TextBox Name="txtHatchSpc" Text="3" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
+                    <TextBlock Text="Spacing / Depth (mm):" Style="{StaticResource LabelTextStyle}"/>
+                    <TextBox Name="txtHatchLen" Text="70" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
 
-                    <TextBlock Text="Length / Depth:" Style="{StaticResource LabelTextStyle}"/>
-                    <TextBox Name="txtHatchLen" Text="12" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
-
-                    <CheckBox Name="chkUseRectFill" Content="Use Rectangle Pattern Fill" Margin="0,5,0,10" Checked="OnSettingChanged" Unchecked="OnSettingChanged"/>
-
-                    <StackPanel IsEnabled="{Binding Path=IsChecked, ElementName=chkUseRectFill}">
-                        <TextBlock Text="Pattern Name (e.g. ANSI31_13):" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Name="txtFillName" Text="ANSI31_13" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
+                    <StackPanel>
+                        <TextBlock Text="Pattern Name:" Style="{StaticResource LabelTextStyle}"/>
+                        <TextBox Name="txtFillName" Text="ANSI32_A" Margin="0,0,0,8" TextChanged="OnSettingChanged"/>
 
                         <TextBlock Text="Scale X:" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Name="txtScaleX" Text="1" Margin="0,0,0,12" TextChanged="OnSettingChanged"/>
+                        <TextBox Name="txtScaleX" Text="0.05" Margin="0,0,0,12" TextChanged="OnSettingChanged"/>
 
                         <TextBlock Text="Scale Y:" Style="{StaticResource LabelTextStyle}"/>
-                        <TextBox Name="txtScaleY" Text="1" Margin="0,0,0,10" TextChanged="OnSettingChanged"/>
+                        <TextBox Name="txtScaleY" Text="0.05" Margin="0,0,0,10" TextChanged="OnSettingChanged"/>
                     </StackPanel>
-
-
 
                     <Border Background="#F8F8F8" CornerRadius="4" Margin="0,15,0,0" Padding="10">
                         <TextBlock Name="txtStatus" Text="Ready" TextWrapping="Wrap" Foreground="#444" FontSize="11" FontStyle="Italic"/>
@@ -85,8 +78,8 @@
         <Border Grid.Column="1" Style="{StaticResource CardStyle}">
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="400"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <Border Background="#F0F0F0" CornerRadius="4">
                     <Viewbox  Margin="20">

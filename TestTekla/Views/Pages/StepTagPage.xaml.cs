@@ -42,9 +42,7 @@ namespace TeklaApp.Views
                 SetComboBoxText(cmbTextColor, settings.StepTextColor);
                 txtSurfLen.Text = settings.StepSurfLen;
                 txtStepHeight.Text = settings.StepHeight;
-                txtHatchSpc.Text = settings.StepHatchSpc;
                 txtHatchLen.Text = settings.StepHatchLen;
-                chkUseRectFill.IsChecked = settings.StepUseRectFill;
                 txtFillName.Text = settings.StepFillName;
                 txtScaleX.Text = settings.StepScaleX;
                 txtScaleY.Text = settings.StepScaleY;
@@ -62,13 +60,11 @@ namespace TeklaApp.Views
                 settings.StepTextColor = GetComboBoxText(cmbTextColor);
                 settings.StepSurfLen = txtSurfLen.Text;
                 settings.StepHeight = txtStepHeight.Text;
-                settings.StepHatchSpc = txtHatchSpc.Text;
                 settings.StepHatchLen = txtHatchLen.Text;
-                settings.StepUseRectFill = chkUseRectFill.IsChecked ?? false;
                 settings.StepFillName = txtFillName.Text;
                 settings.StepScaleX = txtScaleX.Text;
                 settings.StepScaleY = txtScaleY.Text;
-                
+
                 SettingsService.SaveSettings(settings);
             }
             catch { }
@@ -82,7 +78,6 @@ namespace TeklaApp.Views
             double th = V(txtTextHeight, 3.5);
             double surfLen = V(txtSurfLen, 15);
             double stepH = V(txtStepHeight, 10);
-            double hatchSpc = V(txtHatchSpc, 3);
             double hatchLen = V(txtHatchLen, 12);
 
             double cW = 400, cH = 300;
@@ -113,76 +108,35 @@ namespace TeklaApp.Views
             Ln(cJ.X, cJ.Y, cLowJ.X, cLowJ.Y, Brushes.Black, 2);
             Ln(cLowJ.X, cLowJ.Y, cLowEnd.X, cLowEnd.Y, Brushes.Black, 2);
 
-            // ======== Hatching ========
-            bool useRectFill = chkUseRectFill?.IsChecked ?? false;
-            double hx = 0.707;
-            double hy = -0.707;
+            // ======== Hatching / Fill ========
+            double hDepthX = 0;
+            double hDepthY = -hatchLen;
 
-            if (!useRectFill)
-            {
-                void DrawTeklaHatch(double fx, double fy, double tx, double ty)
-                {
-                    double dx = tx - fx;
-                    double dy = ty - fy;
-                    double lineLen = Math.Sqrt(dx * dx + dy * dy);
-                    if (lineLen < 0.1 || hatchSpc < 0.1) return;
+            Polygon hPoly = new Polygon();
+            hPoly.Points.Add(new Point(MapX(pX_HighEnd), MapY(pY_HighEnd)));
+            hPoly.Points.Add(new Point(MapX(pX_J), MapY(pY_J)));
+            hPoly.Points.Add(new Point(MapX(pX_J + hDepthX), MapY(pY_J + hDepthY)));
+            hPoly.Points.Add(new Point(MapX(pX_HighEnd + hDepthX), MapY(pY_HighEnd + hDepthY)));
+            hPoly.Stroke = Brushes.Black;
+            hPoly.StrokeThickness = 1;
+            hPoly.Fill = new SolidColorBrush(Color.FromArgb(80, 100, 100, 100));
+            previewCanvas.Children.Add(hPoly);
 
-                    double nx = dx / lineLen;
-                    double ny = dy / lineLen;
-
-                    double startPadding = hatchSpc * 0.5;
-                    double endPadding = hatchSpc * 0.5;
-                    double effectiveLen = lineLen - (startPadding + endPadding);
-                    if (effectiveLen <= 0) return;
-
-                    int n = (int)(effectiveLen / hatchSpc);
-                    for (int h = 0; h <= n; h++)
-                    {
-                        double t = startPadding + (h * hatchSpc);
-                        double hsX = fx + nx * t;
-                        double hsY = fy + ny * t;
-                        double heX = hsX + hx * hatchLen;
-                        double heY = hsY + hy * hatchLen;
-
-                        Ln(MapX(hsX), MapY(hsY), MapX(heX), MapY(heY), Brushes.Black, 1);
-                    }
-                }
-
-                DrawTeklaHatch(pX_HighEnd, pY_HighEnd, pX_J, pY_J);
-                DrawTeklaHatch(pX_LowJ, pY_LowJ, pX_LowEnd, pY_LowEnd);
-            }
-            else
-            {
-                hy = -1.0; 
-                double hDepthX = 0; 
-                double hDepthY = -hatchLen; 
-
-                Polygon hPoly = new Polygon();
-                hPoly.Points.Add(new Point(MapX(pX_HighEnd), MapY(pY_HighEnd)));
-                hPoly.Points.Add(new Point(MapX(pX_J), MapY(pY_J)));
-                hPoly.Points.Add(new Point(MapX(pX_J + hDepthX), MapY(pY_J + hDepthY)));
-                hPoly.Points.Add(new Point(MapX(pX_HighEnd + hDepthX), MapY(pY_HighEnd + hDepthY)));
-                hPoly.Stroke = Brushes.Black;
-                hPoly.StrokeThickness = 1;
-                hPoly.Fill = new SolidColorBrush(Color.FromArgb(80, 100, 100, 100));
-                previewCanvas.Children.Add(hPoly);
-
-                Polygon lPoly = new Polygon();
-                lPoly.Points.Add(new Point(MapX(pX_LowJ), MapY(pY_LowJ)));
-                lPoly.Points.Add(new Point(MapX(pX_LowEnd), MapY(pY_LowEnd)));
-                lPoly.Points.Add(new Point(MapX(pX_LowEnd + hDepthX), MapY(pY_LowEnd + hDepthY)));
-                lPoly.Points.Add(new Point(MapX(pX_LowJ + hDepthX), MapY(pY_LowJ + hDepthY)));
-                lPoly.Stroke = Brushes.Black;
-                lPoly.StrokeThickness = 1;
-                lPoly.Fill = new SolidColorBrush(Color.FromArgb(80, 100, 100, 100));
-                previewCanvas.Children.Add(lPoly);
-            }
+            Polygon lPoly = new Polygon();
+            lPoly.Points.Add(new Point(MapX(pX_LowJ), MapY(pY_LowJ)));
+            lPoly.Points.Add(new Point(MapX(pX_LowEnd), MapY(pY_LowEnd)));
+            lPoly.Points.Add(new Point(MapX(pX_LowEnd + hDepthX), MapY(pY_LowEnd + hDepthY)));
+            lPoly.Points.Add(new Point(MapX(pX_LowJ + hDepthX), MapY(pY_LowJ + hDepthY)));
+            lPoly.Stroke = Brushes.Black;
+            lPoly.StrokeThickness = 1;
+            lPoly.Fill = new SolidColorBrush(Color.FromArgb(80, 100, 100, 100));
+            previewCanvas.Children.Add(lPoly);
 
             // ======== Text ========
-            double tX = (pX_J + pX_LowJ) / 2.0 - surfLen * 0.3; 
+            double tX = (pX_J + pX_LowJ) / 2.0 - surfLen * 0.3;
             double tY = (pY_J + pY_LowJ) / 2.0;
 
-            double textSize = Math.Max(12, th * s * 0.6); 
+            double textSize = Math.Max(12, th * s * 0.6);
             var stepText = new TextBlock
             {
                 Text = ((int)stepH).ToString(),
@@ -190,13 +144,13 @@ namespace TeklaApp.Views
                 Foreground = GetWpfBrush(GetComboBoxText(cmbTextColor)),
                 FontWeight = FontWeights.Bold
             };
-            
+
             Canvas.SetLeft(stepText, MapX(tX) - textSize * 0.5);
             Canvas.SetTop(stepText, MapY(tY) - textSize * 0.6);
             previewCanvas.Children.Add(stepText);
 
             // ======== Dimensions ========
-            double yHatchMax = MapY(-stepH - Math.Abs(hy) * hatchLen);
+            double yHatchMax = MapY(-stepH - hatchLen);
             DimH(cLowEnd.X, cLowJ.X, yHatchMax + 15, surfLen.ToString());
             DimV(cHighEnd.Y, cLowEnd.Y, cHighEnd.X + 20, stepH.ToString());
         }
@@ -270,13 +224,12 @@ namespace TeklaApp.Views
             parentWindow.Hide();
             try
             {
-                bool useRectFill = chkUseRectFill?.IsChecked ?? false;
-                string fillName = txtFillName?.Text ?? "ANSI31_13";
+                string fillName = txtFillName?.Text ?? "ANSI32_A";
                 string textColor = GetComboBoxText(cmbTextColor);
 
                 string result = _viewModel.CreateStepTag(
                     V(txtTextHeight, 3.5), txtFontName.Text, textColor,
-                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchSpc, 3), V(txtHatchLen, 12), useRectFill, fillName, V(txtScaleX, 1.0), V(txtScaleY, 1.0));
+                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchLen, 12), fillName, V(txtScaleX, 1.0), V(txtScaleY, 1.0));
                 txtStatus.Text = result;
             }
             finally
@@ -293,9 +246,7 @@ namespace TeklaApp.Views
         public string TextColor { get; set; }
         public double SurfLen { get; set; }
         public double StepHeight { get; set; }
-        public double HatchSpc { get; set; }
         public double HatchLen { get; set; }
-        public bool UseRectFill { get; set; }
         public string FillName { get; set; }
         public double ScaleX { get; set; }
         public double ScaleY { get; set; }

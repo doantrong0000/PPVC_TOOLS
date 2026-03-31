@@ -15,10 +15,6 @@ namespace TeklaApp.Views.Pages
             this.DataContext = _viewModel;
         }
 
-        private void BtnRun_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel.RunNumbering();
-        }
 
         private void BtnAutoPrefix_Click(object sender, RoutedEventArgs e)
         {

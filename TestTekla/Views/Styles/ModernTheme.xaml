@@ -2,15 +2,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Color Palette -->
-    <Color x:Key="PrimaryBlueColor">#333333</Color>
-    <Color x:Key="SecondaryBlueColor">#666666</Color>
+    <Color x:Key="PrimaryBlueColor">#000000</Color>
+    <Color x:Key="SecondaryBlueColor">#333333</Color>
     <Color x:Key="BackgroundWhiteColor">#FFFFFF</Color>
-    <Color x:Key="BackgroundLightGreyColor">#F5F5F7</Color>
-    <Color x:Key="BorderGreyColor">#E0E0E0</Color>
-    <Color x:Key="TextDarkColor">#1A1A1A</Color>
-    <Color x:Key="SidebarColor">#252526</Color>
-    <Color x:Key="SidebarHoverColor">#37373D</Color>
-    <Color x:Key="PrimaryButtonColor">#FF333333</Color>
+    <Color x:Key="BackgroundLightGreyColor">#F4F4F4</Color>
+    <Color x:Key="BorderGreyColor">#000000</Color>
+    <Color x:Key="TextDarkColor">#000000</Color>
+    <Color x:Key="SidebarColor">#000000</Color>
+    <Color x:Key="SidebarHoverColor">#222222</Color>
+    <Color x:Key="PrimaryButtonColor">#000000</Color>
 
     <SolidColorBrush x:Key="PrimaryBlueBrush" Color="{StaticResource PrimaryBlueColor}"/>
     <SolidColorBrush x:Key="BackgroundWhiteBrush" Color="{StaticResource BackgroundWhiteColor}"/>
@@ -24,23 +24,23 @@
     <!-- Global Text Style -->
     <Style TargetType="TextBlock">
         <Setter Property="FontFamily" Value="Segoe UI, Roboto, sans-serif"/>
-        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontSize" Value="14"/>
     </Style>
 
     <!-- Header Text Style -->
     <Style x:Key="HeaderTextStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="18"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource PrimaryBlueBrush}"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource TextDarkBrush}"/>
         <Setter Property="Margin" Value="0,0,0,20"/>
     </Style>
 
     <!-- Label Text Style -->
     <Style x:Key="LabelTextStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="12"/>
-        <Setter Property="FontWeight" Value="Medium"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Margin" Value="0,0,0,4"/>
-        <Setter Property="Foreground" Value="#555555"/>
+        <Setter Property="Foreground" Value="{StaticResource TextDarkBrush}"/>
     </Style>
 
     <!-- Modern Button Style -->
@@ -77,7 +77,7 @@
     <Style x:Key="SideMenuButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="#CCCCCC"/>
+        <Setter Property="Foreground" Value="White"/>
         <Setter Property="Height" Value="45"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="Padding" Value="15,0"/>
@@ -93,7 +93,7 @@
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="Background" Value="#3F3F46"/>
+                            <Setter TargetName="Border" Property="Background" Value="#111111"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -163,6 +163,40 @@
         <Setter Property="Effect">
             <Setter.Value>
                 <DropShadowEffect BlurRadius="15" ShadowDepth="2" Opacity="0.05" Color="Black"/>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Toggle Tab Button Style -->
+    <Style x:Key="ToggleTabButtonStyle" TargetType="RadioButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#666666"/>
+        <Setter Property="BorderThickness" Value="0,0,0,2"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border Background="{TemplateBinding Background}" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Foreground" Value="Black"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="BorderBrush" Value="Black"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>

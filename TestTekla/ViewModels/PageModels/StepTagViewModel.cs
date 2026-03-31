@@ -1,4 +1,4 @@
-﻿// ViewModels\StepTagViewModel.cs
+// ViewModels\StepTagViewModel.cs
 using System;
 using System.Collections.Generic;
 using Tekla.Structures.Drawing;
@@ -13,9 +13,9 @@ namespace TeklaApp.ViewModels
     {
         /// <summary>
         /// Tạo ký hiệu giật cấp tại vị trí giao nhau giữa các cấu kiện.
-        /// Logic đã được tách biệt cho phương dọc và phương ngang để đảm bảo hiển thị đúng thị giác.
+        /// Sử dụng fill area
         /// </summary>
-        public string CreateStepTag(double textHeight, string fontName, string textColor, double surfLen, double stepHeight, double hatchSpc, double hatchLen, bool useRectFill = false, string fillName = "ANSI31_13", double scaleX = 1.0, double scaleY = 1.0)
+        public string CreateStepTag(double textHeight, string fontName, string textColor, double surfLen, double stepHeight, double hatchLen, string fillName = "ANSI31_13", double scaleX = 1.0, double scaleY = 1.0)
         {
             DrawingHandler dh = new DrawingHandler();
             if (dh.GetActiveDrawing() == null)
@@ -142,47 +142,38 @@ namespace TeklaApp.ViewModels
                         Point pLowEnd = new Point(pLowJ.X + vLow.X * sSurf, pLowJ.Y + vLow.Y * sSurf, 0);
 
 
-                        // ======== Hatching ========
-                        if (!useRectFill)
-                        {
-                            Vector hatchDir = isJointHorizontal ? new Vector(0.707, 0.707, 0) : new Vector(0.707, -0.707, 0);
-                            DrawHatchAlongLine(view, pHighEnd, pJ, hatchDir, hatchSpc * scale, hatchLen * scale);
-                            DrawHatchAlongLine(view, pLowJ, pLowEnd, hatchDir, hatchSpc * scale, hatchLen * scale);
-                        }
-                        else
-                        {
-                            double sHatchLen = hatchLen * scale;
+                        // ======== Hatching / Fill ========
+                        double sHatchLen = hatchLen * scale;
 
-                            var hPolyPts = new PointList();
-                            hPolyPts.Add(new Point(pHighEnd.X, pHighEnd.Y, pHighEnd.Z));
-                            hPolyPts.Add(new Point(pJ.X, pJ.Y, pJ.Z));
-                            hPolyPts.Add(new Point(pJ.X + vAlong.X * sHatchLen, pJ.Y + vAlong.Y * sHatchLen, pJ.Z));
-                            hPolyPts.Add(new Point(pHighEnd.X + vAlong.X * sHatchLen, pHighEnd.Y + vAlong.Y * sHatchLen, pHighEnd.Z));
-                            hPolyPts.Add(new Point(pHighEnd.X, pHighEnd.Y, pHighEnd.Z));
+                        var hPolyPts = new PointList();
+                        hPolyPts.Add(new Point(pHighEnd.X, pHighEnd.Y, pHighEnd.Z));
+                        hPolyPts.Add(new Point(pJ.X, pJ.Y, pJ.Z));
+                        hPolyPts.Add(new Point(pJ.X + vAlong.X * sHatchLen, pJ.Y + vAlong.Y * sHatchLen, pJ.Z));
+                        hPolyPts.Add(new Point(pHighEnd.X + vAlong.X * sHatchLen, pHighEnd.Y + vAlong.Y * sHatchLen, pHighEnd.Z));
+                        hPolyPts.Add(new Point(pHighEnd.X, pHighEnd.Y, pHighEnd.Z));
 
-                            var hPoly = new Tekla.Structures.Drawing.Polygon(view, hPolyPts);
-                            hPoly.Attributes.Hatch.Name = fillName;
-                            hPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
-                            hPoly.Attributes.Hatch.ScaleX = scaleX;
-                            hPoly.Attributes.Hatch.ScaleY = scaleY;
-                            hPoly.Attributes.Line.Color = DrawingColors.Invisible;
-                            hPoly.Insert();
+                        var hPoly = new Tekla.Structures.Drawing.Polygon(view, hPolyPts);
+                        hPoly.Attributes.Hatch.Name = fillName;
+                        hPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
+                        hPoly.Attributes.Hatch.ScaleX = scaleX;
+                        hPoly.Attributes.Hatch.ScaleY = scaleY;
+                        hPoly.Attributes.Line.Color = DrawingColors.Invisible;
+                        hPoly.Insert();
 
-                            var lPolyPts = new PointList();
-                            lPolyPts.Add(new Point(pLowJ.X, pLowJ.Y, pLowJ.Z));
-                            lPolyPts.Add(new Point(pLowEnd.X, pLowEnd.Y, pLowEnd.Z));
-                            lPolyPts.Add(new Point(pLowEnd.X + vAlong.X * sHatchLen, pLowEnd.Y + vAlong.Y * sHatchLen, pLowEnd.Z));
-                            lPolyPts.Add(new Point(pLowJ.X + vAlong.X * sHatchLen, pLowJ.Y + vAlong.Y * sHatchLen, pLowJ.Z));
-                            lPolyPts.Add(new Point(pLowJ.X, pLowJ.Y, pLowJ.Z));
+                        var lPolyPts = new PointList();
+                        lPolyPts.Add(new Point(pLowJ.X, pLowJ.Y, pLowJ.Z));
+                        lPolyPts.Add(new Point(pLowEnd.X, pLowEnd.Y, pLowEnd.Z));
+                        lPolyPts.Add(new Point(pLowEnd.X + vAlong.X * sHatchLen, pLowEnd.Y + vAlong.Y * sHatchLen, pLowEnd.Z));
+                        lPolyPts.Add(new Point(pLowJ.X + vAlong.X * sHatchLen, pLowJ.Y + vAlong.Y * sHatchLen, pLowJ.Z));
+                        lPolyPts.Add(new Point(pLowJ.X, pLowJ.Y, pLowJ.Z));
 
-                            var lPoly = new Tekla.Structures.Drawing.Polygon(view, lPolyPts);
-                            lPoly.Attributes.Hatch.Name = fillName;
-                            lPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
-                            lPoly.Attributes.Hatch.ScaleX = scaleX;
-                            lPoly.Attributes.Hatch.ScaleY = scaleY;
-                            lPoly.Attributes.Line.Color = DrawingColors.Invisible;
-                            lPoly.Insert();
-                        }
+                        var lPoly = new Tekla.Structures.Drawing.Polygon(view, lPolyPts);
+                        lPoly.Attributes.Hatch.Name = fillName;
+                        lPoly.Attributes.Hatch.Color = DrawingHatchColors.Black;
+                        lPoly.Attributes.Hatch.ScaleX = scaleX;
+                        lPoly.Attributes.Hatch.ScaleY = scaleY;
+                        lPoly.Attributes.Line.Color = DrawingColors.Invisible;
+                        lPoly.Insert();
 
 
                         new Line(view, pHighEnd, pJ).Insert();
@@ -195,8 +186,8 @@ namespace TeklaApp.ViewModels
                         if (textHeight > 2.5) x = 0.7;
 
                         Point textPos = new Point(
-                            (pJ.X + pLowJ.X) / 2.0 + vLow.X * 150 * 0.5,
-                            (pJ.Y + pLowJ.Y) / 2.0 + vLow.Y * 150 * 0.5, 0);
+                            pJ.X + vLow.X * surfLen * 0.5,
+                            pJ.Y + vLow.Y * surfLen * 0.5, 0);
 
                         Text text = new Text(view, textPos, ((int)Math.Round(Math.Abs(z1 - z2))).ToString());
                         text.Attributes = new Text.TextAttributes();
@@ -205,6 +196,7 @@ namespace TeklaApp.ViewModels
                         text.Attributes.Font.Height = textHeight;
                         text.Attributes.Font.Name = fontName;
                         text.Attributes.Font.Color = GetDrawingColor(textColor);
+
 
                         Vector vPerp = new Vector(vAlong.Y, -vAlong.X, 0);
                         double angleDeg = Math.Atan2(vPerp.Y, vPerp.X) * 180.0 / Math.PI;
@@ -238,41 +230,6 @@ namespace TeklaApp.ViewModels
         }
 
 
-
-        private void DrawHatchAlongLine(ViewBase view, Point from, Point to, Vector hatchDir, double spacing, double len)
-        {
-            Vector dir = new Vector(to.X - from.X, to.Y - from.Y, 0);
-            double lineLen = dir.GetLength();
-
-            // Nếu đường line quá ngắn hoặc khoảng cách hatch quá nhỏ thì không vẽ
-            if (lineLen < 0.1 || spacing < 0.1) return;
-
-            Vector dirN = new Vector(dir.X, dir.Y, 0);
-            dirN.Normalize();
-
-            // --- CẢI TIẾN: Thêm khoảng đệm (Padding) ---
-            // Chúng ta bắt đầu từ 0.5 * spacing và kết thúc trước khi chạm điểm 'to'
-            double startPadding = spacing * 0.5;
-            double endPadding = spacing * 0.5;
-            double effectiveLen = lineLen - (startPadding + endPadding);
-
-            if (effectiveLen <= 0) return; // Nếu đường line ngắn hơn tổng khoảng đệm
-
-            int n = (int)(effectiveLen / spacing);
-
-            for (int h = 0; h <= n; h++)
-            {
-                // t bắt đầu từ startPadding thay vì từ 0
-                double t = startPadding + (h * spacing);
-
-                Point hs = new Point(from.X + dirN.X * t, from.Y + dirN.Y * t, 0);
-                Point he = new Point(hs.X + hatchDir.X * len, hs.Y + hatchDir.Y * len, 0);
-
-                var l = new Line(view, hs, he);
-                l.Attributes.Line.Color = DrawingColors.Black;
-                l.Insert();
-            }
-        }
 
         // Helper to negate a Vector (Vector doesn't define unary - operator)
         private Vector Neg(Vector v) => new Vector(-v.X, -v.Y, -v.Z);

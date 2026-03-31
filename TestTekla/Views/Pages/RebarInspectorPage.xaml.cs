@@ -13,6 +13,7 @@ namespace TeklaApp.Views.Pages
         {
             InitializeComponent();
             _viewModel = new RebarInspectorViewModel();
+            this.DataContext = _viewModel;
             dgRebars.ItemsSource = _viewModel.Rebars;
         }
 
@@ -72,6 +73,29 @@ namespace TeklaApp.Views.Pages
                 {
                     column.Visibility = chk.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
                 }
+            }
+        }
+
+        private void BtnExportJson_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.ExportToJson();
+        }
+
+        private void BtnRunNumbering_Click(object sender, RoutedEventArgs e)
+        {
+            this.txtStatus.Text = "ACTIVE: Numbering (skip existing)...";
+            string res = _viewModel.RunNumbering(false);
+            this.txtStatus.Text = res;
+        }
+
+        private void BtnReassignAll_Click(object sender, RoutedEventArgs e)
+        {
+            var msgBoxResult = MessageBox.Show("Are you sure you want to reassign ALL numbers? This will overwrite existing numbers.", "Confirm Reassign", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (msgBoxResult == MessageBoxResult.Yes)
+            {
+                this.txtStatus.Text = "ACTIVE: Reassigning all numbers...";
+                string res = _viewModel.RunNumbering(true);
+                this.txtStatus.Text = res;
             }
         }
     }

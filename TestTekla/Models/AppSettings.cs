@@ -16,19 +16,7 @@ namespace TeklaApp.Models
         public string RebarClass { get; set; } = "2";
         public bool MergeGroups { get; set; } = true;
 
-        // JoinAssemblyPage
-        public bool JoinSteel { get; set; } = true;
-        public bool JoinEmbed { get; set; } = true;
-        public bool JoinRebar { get; set; } = true;
-        public bool JoinBolt { get; set; } = true;
-        public bool JoinWeld { get; set; } = false;
-        public bool JoinSurface { get; set; } = true;
-        public bool JoinFeatures { get; set; } = false;
 
-        // ViewAlignPage
-        public string AlignAxis { get; set; } = "Z"; // X, Y, Z
-        public string AlignMode { get; set; } = "EditPoints"; // EditPoints, MoveObject, DrawingView
-        public bool AlignByCenter { get; set; } = false;
 
         // StepTagPage
         public string StepTextHeight { get; set; } = "3.5";
