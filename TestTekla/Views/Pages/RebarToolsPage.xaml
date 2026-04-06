@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
-             Background="White">
+             Background="Transparent">
     <Grid>
         <!-- Use ScrollViewer to prevent overflow if window is small -->
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -107,8 +107,8 @@
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                     <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="30" Padding="12,0,12,0" Background="#0078D7" BorderThickness="0">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="⚡" FontSize="14" Foreground="White" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                            <TextBlock Text="RUN" FontSize="11" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                            <TextBlock Text="⚡" FontSize="14" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                            <TextBlock Text="RUN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
                                     <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
@@ -125,8 +125,8 @@
                                          " VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
                                 <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="26" Margin="10,0,0,0" Padding="12,0" Background="#0097A7" BorderThickness="0" ToolTip="Find and Select rebar in model by SEQ number">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🔍" FontSize="12" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                                        <TextBlock Text="🔍" FontSize="12" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                        <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                                 <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>

@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <!-- Top Toggle Bar -->
-        <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="{DynamicResource BackgroundWhiteBrush}" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <RadioButton x:Name="rbModel" Content="MODEL VIEW" Style="{StaticResource ToggleTabButtonStyle}" IsChecked="True" Checked="Mode_Checked"/>
                 <RadioButton x:Name="rbDrawing" Content="DRAWING VIEW" Style="{StaticResource ToggleTabButtonStyle}" Checked="Mode_Checked"/>
@@ -36,7 +36,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Sidebar Navigation -->
-            <Border Grid.Column="0" Background="{StaticResource SidebarBrush}" TextElement.Foreground="White">
+            <Border Grid.Column="0" Background="{StaticResource SidebarBrush}" TextElement.Foreground="{DynamicResource TextLightBrush}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -46,7 +46,7 @@
 
                     <!-- Sidebar Header -->
                     <StackPanel Grid.Row="0" Margin="20,30,20,30">
-                        <TextBlock Text="TEKLA TOOLS" Foreground="White" FontSize="22" FontWeight="Bold"/>
+                        <TextBlock Text="TEKLA TOOLS" Foreground="{DynamicResource TextLightBrush}" FontSize="22" FontWeight="Bold"/>
                         <TextBlock Text="Minimalist Edition" Foreground="#888888" FontSize="12" Margin="0,5,0,0"/>
                     </StackPanel>
 
@@ -64,7 +64,7 @@
                             <TextBlock Text="Delete by ID/GUID:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,5"/>
                             <StackPanel Orientation="Horizontal">
                                 <TextBox x:Name="txtDeleteId" Width="140" Height="28" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
-                                <Button Name="btnDeleteById" Content="Delete" Click="BtnDeleteById_Click" Background="White" Foreground="Black" BorderThickness="0" Padding="15,0" FontWeight="Bold"/>
+                                <Button Name="btnDeleteById" Content="Delete" Click="BtnDeleteById_Click" Background="{DynamicResource BackgroundWhiteBrush}" Foreground="{DynamicResource TextDarkBrush}" BorderThickness="0" Padding="15,0" FontWeight="Bold"/>
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -89,7 +89,7 @@
             </Border>
 
             <!-- Main Content Area -->
-            <Grid Grid.Column="1" Background="White">
+            <Grid Grid.Column="1" Background="{DynamicResource BackgroundWhiteBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="70"/>
                     <RowDefinition Height="*"/>
@@ -98,7 +98,7 @@
                 <!-- Top Header -->
                 <Border Grid.Row="0" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="30,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="txtCurrentTool" Text="Welcome" FontSize="24" FontWeight="Bold" Foreground="Black" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="txtCurrentTool" Text="Welcome" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextDarkBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
 

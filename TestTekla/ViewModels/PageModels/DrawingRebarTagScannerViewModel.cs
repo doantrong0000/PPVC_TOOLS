@@ -7,8 +7,10 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Xml.Linq;
+using Tekla.Structures;
 using Tekla.Structures.Drawing;
 using Tekla.Structures.DrawingInternal;
 using Tekla.Structures.Model;
@@ -20,15 +22,12 @@ namespace TeklaApp.ViewModels.PageModels
     {
         public ObservableCollection<ScannedRebarItem> ScannedData { get; set; } = new ObservableCollection<ScannedRebarItem>();
 
-
         public void ScanActiveDrawing(out string status)
         {
             ScannedData.Clear();
-            status = "Ready";
-
             DrawingHandler dh = new DrawingHandler();
             Tekla.Structures.Drawing.Drawing activeDrawing = dh.GetActiveDrawing();
-            if (activeDrawing == null) return;
+            if (activeDrawing == null) { status = "No active drawing"; return; }
 
             try
             {
@@ -42,65 +41,44 @@ namespace TeklaApp.ViewModels.PageModels
                     {
                         string viewName = string.IsNullOrEmpty(view.Name) ? "Unnamed View" : view.Name;
 
-                        // 1. Xử lý Mark
-                        DrawingObjectEnumerator markEnum = view.GetObjects(new Type[] { typeof(Tekla.Structures.Drawing.Mark) });
+                        // Quét tất cả Mark trong View
+                        DrawingObjectEnumerator markEnum = view.GetObjects(new Type[] { typeof(Mark) });
                         while (markEnum.MoveNext())
                         {
-                            if (markEnum.Current is Tekla.Structures.Drawing.Mark mark)
+                            if (markEnum.Current is Mark mark)
                             {
-                                string dobjId = mark.GetIdentifier().ID.ToString();
-
-                                // Kiểm tra mark này có liên kết với thép (ReinforcementBase) không?
-                                DrawingObjectEnumerator relatedEnum = null;
-                                try
+                                // Lấy đối tượng Model mà Mark này trỏ tới
+                                DrawingObjectEnumerator relatedObjects = mark.GetRelatedObjects();
+                                while (relatedObjects.MoveNext())
                                 {
-                                    // Cách lấy đối tượng liên quan (Model object mà Mark trỏ tới)
-                                    var method = mark.GetType().GetMethod("GetRelatedObjects", Type.EmptyTypes);
-                                    if (method != null)
+                                    if (relatedObjects.Current is ReinforcementBase dRebar)
                                     {
-                                        relatedEnum = (DrawingObjectEnumerator)method.Invoke(mark, null);
-                                    }
-                                    else
-                                    {
-                                        relatedEnum = mark.GetRelatedObjects(new Type[] { typeof(ReinforcementBase) });
-                                    }
-                                }
-                                catch { }
-
-                                if (relatedEnum != null)
-                                {
-                                    while (relatedEnum.MoveNext())
-                                    {
-                                        if (relatedEnum.Current is ReinforcementBase dRebar)
-                                        {
-                                            // Lấy ModelIdentifier của cây Thép chứa Mark
-                                            ProcessRebarWithTag(rebarDict, model, dRebar.ModelIdentifier, viewName, "Mark", "Mark_ID:" + dobjId);
-                                        }
+                                        string textContent = GetRebarMarkContent(mark, model);
+                                        ProcessRebarWithTag(rebarDict, model, dRebar.ModelIdentifier, viewName, "Mark", textContent);
                                     }
                                 }
                             }
                         }
 
-                        // 2. Xử lý các đối tượng khác (Dimension...)
-                        DrawingObjectEnumerator objEnum = view.GetObjects();
-                        while (objEnum.MoveNext())
+                        // Xử lý Rebar Dimension Mark (thường dùng cho nhóm thép)
+                        DrawingObjectEnumerator allObjEnum = view.GetObjects();
+                        while (allObjEnum.MoveNext())
                         {
-                            var dobj = objEnum.Current;
-                            if (dobj == null) continue;
-
-                            string dobjId = dobj.GetIdentifier().ID.ToString();
-
-                            if (dobj.GetType().Name.Contains("RebarDimensionMark"))
+                            // Kiểm tra bằng tên Type nếu không muốn dùng thư viện Internal
+                            if (allObjEnum.Current.GetType().Name.Contains("RebarDimensionMark"))
                             {
-                                var method = dobj.GetType().GetMethod("GetRelatedObjects");
+                                var dimMark = allObjEnum.Current;
+                                // Dùng Reflection an toàn để gọi GetRelatedObjects
+                                var method = dimMark.GetType().GetMethod("GetRelatedObjects", Type.EmptyTypes);
                                 if (method != null)
                                 {
-                                    var rEnum = (DrawingObjectEnumerator)method.Invoke(dobj, null);
+                                    var rEnum = (DrawingObjectEnumerator)method.Invoke(dimMark, null);
                                     while (rEnum != null && rEnum.MoveNext())
                                     {
                                         if (rEnum.Current is ReinforcementBase dRebar)
                                         {
-                                            ProcessRebarWithTag(rebarDict, model, dRebar.ModelIdentifier, viewName, "DimMark", "ID:" + dobjId);
+                                            string textContent = GetRebarMarkContent(dimMark, model);
+                                            ProcessRebarWithTag(rebarDict, model, dRebar.ModelIdentifier, viewName, "DimMark", textContent);
                                         }
                                     }
                                 }
@@ -112,14 +90,61 @@ namespace TeklaApp.ViewModels.PageModels
                 foreach (var item in rebarDict.Values)
                 {
                     item.TagCount = item.Tags.Count;
-                    item.TagSummary = string.Join(", ", item.Tags.Select(t => t.TagType + ":" + t.TagContent));
+                    item.TagSummary = string.Join(", ", item.Tags.Select(t => t.TagContent));
                     ScannedData.Add(item);
                 }
 
-                status = $"Scanned {rebarDict.Count} items.";
+                status = $"Scanned {rebarDict.Count} rebar groups.";
             }
             catch (Exception ex) { status = "Error: " + ex.Message; }
         }
+
+        private string GetRebarMarkContent(DrawingObject dobj, Tekla.Structures.Model.Model model)
+        {
+            // Kiểm tra xem đối tượng có phải là Mark không
+            if (dobj is Tekla.Structures.Drawing.Mark mark)
+            {
+                List<string> parts = new List<string>();
+
+                // Lấy đối tượng thép từ Model để tra cứu giá trị thực tế (Pos, Grade, Size...)
+                Tekla.Structures.Model.ModelObject mObj = null;
+                var relatedEnum = mark.GetRelatedObjects();
+                if (relatedEnum.MoveNext() && relatedEnum.Current is ReinforcementBase dRebar)
+                {
+                    mObj = model.SelectModelObject(dRebar.ModelIdentifier);
+                }
+
+                // Duyệt qua các thành phần (Elements) bên trong Tag
+                // mark.Attributes.Content là cách gọi "chính quy" nhất, không bao giờ lỗi Ambiguous
+                foreach (var element in mark.Attributes.Content)
+                {
+                    if (element is Tekla.Structures.Drawing.TextElement textElem)
+                    {
+                        parts.Add(textElem.GetUnformattedString());
+                    }
+                    else if (element is PropertyElement propElem && mObj != null)
+                    {
+                        string val = "";
+                        // Tra cứu thuộc tính từ Model (ví dụ: "REBAR_POS", "GRADE")
+                        if (mObj.GetReportProperty(propElem.Name, ref val) && !string.IsNullOrEmpty(val))
+                        {
+                            parts.Add(val);
+                        }
+                        else
+                        {
+                            double dVal = 0;
+                            if (mObj.GetReportProperty(propElem.Name, ref dVal))
+                                parts.Add(dVal.ToString("0.##"));
+                        }
+                    }
+                }
+
+                return string.Join(" ", parts).Trim();
+            }
+
+            return string.Empty;
+        }
+
 
         private void ProcessRebarWithTag(Dictionary<string, ScannedRebarItem> dict, Tekla.Structures.Model.Model model, Tekla.Structures.Identifier mId, string viewName, string type, string content)
         {

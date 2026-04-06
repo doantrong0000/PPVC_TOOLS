@@ -119,7 +119,7 @@
         </Border>
 
         <!-- Footer / Action Bar -->
-        <Border Grid.Row="2" Background="White" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="10">
+        <Border Grid.Row="2" Background="{DynamicResource BackgroundWhiteBrush}" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="10">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
