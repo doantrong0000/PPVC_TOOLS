@@ -21,7 +21,6 @@ namespace TeklaApp.ViewModels
         public string SelectedObjectName { get; set; } = "";
         private Model _model = new Model();
         private TeklaModelMng _teklaModel = new TeklaModelMng();
-        private RebarNumberingModel _logicModel = new RebarNumberingModel();
 
         private int _startingNumber = 1;
         private string _slabKeywords = "SLAB,SÀN,FLOOR";
@@ -54,7 +53,11 @@ namespace TeklaApp.ViewModels
                 _slabKeywords = settings.SlabKeywords;
                 _beamKeywords = settings.BeamKeywords;
                 _wallKeywords = settings.WallKeywords;
+                
+                LoadSizeColorMapping(settings);
+                
                 OnPropertyChanged(nameof(StartingNumber));
+                OnPropertyChanged(nameof(SizeColorTable));
             }
             catch { }
         }
@@ -106,7 +109,7 @@ namespace TeklaApp.ViewModels
                 if (rebarMap.Count == 0) return "No valid rebar objects found.";
 
                 // Group by signature (Geometry-only grouping, ignoring Prefix/Position)
-                var groupSets = rebarMap.GroupBy(kv => _logicModel.GetRebarSignature(kv.Value)).ToList();
+                var groupSets = rebarMap.GroupBy(kv => GetRebarSignature(kv.Value)).ToList();
 
                 // Build sorting data
                 var groupSortData = new List<RebarNumberingGroupInfo>();
@@ -207,15 +210,16 @@ namespace TeklaApp.ViewModels
         }
 
         /// <summary>Preview Auto V/H prefix: assigns V/H/X prefix to Position based on rebar direction and host type</summary>
-        public string PreviewAutoVH(string excludeNames = "")
+        public string PreviewAutoVH()
         {
             if (Rebars.Count == 0) return "No rebars loaded.";
             if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
 
+            var settings = SettingsService.LoadSettings();
             var excludeList = new List<string>();
-            if (!string.IsNullOrWhiteSpace(excludeNames))
+            if (settings.UseExclusion && !string.IsNullOrWhiteSpace(settings.ExcludeNames))
             {
-                excludeList = excludeNames.Split(',')
+                excludeList = settings.ExcludeNames.Split(',')
                     .Select(s => s.Trim().ToUpper())
                     .Where(s => !string.IsNullOrEmpty(s))
                     .ToList();
@@ -243,7 +247,7 @@ namespace TeklaApp.ViewModels
                     ModelObject father = rebar.GetFatherComponent();
                     Part hostPart = father as Part;
 
-                    string prefix = _logicModel.GetAutoPrefix(rebar, hostPart, _slabKeywords, _beamKeywords, _wallKeywords);
+                    string prefix = GetAutoPrefix(rebar, hostPart, _slabKeywords, _beamKeywords, _wallKeywords);
 
                     if (!string.IsNullOrEmpty(prefix) && prefix != item.Position)
                     {
@@ -282,11 +286,18 @@ namespace TeklaApp.ViewModels
                     // Size and Grade are report properties, set via class if possible
                     if (item.Grade != item.OriginalGrade) rebar.Grade = item.Grade;
 
-                    // Apply SEQ number
+                    // Apply Seq number
                     if (item.Seq != item.OriginalSeq)
                     {
                         if (int.TryParse(item.Seq, out int seqNum))
                             rebar.SetUserProperty("REBAR_SEQ_NO", seqNum);
+                    }
+
+                    // Apply Class
+                    if (item.ClassStr != item.OriginalClassStr)
+                    {
+                        if (int.TryParse(item.ClassStr, out int cls))
+                            rebar.Class = cls;
                     }
 
                     // Apply Position (NumberingSeries Prefix)
@@ -358,7 +369,8 @@ namespace TeklaApp.ViewModels
                     {
                         Name = name, Size = size, Grade = grade, Length = length,
                         Position = pos, Seq = seq, Quantity = dQty, Id = idStr,
-                        TargetSpacing = spacing, HostName = hostMap.ContainsKey(idStr) ? hostMap[idStr] : ""
+                        TargetSpacing = spacing, HostName = hostMap.ContainsKey(idStr) ? hostMap[idStr] : "",
+                        ClassStr = r.Class.ToString()
                     };
                     item.SaveOriginals();
                     Rebars.Add(item);
@@ -534,7 +546,8 @@ namespace TeklaApp.ViewModels
                         Quantity = dQty,
                         Id = id,
                         TargetSpacing = spacing,
-                        HostName = rebarToHostMap[id]
+                        HostName = rebarToHostMap[id],
+                        ClassStr = r.Class.ToString()
                     };
                     item.SaveOriginals();
                     results.Add(item);
@@ -599,20 +612,16 @@ namespace TeklaApp.ViewModels
         ///   Beam  → stirrup(4+ poly pts) = "BEAM STIRRUP", else COG_Z comparison → "TOP BAR_H13" / "BOTTOM BAR_H13"
         ///   Slab  → thickness=75 → "ROOF BOTTOM REBAR", else COG_Z comparison → "SLAB TOP REBAR" / "SLAB BOTTOM REBAR"
         /// </summary>
-        public string PreviewAutoName(string excludeNames = "")
+        public string PreviewAutoName()
         {
-            if (!_model.GetConnectionStatus())
-                return "Error: Tekla Model not connected.";
+            if (Rebars.Count == 0) return "No rebars loaded.";
+            if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
 
-            if (Rebars.Count == 0)
-                return "No rebars loaded. Pick part first.";
-
-            LoadPersistentSettings();
-
+            var settings = SettingsService.LoadSettings();
             var excludeList = new List<string>();
-            if (!string.IsNullOrWhiteSpace(excludeNames))
+            if (settings.UseExclusion && !string.IsNullOrWhiteSpace(settings.ExcludeNames))
             {
-                excludeList = excludeNames.Split(',')
+                excludeList = settings.ExcludeNames.Split(',')
                     .Select(s => s.Trim().ToUpper())
                     .Where(s => !string.IsNullOrEmpty(s))
                     .ToList();
@@ -842,12 +851,229 @@ namespace TeklaApp.ViewModels
                 return single.Polygon;
             return null;
         }
+
+        // ==============================================================================
+        // AUTOMATIC COLOR ASSIGNMENT
+        // ==============================================================================
+        public ObservableCollection<SizeColorItem> SizeColorTable { get; set; }
+
+        public void UpdateSettings(AppSettings settings)
+        {
+            SettingsService.SaveSettings(settings);
+            LoadPersistentSettings(); // Reload keywords
+            LoadSizeColorMapping(settings);
+            OnPropertyChanged(nameof(SizeColorTable));
+        }
+
+        private void LoadSizeColorMapping(AppSettings settings)
+        {
+            SizeColorTable = new ObservableCollection<SizeColorItem>();
+            if (!string.IsNullOrEmpty(settings.SizeClassMapping))
+            {
+                var parts = settings.SizeClassMapping.Split(';');
+                foreach (var p in parts)
+                {
+                    var pair = p.Split(':');
+                    if (pair.Length == 2 && int.TryParse(pair[0], out int sz) && int.TryParse(pair[1], out int cl))
+                    {
+                        SizeColorTable.Add(new SizeColorItem { RebarSize = sz, RebarClass = cl });
+                    }
+                }
+            }
+        }
+
+        public string PreviewAutoColor()
+        {
+            if (Rebars.Count == 0) return "No rebars loaded.";
+            
+            var settings = SettingsService.LoadSettings();
+            LoadSizeColorMapping(settings);
+            
+            if (SizeColorTable == null || SizeColorTable.Count == 0) return "No mapping rules defined in Settings.";
+
+            int count = 0;
+            foreach (var item in Rebars)
+            {
+                int sz = (int)Math.Round(item.SizeNum);
+                var match = SizeColorTable.FirstOrDefault(x => x.RebarSize == sz);
+                if (match != null)
+                {
+                    string targetClass = match.RebarClass.ToString();
+                    if (item.ClassStr != targetClass)
+                    {
+                        item.ClassStr = targetClass;
+                        count++;
+                    }
+                }
+            }
+
+            return $"Preview: {count} rebars assigned Color Class based on rule. Click APPLY to commit.";
+        }
+
+        // ==============================================================================
+        // REBAR AUTO V/H DIRECTION LOGIC (Merged from RebarNumberingModel)
+        // ==============================================================================
+        public string GetAutoPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
+        {
+            string prefix = "";
+            if (hostPart != null)
+            {
+                string hostName = (hostPart.Name ?? "").ToUpper();
+                bool isWall = MatchesKeywords(hostName, wallKeys);
+                bool isBeam = MatchesKeywords(hostName, beamKeys);
+                bool isSlab = MatchesKeywords(hostName, slabKeys);
+
+                if (!isWall && !isBeam && !isSlab)
+                    if (hostPart is ContourPlate) isSlab = true;
+
+                if (isSlab) prefix = GetRebarDirectionPrefix(rebar, false);
+                else prefix = GetPartDirectionPrefix(hostPart);
+            }
+            else
+            {
+                prefix = GetRebarDirectionPrefix(rebar, false);
+            }
+            return prefix;
+        }
+
+        private string GetDirectionFromVector(Vector vec, bool isWall = false)
+        {
+            vec.Normalize();
+            double absX = Math.Abs(vec.X);
+            double absY = Math.Abs(vec.Y);
+            double absZ = Math.Abs(vec.Z);
+            if (isWall)
+            {
+                if (absZ > 0.98) return "V";
+                if (absX > 0.98 || absY > 0.98) return "H";
+            }
+            else
+            {
+                if (absX > 0.98) return "H";
+                if (absY > 0.98) return "V";
+            }
+            return "X";
+        }
+
+        private string GetRebarDirectionPrefix(Reinforcement rebar, bool isWall)
+        {
+            Polygon poly = GetFirstPolygon(rebar);
+            if (poly == null || poly.Points.Count < 2) return "";
+            double maxLength = -1;
+            Vector bestVec = null;
+            for (int i = 0; i < poly.Points.Count - 1; i++)
+            {
+                if (poly.Points[i] is Point pA && poly.Points[i + 1] is Point pB)
+                {
+                    Vector currentVec = new Vector(pB.X - pA.X, pB.Y - pA.Y, pB.Z - pA.Z);
+                    double len = currentVec.GetLength();
+                    if (len > maxLength) { maxLength = len; bestVec = currentVec; }
+                }
+            }
+            if (bestVec == null || maxLength < 0.1) return "";
+            return GetDirectionFromVector(bestVec, isWall);
+        }
+
+        private string GetPartDirectionPrefix(Part part)
+        {
+            Vector vec = null;
+            if (part is Beam beam)
+            {
+                vec = new Vector(beam.EndPoint.X - beam.StartPoint.X, beam.EndPoint.Y - beam.StartPoint.Y, 0);
+            }
+            else if (part is ContourPlate cp)
+            {
+                double maxLen = -1;
+                Vector bestVec = null;
+                var points = cp.Contour.ContourPoints;
+                if (points != null && points.Count > 1)
+                {
+                    for (int i = 0; i < points.Count; i++)
+                    {
+                        var p1 = points[i] as ContourPoint;
+                        var p2 = points[(i + 1) % points.Count] as ContourPoint;
+                        if (p1 != null && p2 != null)
+                        {
+                            Vector v = new Vector(p2.X - p1.X, p2.Y - p1.Y, 0);
+                            double len = v.GetLength();
+                            if (len > maxLen) { maxLen = len; bestVec = v; }
+                        }
+                    }
+                }
+                vec = bestVec ?? part.GetCoordinateSystem().AxisX;
+            }
+            else
+            {
+                vec = part.GetCoordinateSystem().AxisX;
+            }
+            if (vec == null || vec.GetLength() < 0.1) return "";
+            return GetDirectionFromVector(vec);
+        }
+
+        public string GetRebarSignature(Reinforcement rebar)
+        {
+            string size = "";
+            rebar.GetReportProperty("SIZE", ref size);
+
+            double length = 0;
+            rebar.GetReportProperty("LENGTH", ref length);
+            string lengthStr = (Math.Round(length / 5.0, 0) * 5).ToString();
+
+            string shapeKey = GetShapeKey(rebar);
+            string hookKey = GetHookKey(rebar);
+
+            return $"{size}|{lengthStr}|{shapeKey}|{hookKey}";
+        }
+
+        private string GetShapeKey(Reinforcement rebar)
+        {
+            System.Collections.ArrayList polygons = null;
+            if (rebar is RebarGroup group) polygons = group.Polygons;
+            else if (rebar is SingleRebar single) polygons = new System.Collections.ArrayList { single.Polygon };
+
+            if (polygons == null || polygons.Count == 0) return "NoShape";
+
+            List<string> polyKeys = new List<string>();
+            foreach (var obj in polygons)
+            {
+                if (obj is Tekla.Structures.Model.Polygon poly)
+                {
+                    List<double> lengths = new List<double>();
+                    for (int i = 0; i < poly.Points.Count - 1; i++)
+                    {
+                        var p1 = poly.Points[i] as Tekla.Structures.Geometry3d.Point;
+                        var p2 = poly.Points[i + 1] as Tekla.Structures.Geometry3d.Point;
+                        double len = Math.Round(Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2) + Math.Pow(p2.Z - p1.Z, 2)) / 5.0, 0) * 5;
+                        lengths.Add(len);
+                    }
+                    string forward = string.Join("-", lengths);
+                    var reversed = new List<double>(lengths);
+                    reversed.Reverse();
+                    string backward = string.Join("-", reversed);
+                    polyKeys.Add(string.Compare(forward, backward, StringComparison.Ordinal) <= 0 ? forward : backward);
+                }
+            }
+            return string.Join(";", polyKeys);
+        }
+
+        private string GetHookKey(Reinforcement rebar)
+        {
+            double startHookAngle = 0, endHookAngle = 0;
+            double startHookLength = 0, endHookLength = 0;
+
+            rebar.GetReportProperty("HOOK_START_ANGLE", ref startHookAngle);
+            rebar.GetReportProperty("HOOK_END_ANGLE", ref endHookAngle);
+            rebar.GetReportProperty("HOOK_START_LENGTH", ref startHookLength);
+            rebar.GetReportProperty("HOOK_END_LENGTH", ref endHookLength);
+
+            return $"S:{Math.Round(startHookAngle, 0)}-{Math.Round(startHookLength, 0)}|E:{Math.Round(endHookAngle, 0)}-{Math.Round(endHookLength, 0)}";
+        }
     }
 
     public class RebarInfoItem : INotifyPropertyChanged
     {
         // === Backing fields ===
-        private string _position, _seq, _name, _size, _grade, _targetSpacing, _hostName, _id;
+        private string _position, _seq, _name, _size, _grade, _classStr, _targetSpacing, _hostName, _id;
         private double _length;
         private int _quantity;
         private bool _isIncluded = true;
@@ -858,6 +1084,7 @@ namespace TeklaApp.ViewModels
         public string OriginalPosition { get; private set; }
         public string OriginalSize { get; private set; }
         public string OriginalGrade { get; private set; }
+        public string OriginalClassStr { get; private set; }
 
         // === Editable properties ===
         public string Position { get => _position; set { if (_position != value) { _position = value; Notify(); Notify(nameof(IsChanged)); } } }
@@ -865,6 +1092,7 @@ namespace TeklaApp.ViewModels
         public string Name { get => _name; set { if (_name != value) { _name = value; Notify(); Notify(nameof(IsChanged)); } } }
         public string Size { get => _size; set { if (_size != value) { _size = value; Notify(); Notify(nameof(IsChanged)); Notify(nameof(SizeNum)); } } }
         public string Grade { get => _grade; set { if (_grade != value) { _grade = value; Notify(); Notify(nameof(IsChanged)); } } }
+        public string ClassStr { get => _classStr; set { if (_classStr != value) { _classStr = value; Notify(); Notify(nameof(IsChanged)); } } }
 
         // === Read-only (from Tekla, not editable) ===
         public double Length { get => _length; set { _length = value; Notify(); } }
@@ -891,7 +1119,8 @@ namespace TeklaApp.ViewModels
             Seq != OriginalSeq ||
             Position != OriginalPosition ||
             Size != OriginalSize ||
-            Grade != OriginalGrade;
+            Grade != OriginalGrade ||
+            ClassStr != OriginalClassStr;
 
         public bool IsIncluded
         {
@@ -907,12 +1136,12 @@ namespace TeklaApp.ViewModels
             OriginalPosition = Position;
             OriginalSize = Size;
             OriginalGrade = Grade;
+            OriginalClassStr = ClassStr;
             _isIncluded = true;
             Notify(nameof(IsChanged));
             Notify(nameof(IsIncluded));
         }
 
-        /// <summary>Revert all editable fields to original Tekla values</summary>
         public void RevertToOriginal()
         {
             Name = OriginalName;
@@ -920,6 +1149,7 @@ namespace TeklaApp.ViewModels
             Position = OriginalPosition;
             Size = OriginalSize;
             Grade = OriginalGrade;
+            ClassStr = OriginalClassStr;
             IsIncluded = true;
         }
 
@@ -938,6 +1168,12 @@ namespace TeklaApp.ViewModels
         public string HostName { get; set; }
         public int HostId { get; set; }
         public double Length { get; set; }
+    }
+
+    public class SizeColorItem
+    {
+        public int RebarSize { get; set; }
+        public int RebarClass { get; set; }
     }
 }
 

@@ -52,14 +52,21 @@
                                 Click="BtnAutoName_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#00897B" BorderBrush="#00796B"
-                                Width="95" Height="30" Margin="0,0,4,4"
+                                Width="95" Height="36" Margin="0,0,4,4"
                                 ToolTip="Preview auto-naming based on host type and position"/>
-                        <TextBlock Text="Exclude:" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="0,0,3,4"/>
-                        <CheckBox x:Name="chkUseExclusion" IsChecked="True" VerticalAlignment="Center" Margin="0,0,5,4" ToolTip="Enable/Disable name exclusion"/>
-                        <TextBox x:Name="txtExcludeNames" Text="LIFTING HOOK BAR,U BAR,ROOF RESTRAINT BAR,KERB REBAR_H10,RESTRAINT BAR,TRIMMER BAR" Width="180" Height="28"
-                                 VerticalContentAlignment="Center" Padding="4,0" BorderBrush="#CCC" Margin="0,0,8,4" FontSize="10"
-                                 IsEnabled="{Binding IsChecked, ElementName=chkUseExclusion}"
-                                 ToolTip="Comma-separated names to skip during auto-naming"/>
+                        <Button Content="AUTO COLOR"
+                                Click="BtnAutoColor_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#8E24AA" BorderBrush="#7B1FA2"
+                                Width="95" Height="36" Margin="0,0,4,4"
+                                ToolTip="Auto assign class based on rebar size"/>
+                                
+                        <Button Content="⚙ SETTINGS"
+                                Click="BtnSettings_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#FAFAFA" BorderBrush="#DDDDDD" Foreground="#333333"
+                                Width="95" Height="36" Margin="0,0,8,4"
+                                ToolTip="Configure Exclusions, Auto V/H Keywords, and Auto Color mappings"/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
@@ -68,7 +75,7 @@
                                 Click="BtnAutoVH_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#5C6BC0" BorderBrush="#3F51B5"
-                                Width="80" Height="30" Margin="0,0,8,4"
+                                Width="80" Height="36" Margin="0,0,8,4"
                                 ToolTip="Preview auto V/H prefix assignment"/>
 
                         <!-- Numbering -->
@@ -77,12 +84,12 @@
                         <Button Content="NUMBERS"
                                 Click="BtnRunNumbering_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Width="80" Height="30" Margin="0,0,4,4"/>
+                                Width="80" Height="36" Margin="0,0,4,4"/>
                         <Button Content="RENUM ALL"
                                 Click="BtnReassignAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#FF9800" BorderBrush="#E68A00"
-                                Width="95" Height="30" Margin="0,0,8,4"/>
+                                Width="95" Height="36" Margin="0,0,8,4"/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
@@ -91,13 +98,13 @@
                                 Click="BtnApply_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#D32F2F" BorderBrush="#B71C1C"
-                                Width="80" Height="30" Margin="0,0,4,4" FontWeight="Bold"
+                                Width="80" Height="36" Margin="0,0,4,4" FontWeight="Bold"
                                 ToolTip="Commit all highlighted changes to Tekla model"/>
                         <Button Content="↺ REVERT ALL"
                                 Click="BtnRevertAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#757575" BorderBrush="#616161"
-                                Width="100" Height="30" Margin="0,0,4,4"
+                                Width="100" Height="36" Margin="0,0,4,4"
                                 ToolTip="Undo all pending changes, restore original Tekla values"/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
@@ -106,7 +113,7 @@
                                 Click="BtnExportJson_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#4CAF50" BorderBrush="#45a049"
-                                Width="70" Height="30" Margin="0,0,0,4"/>
+                                Width="70" Height="36" Margin="0,0,0,4"/>
                     </WrapPanel>
                 </Border>
             </StackPanel>
@@ -185,6 +192,7 @@
                             <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="100"/>
                             <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size, UpdateSourceTrigger=PropertyChanged}" SortMemberPath="SizeNum" Width="Auto" MinWidth="45"/>
                             <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="45"/>
+                            <DataGridTextColumn x:Name="colClass" Header="Class" Binding="{Binding ClassStr, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="45"/>
 
                             <!-- Read-only columns -->
                             <DataGridTextColumn x:Name="colLength" Header="Length" Binding="{Binding Length}" IsReadOnly="True" Width="Auto" MinWidth="55"/>
@@ -248,3 +256,4 @@
         </Border>
     </Grid>
 </UserControl>
+

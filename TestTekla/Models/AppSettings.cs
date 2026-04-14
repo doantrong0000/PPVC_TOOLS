@@ -40,5 +40,9 @@ namespace TeklaApp.Models
 
         // RebarFinderPage
         public string FinderAttributeName { get; set; } = "REBAR_SEQ_NO";
+
+        // RebarInspectorPage Exclusion
+        public string ExcludeNames { get; set; } = "LIFTING HOOK BAR,U BAR,ROOF RESTRAINT BAR,KERB REBAR_H10,RESTRAINT BAR,TRIMMER BAR";
+        public bool UseExclusion { get; set; } = true;
     }
 }

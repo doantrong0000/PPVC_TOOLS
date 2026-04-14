@@ -117,24 +117,31 @@ namespace TeklaApp.Views.Pages
 
         private void BtnAutoName_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
-
-            string excludeText = (chkUseExclusion.IsChecked == true) ? (txtExcludeNames.Text?.Trim() ?? "") : "";
-            txtStatus.Text = "Preview: Auto-naming...";
-            string result = _viewModel.PreviewAutoName(excludeText);
-            txtStatus.Text = result;
-            dgRebars.Items.Refresh();
+            _viewModel.PreviewAutoName();
         }
 
         private void BtnAutoVH_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            string excludeText = (chkUseExclusion.IsChecked == true) ? (txtExcludeNames.Text?.Trim() ?? "") : "";
             txtStatus.Text = "Preview: Assigning V/H prefixes...";
-            string result = _viewModel.PreviewAutoVH(excludeText);
+            string result = _viewModel.PreviewAutoVH();
             txtStatus.Text = result;
             dgRebars.Items.Refresh();
+        }
+
+        private void BtnAutoColor_Click(object sender, RoutedEventArgs e)
+        {
+            txtStatus.Text = "Preview: Assigning Class by Size...";
+            string result = _viewModel.PreviewAutoColor();
+            txtStatus.Text = result;
+            dgRebars.Items.Refresh();
+        }
+
+        private void BtnSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new RebarSettingsWindow(_viewModel);
+            window.ShowDialog();
         }
 
         private void BtnRunNumbering_Click(object sender, RoutedEventArgs e)
