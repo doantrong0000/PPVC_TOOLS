@@ -65,6 +65,11 @@ namespace TeklaApp.Views.Pages
         {
             _viewModel.SelectRebarsOfPart();
         }
+        
+        private void BtnSplitRebar_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.SplitRebarDistribution();
+        }
 
         private void BtnQuickRebarMulti_Click(object sender, RoutedEventArgs e)
         {

@@ -7,156 +7,146 @@
              d:DesignHeight="600" d:DesignWidth="1000"
              Background="Transparent">
     <Grid>
-        <!-- Use ScrollViewer to prevent overflow if window is small -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-            <!-- DockPanel allows sub-content to stretch -->
-            <DockPanel LastChildFill="True" Margin="10">
+        <!-- DockPanel: top section is fixed, bottom fills remaining space -->
+        <DockPanel LastChildFill="True" Margin="10">
 
-                <TextBlock DockPanel.Dock="Top" Text="REBAR INSTANT ACTIONS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
+            <!-- ===== COLLAPSIBLE: Guide ===== -->
+            <Expander DockPanel.Dock="Top" Header="📖 Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
+                <StackPanel Margin="10,5,10,10">
+                    <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
+                        <Run Text="Allows you to distribute continuous rebar across multiple segments with voids in a single operation." />
+                        <Run Text="The result is a single "/> <Run FontWeight="Bold" Text="Unified Rebar Group"/>
+                        <Run Text=" containing all gaps, which is easy to adjust without relying on risky merge macros." />
+                    </TextBlock>
 
-                <!-- INSTRUCTION ENCYCLOPEDIA -->
-                <Expander DockPanel.Dock="Top" Header="📖 Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
-                    <StackPanel Margin="10,5,10,10">
-                        <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
-                            <Run Text="Allows you to distribute continuous rebar across multiple segments with voids in a single operation." />
-                            <Run Text="The result is a single "/> <Run FontWeight="Bold" Text="Unified Rebar Group"/>
-                            <Run Text=" containing all gaps, which is easy to adjust without relying on risky merge macros." />
-                        </TextBlock>
+                    <TextBlock Text="TEKLA OPERATION INSTRUCTIONS:" FontWeight="Bold" Foreground="#107C41" FontSize="13" Margin="0,0,0,2"/>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="1. Enter Parameters:" />
+                        <Run Text=" Fill the Spacing value in the tool UI (target Spacing) before clicking the button."/>
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="2. Pick Part:" />
+                        <Run Text=" Click over the concrete Part you want to reinforce."/>
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="3. Pick Shape Points:" />
+                        <Run Text=" Click points to define the physical cross-section geometry of the rebar. Press Middle Mouse Button to finish."/>
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="4. Pick Distribution Points:" />
+                        <Run Text=" Click pairs of points: [P1, P2] for segment A, [P3, P4] for segment B, etc. Press Middle Mouse Button to finish."/>
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
 
-                        <TextBlock Text="TEKLA OPERATION INSTRUCTIONS:" FontWeight="Bold" Foreground="#107C41" FontSize="13" Margin="0,0,0,2"/>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
-                            <Run FontWeight="Bold" Text="1. Enter Parameters:" />
-                            <Run Text=" Fill the Spacing value in the tool UI (target Spacing) before clicking the button."/>
-                        </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
-                            <Run FontWeight="Bold" Text="2. Pick Part:" />
-                            <Run Text=" Click over the concrete Part you want to reinforce."/>
-                        </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
-                            <Run FontWeight="Bold" Text="3. Pick Shape Points:" />
-                            <Run Text=" Click points to define the physical cross-section geometry of the rebar. Press Middle Mouse Button to finish."/>
-                        </TextBlock>
-                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
-                            <Run FontWeight="Bold" Text="4. Pick Distribution Points:" />
-                            <Run Text=" Click pairs of points: [P1, P2] for segment A, [P3, P4] for segment B, etc. Press Middle Mouse Button to finish."/>
-                        </TextBlock>
+            <!-- ===== COLLAPSIBLE: Quick Rebar Tools ===== -->
+            <Expander DockPanel.Dock="Top" Header="⚡ Quick Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
+                <StackPanel Margin="10,5,10,10">
+                    <!-- Action Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,5,8">
+                        <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,0" Width="150" Height="35" Click="BtnReverseRebar_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
+                        <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,5,0" Width="150" Height="35" Click="BtnRepickRebarRange_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
+                        <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="35" Click="BtnSelectRebarsOfPart_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
+                        <Button Name="btnSplitRebar" Content="Split Rebar Group" Margin="0,0,5,0" Width="150" Height="35" Click="BtnSplitRebar_Click" Background="#FFF1CC" BorderBrush="#FFC107"/>
                     </StackPanel>
-                </Expander>
 
-                <!-- Buttons for instant actions -->
-                <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,5,5">
-                            <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,5" Width="150" Height="35" Click="BtnReverseRebar_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
-                            <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,5,5" Width="150" Height="35" Click="BtnRepickRebarRange_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
-                            <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,5" Width="150" Height="35" Click="BtnSelectRebarsOfPart_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
-                        </StackPanel>
+                    <!-- Compact Single-Line Toolbar for Rebar Creation -->
+                    <Border Background="#FDFDFD" BorderBrush="#E0E0E0" BorderThickness="1" Padding="4" Margin="0,0,0,8" CornerRadius="4">
+                        <WrapPanel Orientation="Horizontal">
+                            <TextBlock Text="CREATE REBAR:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
 
-                        <!-- Unified Parameter Grid for Quick Rebar -->
-                        <!-- Compact Single-Line Toolbar for Rebar Creation -->
-                        <Border Background="#FDFDFD" BorderBrush="#E0E0E0" BorderThickness="1" Padding="4" Margin="0,0,0,15" CornerRadius="4" >
-                            <WrapPanel Orientation="Horizontal">
-                                <TextBlock Text="CREATE REBAR:" FontSize="11"  FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="Spacing" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarSpacing" Text="200" Width="45" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <!-- Parameters -->
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="Spacing" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarSpacing" Text="200" Width="45" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="Start" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarStart" Text="25" Width="35" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="Start" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarStart" Text="25" Width="35" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="End" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarEnd" Text="25" Width="35" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="End" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarEnd" Text="25" Width="35" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="OnPlane" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarOnPlane" Text="25" Width="35" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="OnPlane" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarOnPlane" Text="25" Width="35" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="Name" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarName" Text="REBAR" Width="80" Height="24" VerticalContentAlignment="Center" Padding="5,0,0,0" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="Name" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarName" Text="REBAR" Width="80" Height="24" VerticalContentAlignment="Center" Padding="5,0,0,0" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="Size" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarSize" Text="10" Width="50" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="Size" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarSize" Text="10" Width="50" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="Grade" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarGrade" Text="H" Width="30" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="Grade" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarGrade" Text="H" Width="30" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                                <TextBlock Text="Class" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                <TextBox x:Name="txtQuickRebarClass" Text="2" Width="30" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
+                            </StackPanel>
 
-                                <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
-                                    <TextBlock Text="Class" FontSize="11" Foreground="#666666" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <TextBox x:Name="txtQuickRebarClass" Text="2" Width="30" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" BorderBrush="#CCCCCC"/>
-                                </StackPanel>
+                            <Rectangle Width="1" Fill="#EEEEEE" Margin="5,2,10,2"/>
 
-                                <!-- Vertical Separator -->
-                                <Rectangle Width="1" Fill="#EEEEEE" Margin="5,2,10,2"/>
-
-                                <!-- Action Button -->
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="30" Padding="12,0,12,0" Background="#0078D7" BorderThickness="0">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="⚡" FontSize="14" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                            <TextBlock Text="RUN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
-                                </StackPanel>
-                            </WrapPanel>
-                        </Border>
-
-                        <!-- FIND REBAR BY SEQ SECTION (Added) -->
-                        <Border Background="#F9FEFF" BorderBrush="#B2EBF2" BorderThickness="1" Padding="2" Margin="0,0,0,15" CornerRadius="4">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="FIND REBAR BY SEQ:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                                <TextBlock Text="SEQ No:" FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="60" Height="30
-                                         " VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
-                                <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="26" Margin="10,0,0,0" Padding="12,0" Background="#0097A7" BorderThickness="0" ToolTip="Find and Select rebar in model by SEQ number">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="30" Padding="12,0,12,0" Background="#0078D7" BorderThickness="0">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🔍" FontSize="12" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="⚡" FontSize="14" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="RUN" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
-                                <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>
+                                <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
+                        </WrapPanel>
+                    </Border>
 
+                    <!-- FIND REBAR BY SEQ -->
+                    <Border Background="#F9FEFF" BorderBrush="#B2EBF2" BorderThickness="1" Padding="2" CornerRadius="4">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="FIND REBAR BY SEQ:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                            <TextBlock Text="SEQ No:" FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="60" Height="30" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
+                            <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="26" Margin="10,0,0,0" Padding="12,0" Background="#0097A7" BorderThickness="0" ToolTip="Find and Select rebar in model by SEQ number">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔍" FontSize="12" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Expander>
 
-                </WrapPanel>
+            <Separator DockPanel.Dock="Top" Margin="0,5,0,5"/>
 
-                <Separator DockPanel.Dock="Top" Margin="0,0,0,10"/>
+            <!-- ===== Sub-page buttons ===== -->
+            <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
+                <Button Name="btnShowRebarInspector" Content="Open Rebar Manager" Margin="0,0,5,5" Width="170" Height="35" Click="BtnShowRebarInspector_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                <Button Name="btnShowRebarNumbering" Content="Open Rebar Numbering" Margin="0,0,5,5" Width="170" Height="35" Click="BtnShowRebarNumbering_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,5" Width="150" Height="35" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
+            </WrapPanel>
 
-                <TextBlock DockPanel.Dock="Top" Text="ADVANCED REBAR VIEWS" FontSize="16" FontWeight="Bold" Margin="0,0,0,5" Foreground="#005A9E"/>
-
-                <!-- Buttons to load sub-pages -->
-                <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,10">
-                    <Button Name="btnShowRebarInspector" Content="Open Rebar Inspector" Margin="0,0,5,5" Width="170" Height="35" Click="BtnShowRebarInspector_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
-                    <Button Name="btnShowRebarNumbering" Content="Open Rebar Numbering" Margin="0,0,5,5" Width="170" Height="35" Click="BtnShowRebarNumbering_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
-                    <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,5" Width="150" Height="35" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
-                </WrapPanel>
-
-                <!-- Sub View Container -->
-                <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="0" MinHeight="350" Background="#FDFDFD">
-                    <Grid>
-                        <TextBlock x:Name="txtEmptyState" Text="Select an advanced tool to display it here" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AAAAAA" FontSize="13" FontStyle="Italic"/>
+            <!-- ===== Sub View Container - fills remaining space with its own scroll ===== -->
+            <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="0" Background="#FDFDFD">
+                <Grid>
+                    <TextBlock x:Name="txtEmptyState" Text="Select an advanced tool to display it here" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AAAAAA" FontSize="13" FontStyle="Italic"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ContentControl x:Name="RebarSubContent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                    </Grid>
-                </Border>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
 
-            </DockPanel>
-        </ScrollViewer>
+        </DockPanel>
     </Grid>
 </UserControl>

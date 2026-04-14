@@ -1,9 +1,9 @@
 <UserControl x:Class="TeklaApp.Views.Pages.RebarInspectorPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="800">
 
     <UserControl.Resources>
@@ -11,6 +11,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Views/Styles/ModernTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- BoolToVisibility converter for X button -->
+            <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -21,29 +24,96 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" Margin="10,10,10,5"  Style="{StaticResource CardStyle}">
-            <DockPanel LastChildFill="True">
-                <Button DockPanel.Dock="Right" 
-            Content="PICK PART" 
-            Click="BtnPickPart_Click"
-            Style="{StaticResource PrimaryButtonStyle}"
-            Width="120" Height="36"/>
+        <!-- Header + Action Bar -->
+        <Border Grid.Row="0" Margin="10,10,10,5" Style="{StaticResource CardStyle}">
+            <StackPanel>
+                <!-- Title Row -->
+                <DockPanel LastChildFill="True">
+                    <Button DockPanel.Dock="Right"
+                            Content="PICK PART"
+                            Click="BtnPickPart_Click"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Width="120" Height="36"/>
 
-                <StackPanel>
-                    <TextBlock Text="REBAR INSPECTOR" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                        <TextBlock Text="Selected Object: " FontSize="12" Foreground="#888888"/>
-                        <TextBlock x:Name="txtSelectedPart" Text="None" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}"/>
+                    <StackPanel>
+                        <TextBlock Text="REBAR MANAGER" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                            <TextBlock Text="Selected Object: " FontSize="12" Foreground="#888888"/>
+                            <TextBlock x:Name="txtSelectedPart" Text="None" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}"/>
+                        </StackPanel>
                     </StackPanel>
-                    <TextBlock Text="Check rebar names and diameters assigned to a part." FontSize="11" Foreground="#AAAAAA" Margin="0,2,0,0"/>
-                </StackPanel>
-            </DockPanel>
+                </DockPanel>
 
+                <!-- Action Buttons Row -->
+                <Border Margin="0,8,0,0" Padding="0,8,0,0" BorderBrush="#EEEEEE" BorderThickness="0,1,0,0">
+                    <WrapPanel Orientation="Horizontal">
+                        <!-- Auto Name -->
+                        <Button Content="AUTO NAME"
+                                Click="BtnAutoName_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#00897B" BorderBrush="#00796B"
+                                Width="95" Height="30" Margin="0,0,4,4"
+                                ToolTip="Preview auto-naming based on host type and position"/>
+                        <TextBlock Text="Exclude:" FontSize="10" Foreground="#666" VerticalAlignment="Center" Margin="0,0,3,4"/>
+                        <CheckBox x:Name="chkUseExclusion" IsChecked="True" VerticalAlignment="Center" Margin="0,0,5,4" ToolTip="Enable/Disable name exclusion"/>
+                        <TextBox x:Name="txtExcludeNames" Text="LIFTING HOOK BAR,U BAR,ROOF RESTRAINT BAR,KERB REBAR_H10,RESTRAINT BAR,TRIMMER BAR" Width="180" Height="28"
+                                 VerticalContentAlignment="Center" Padding="4,0" BorderBrush="#CCC" Margin="0,0,8,4" FontSize="10"
+                                 IsEnabled="{Binding IsChecked, ElementName=chkUseExclusion}"
+                                 ToolTip="Comma-separated names to skip during auto-naming"/>
+
+                        <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
+
+                        <!-- Auto V/H -->
+                        <Button Content="AUTO V/H"
+                                Click="BtnAutoVH_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#5C6BC0" BorderBrush="#3F51B5"
+                                Width="80" Height="30" Margin="0,0,8,4"
+                                ToolTip="Preview auto V/H prefix assignment"/>
+
+                        <!-- Numbering -->
+                        <TextBlock Text="Start:" FontSize="10" VerticalAlignment="Center" Margin="0,0,3,4" Foreground="#555" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding StartingNumber, UpdateSourceTrigger=PropertyChanged}" Width="40" Height="28" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,4,4" BorderBrush="#CCC"/>
+                        <Button Content="NUMBERS"
+                                Click="BtnRunNumbering_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Width="80" Height="30" Margin="0,0,4,4"/>
+                        <Button Content="RENUM ALL"
+                                Click="BtnReassignAll_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#FF9800" BorderBrush="#E68A00"
+                                Width="95" Height="30" Margin="0,0,8,4"/>
+
+                        <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
+
+                        <!-- APPLY TO TEKLA - prominent -->
+                        <Button Content="✔ APPLY"
+                                Click="BtnApply_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#D32F2F" BorderBrush="#B71C1C"
+                                Width="80" Height="30" Margin="0,0,4,4" FontWeight="Bold"
+                                ToolTip="Commit all highlighted changes to Tekla model"/>
+                        <Button Content="↺ REVERT ALL"
+                                Click="BtnRevertAll_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#757575" BorderBrush="#616161"
+                                Width="100" Height="30" Margin="0,0,4,4"
+                                ToolTip="Undo all pending changes, restore original Tekla values"/>
+
+                        <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
+
+                        <Button Content="EXPORT"
+                                Click="BtnExportJson_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#4CAF50" BorderBrush="#45a049"
+                                Width="70" Height="30" Margin="0,0,0,4"/>
+                    </WrapPanel>
+                </Border>
+            </StackPanel>
         </Border>
 
         <!-- Main Content Area with Side Visibility Panel -->
-        <Border Grid.Row="1" Margin="10,5,10,10" Padding="0" Style="{StaticResource CardStyle}">
+        <Border Grid.Row="1" Margin="10,5,10,5" Padding="0" Style="{StaticResource CardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -52,9 +122,11 @@
 
                 <!-- DataGrid Panel -->
                 <Grid Grid.Column="0" Margin="0">
-                    <DataGrid x:Name="dgRebars" 
-                              AutoGenerateColumns="False" 
-                              IsReadOnly="True" 
+                    <DataGrid x:Name="dgRebars"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
                               SelectionMode="Single"
                               HeadersVisibility="Column"
                               GridLinesVisibility="Horizontal"
@@ -62,97 +134,117 @@
                               BorderThickness="0"
                               RowHeight="32"
                               FontSize="12"
-                              SelectionChanged="DgRebars_Click">
+                              SelectionChanged="DgRebars_Click"
+                              ScrollViewer.CanContentScroll="False"
+                              PreviewMouseWheel="DgRebars_PreviewMouseWheel">
                         <DataGrid.Resources>
                             <Style TargetType="DataGridColumnHeader">
                                 <Setter Property="Background" Value="#F8F8F8"/>
                                 <Setter Property="Foreground" Value="#666666"/>
                                 <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="Padding" Value="12,10"/>
+                                <Setter Property="Padding" Value="8,8"/>
                                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                 <Setter Property="BorderBrush" Value="#E5E5E5"/>
+                                <Setter Property="FontSize" Value="11"/>
                             </Style>
                         </DataGrid.Resources>
 
+                        <!-- Row style with change highlighting -->
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <!-- Changed + Included → yellow highlight -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsChanged}" Value="True"/>
+                                            <Condition Binding="{Binding IsIncluded}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Background" Value="#FFF8E1"/>
+                                        <Setter Property="BorderBrush" Value="#FFE082"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    </MultiDataTrigger>
+                                    <!-- Changed + Excluded → grey strikethrough look -->
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding IsChanged}" Value="True"/>
+                                            <Condition Binding="{Binding IsIncluded}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Background" Value="#F5F5F5"/>
+                                        <Setter Property="Foreground" Value="#BBBBBB"/>
+                                        <Setter Property="FontStyle" Value="Italic"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+
                         <DataGrid.Columns>
-                            <DataGridTextColumn x:Name="colMark" Header="Mark/Pos" Binding="{Binding Position}" Width="Auto" MinWidth="70"/>
-                            <DataGridTextColumn x:Name="colSeq" Header="SEQ" Binding="{Binding Seq}" Width="Auto" MinWidth="40"/>
-                            <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name}" Width="*" MinWidth="100"/>
-                            <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size}" Width="Auto" MinWidth="50"/>
-                            <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade}" Width="Auto" MinWidth="50"/>
-                            <DataGridTextColumn x:Name="colSpacing" Header="Spacing" Binding="{Binding TargetSpacing}" Width="Auto" MinWidth="60"/>
-                            <DataGridTextColumn x:Name="colQty" Header="Qty" Binding="{Binding Quantity}" Width="Auto" MinWidth="40"/>
-                            <DataGridTextColumn x:Name="colHost" Header="Host Object" Binding="{Binding HostName}" Width="*" MinWidth="80"/>
-                            <DataGridTextColumn x:Name="colId" Header="Object ID" Binding="{Binding Id}" Width="Auto" MinWidth="70"/>
+                            <!-- Editable columns (two-way binding) -->
+                            <DataGridTextColumn x:Name="colMark" Header="Mark" Binding="{Binding Position, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="55"/>
+                            <DataGridTextColumn x:Name="colSeq" Header="SEQ" Binding="{Binding Seq, UpdateSourceTrigger=PropertyChanged}" SortMemberPath="SeqNum" Width="Auto" MinWidth="40"/>
+                            <DataGridTextColumn x:Name="colName" Header="Name" Binding="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Width="*" MinWidth="100"/>
+                            <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size, UpdateSourceTrigger=PropertyChanged}" SortMemberPath="SizeNum" Width="Auto" MinWidth="45"/>
+                            <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="45"/>
+
+                            <!-- Read-only columns -->
+                            <DataGridTextColumn x:Name="colLength" Header="Length" Binding="{Binding Length}" IsReadOnly="True" Width="Auto" MinWidth="55"/>
+                            <DataGridTextColumn x:Name="colSpacing" Header="Spacing" Binding="{Binding TargetSpacing}" IsReadOnly="True" Width="Auto" MinWidth="55"/>
+                            <DataGridTextColumn x:Name="colQty" Header="Qty" Binding="{Binding Quantity}" IsReadOnly="True" Width="Auto" MinWidth="35"/>
+                            <DataGridTextColumn x:Name="colHost" Header="Host" Binding="{Binding HostName}" IsReadOnly="True" Width="*" MinWidth="70"/>
+                            <DataGridTextColumn x:Name="colId" Header="ID" Binding="{Binding Id}" IsReadOnly="True" Width="Auto" MinWidth="55"/>
+
+                            <!-- Revert/Exclude button column -->
+                            <DataGridTemplateColumn Header="✕" Width="35" IsReadOnly="True">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="✕"
+                                                Click="BtnRevertRow_Click"
+                                                Visibility="{Binding IsChanged, Converter={StaticResource BoolToVis}}"
+                                                Background="Transparent" BorderThickness="0"
+                                                Foreground="#D32F2F" FontWeight="Bold" FontSize="14"
+                                                Cursor="Hand" Padding="0" Margin="0"
+                                                ToolTip="Exclude this rebar from changes / Revert to original"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <TextBlock x:Name="txtNoData" 
-                               Text="No part selected. Click 'PICK PART' to start." 
-                               VerticalAlignment="Center" 
-                               HorizontalAlignment="Center" 
-                               Foreground="#CCCCCC" 
+                    <TextBlock x:Name="txtNoData"
+                               Text="No part selected. Click 'PICK PART' to start."
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Center"
+                               Foreground="#CCCCCC"
                                FontSize="14"
                                Visibility="Visible"/>
                 </Grid>
 
                 <!-- Column Visibility Sidebar -->
-                <Border Grid.Column="1" Width="160" Background="#FBFBFB" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="1,0,0,0">
-                    <StackPanel Margin="15,15,10,15">
-                        <TextBlock Text="VISIBLE COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,10,15"/>
-                        
-                        <CheckBox Content="Mark/Position" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colMark" Margin="0,0,0,10"/>
-                        <CheckBox Content="SEQ" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSeq" Margin="0,0,0,10"/>
-                        <CheckBox Content="Name" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colName" Margin="0,0,0,10"/>
-                        <CheckBox Content="Size" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSize" Margin="0,0,0,10"/>
-                        <CheckBox Content="Grade" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colGrade" Margin="0,0,0,10"/>
-                        <CheckBox Content="Spacing" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSpacing" Margin="0,0,0,10"/>
-                        <CheckBox Content="Quantity" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colQty" Margin="0,0,0,10"/>
-                        <CheckBox Content="Host Object" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colHost" Margin="0,0,0,10"/>
-                        <CheckBox Content="Object ID" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colId" Margin="0,0,0,10"/>
-                        
-                        <Separator Margin="0,10" Background="#EEEEEE"/>
-                        <TextBlock Text="Tips: Toggle columns to reduce horizontal clutter." FontSize="10" Foreground="#AAAAAA" TextWrapping="Wrap" FontStyle="Italic"/>
+                <Border Grid.Column="1" Width="150" Background="#FBFBFB" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="1,0,0,0">
+                    <StackPanel Margin="12,12,8,12">
+                        <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,10,12"/>
+
+                        <CheckBox Content="Mark" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colMark" Margin="0,0,0,8"/>
+                        <CheckBox Content="SEQ" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSeq" Margin="0,0,0,8"/>
+                        <CheckBox Content="Name" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colName" Margin="0,0,0,8"/>
+                        <CheckBox Content="Size" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSize" Margin="0,0,0,8"/>
+                        <CheckBox Content="Grade" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colGrade" Margin="0,0,0,8"/>
+                        <CheckBox Content="Length" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colLength" Margin="0,0,0,8"/>
+                        <CheckBox Content="Spacing" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSpacing" Margin="0,0,0,8"/>
+                        <CheckBox Content="Qty" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colQty" Margin="0,0,0,8"/>
+                        <CheckBox Content="Host" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colHost" Margin="0,0,0,8"/>
+                        <CheckBox Content="ID" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colId" Margin="0,0,0,8"/>
                     </StackPanel>
                 </Border>
             </Grid>
         </Border>
 
-        <!-- Footer / Action Bar -->
-        <Border Grid.Row="2" Background="{DynamicResource BackgroundWhiteBrush}" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="Status:" Foreground="#999" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryBlueBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <TextBlock Text="Start No:" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="#555" FontWeight="SemiBold"/>
-                    <TextBox Text="{Binding StartingNumber, UpdateSourceTrigger=PropertyChanged}" Width="50" Height="36" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,10,0" BorderBrush="#CCC"/>
-                    
-                    <Button Content="ASSIGN NUMBERS" 
-                            Click="BtnRunNumbering_Click" 
-                            Style="{StaticResource PrimaryButtonStyle}" 
-                            Width="140" Height="36" Margin="0,0,10,0"/>
-                    
-                    <Button Content="REASSIGN ALL" 
-                            Click="BtnReassignAll_Click" 
-                            Style="{StaticResource PrimaryButtonStyle}" 
-                            Background="#FF9800" BorderBrush="#E68A00"
-                            Width="120" Height="36" Margin="0,0,15,0"/>
-
-                    <Button Content="EXPORT TO JSON" 
-                            Click="BtnExportJson_Click"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Background="#4CAF50" BorderBrush="#45a049"
-                            Width="130" Height="36"/>
-                </StackPanel>
-            </Grid>
+        <!-- Footer - Status -->
+        <Border Grid.Row="2" Background="{DynamicResource BackgroundWhiteBrush}" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="10,6">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Status:" Foreground="#999" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryBlueBrush}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

@@ -160,13 +160,10 @@
     <!-- Card/Container Style -->
     <Style x:Key="CardStyle" TargetType="Border">
         <Setter Property="Background" Value="{StaticResource BackgroundWhiteBrush}"/>
-        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="Padding" Value="20"/>
-        <Setter Property="Effect">
-            <Setter.Value>
-                <DropShadowEffect BlurRadius="15" ShadowDepth="2" Opacity="0.05" Color="{StaticResource TextDarkColor}"/>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="BorderBrush" Value="{StaticResource BorderGreyBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
 
     <!-- Toggle Tab Button Style -->

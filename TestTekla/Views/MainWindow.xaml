@@ -47,7 +47,6 @@
                     <!-- Sidebar Header -->
                     <StackPanel Grid.Row="0" Margin="20,30,20,30">
                         <TextBlock Text="TEKLA TOOLS" Foreground="{DynamicResource TextLightBrush}" FontSize="22" FontWeight="Bold"/>
-                        <TextBlock Text="Minimalist Edition" Foreground="#888888" FontSize="12" Margin="0,5,0,0"/>
                     </StackPanel>
 
                     <!-- MODEL MENU -->
@@ -82,28 +81,15 @@
                     </StackPanel>
 
                     <!-- Footer -->
-                    <StackPanel Grid.Row="2" Margin="20,0,20,30">
-                        <TextBlock Text="v1.1.0 - Minimalist" Foreground="#666" FontSize="12" HorizontalAlignment="Center"/>
+                    <StackPanel Grid.Row="2" Margin="20,0,20,20">
                     </StackPanel>
                 </Grid>
             </Border>
 
             <!-- Main Content Area -->
             <Grid Grid.Column="1" Background="{DynamicResource BackgroundWhiteBrush}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="70"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <!-- Top Header -->
-                <Border Grid.Row="0" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,0,0,1" Padding="30,0">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock x:Name="txtCurrentTool" Text="Welcome" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource TextDarkBrush}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-
                 <!-- Page Content Container -->
-                <ContentControl Grid.Row="1" x:Name="MainContentControl" Margin="20"/>
+                <ContentControl x:Name="MainContentControl" Margin="10"/>
             </Grid>
         </Grid>
     </Grid>

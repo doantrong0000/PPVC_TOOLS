@@ -178,6 +178,152 @@ namespace TeklaApp.ViewModels
             }
         }
 
+        public void SplitRebarDistribution()
+        {
+            if (!_teklaModel.IsConnected()) return;
+
+            try
+            {
+                Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
+                Tekla.Structures.Model.ModelObject pickedObject = picker.PickObject(Tekla.Structures.Model.UI.Picker.PickObjectEnum.PICK_ONE_REINFORCEMENT, "Select rebar group to split");
+
+                if (pickedObject is RebarGroup rebarGroup)
+                {
+                    // Check bar count
+                    var geometries = rebarGroup.GetRebarGeometries(true);
+                    if (geometries.Count < 3)
+                    {
+                        Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Split failed: Rebar group must have at least 3 bars.");
+                        return;
+                    }
+
+                    // Split point selection
+                    Point pickedPoint = picker.PickPoint("Pick split point on distribution range");
+
+                    // Projection logic
+                    Point start = rebarGroup.StartPoint;
+                    Point end = rebarGroup.EndPoint;
+                    Vector v = new Vector(end.X - start.X, end.Y - start.Y, end.Z - start.Z);
+                    Vector u = new Vector(pickedPoint.X - start.X, pickedPoint.Y - start.Y, pickedPoint.Z - start.Z);
+
+                    double vLenSq = v.X * v.X + v.Y * v.Y + v.Z * v.Z;
+                    if (vLenSq < 1.0) return;
+
+                    double t = (u.X * v.X + u.Y * v.Y + u.Z * v.Z) / vLenSq;
+
+                    if (t <= 0.05 || t >= 0.95)
+                    {
+                        Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Split failed: Position too close to start/end.");
+                        return;
+                    }
+
+                    Point splitPoint = new Point(start.X + t * v.X, start.Y + t * v.Y, start.Z + t * v.Z);
+
+                    // Create second group by cloning the original in-place
+                    // This ensures 100% properties (Hooks, UDAs, Numbering, etc.) are preserved
+                    RebarGroup segment2 = null;
+
+                    // Create a temporary clone using Copy (offset 0,0,0)
+                    // Note: Copy returns true/false, doesn't return the object. We need to find it or use a different way.
+                    // Better way for cloning properties is manual copying of all known fields + UDAs
+                    // since we need to modify the range before/after insertion.
+
+                    segment2 = new RebarGroup();
+
+                    // 1. Core Properties
+                    segment2.Name = rebarGroup.Name;
+                    segment2.Size = rebarGroup.Size;
+                    segment2.Grade = rebarGroup.Grade;
+                    segment2.Class = rebarGroup.Class;
+                    segment2.Father = rebarGroup.Father;
+                    segment2.NumberingSeries = rebarGroup.NumberingSeries;
+
+                    // 2. Shape and Distribution
+                    foreach (Polygon poly in rebarGroup.Polygons) segment2.Polygons.Add(poly);
+                    segment2.SpacingType = rebarGroup.SpacingType;
+                    segment2.Spacings = rebarGroup.Spacings;
+                    segment2.ExcludeType = rebarGroup.ExcludeType;
+
+                    // Deep copy RadiusValues
+                    segment2.RadiusValues.Clear();
+                    foreach (object rv in rebarGroup.RadiusValues) segment2.RadiusValues.Add(rv);
+
+                    // 3. Offsets
+                    segment2.OnPlaneOffsets = rebarGroup.OnPlaneOffsets;
+                    segment2.FromPlaneOffset = rebarGroup.FromPlaneOffset;
+
+                    // 4. HOOKS (Pre-Insert)
+                    segment2.StartHook.Shape = rebarGroup.StartHook.Shape;
+                    segment2.StartHook.Angle = rebarGroup.StartHook.Angle;
+                    segment2.StartHook.Radius = rebarGroup.StartHook.Radius;
+                    segment2.StartHook.Length = rebarGroup.StartHook.Length;
+
+                    segment2.EndHook.Shape = rebarGroup.EndHook.Shape;
+                    segment2.EndHook.Angle = rebarGroup.EndHook.Angle;
+                    segment2.EndHook.Radius = rebarGroup.EndHook.Radius;
+                    segment2.EndHook.Length = rebarGroup.EndHook.Length;
+
+                    // 5. Additional properties
+                    segment2.StirrupType = rebarGroup.StirrupType;
+
+                    // Adjust ranges
+                    double originalEndOffset = rebarGroup.EndFromPlaneOffset;
+                    rebarGroup.EndPoint = splitPoint;
+                    rebarGroup.EndFromPlaneOffset = 0;
+
+                    segment2.StartPoint = splitPoint;
+                    segment2.EndPoint = end;
+                    segment2.StartFromPlaneOffset = 0;
+                    segment2.EndFromPlaneOffset = originalEndOffset;
+
+                    if (rebarGroup.Modify())
+                    {
+                        if (segment2.Insert())
+                        {
+                            // 6. Mandatory Re-apply Hook properties after Insert
+                            // In some Tekla versions, hooks must be applied to an existing object
+                            segment2.StartHook.Shape = rebarGroup.StartHook.Shape;
+                            segment2.StartHook.Angle = rebarGroup.StartHook.Angle;
+                            segment2.StartHook.Radius = rebarGroup.StartHook.Radius;
+                            segment2.StartHook.Length = rebarGroup.StartHook.Length;
+
+                            segment2.EndHook.Shape = rebarGroup.EndHook.Shape;
+                            segment2.EndHook.Angle = rebarGroup.EndHook.Angle;
+                            segment2.EndHook.Radius = rebarGroup.EndHook.Radius;
+                            segment2.EndHook.Length = rebarGroup.EndHook.Length;
+
+                            // 7. Copy UDAs (User Defined Attributes)
+                            System.Collections.Hashtable udas = new System.Collections.Hashtable();
+                            if (rebarGroup.GetAllUserProperties(ref udas))
+                            {
+                                foreach (System.Collections.DictionaryEntry entry in udas)
+                                {
+                                    string key = entry.Key?.ToString();
+                                    if (!string.IsNullOrEmpty(key))
+                                    {
+                                        if (entry.Value is string strVal)
+                                            segment2.SetUserProperty(key, strVal);
+                                        else if (entry.Value is int intVal)
+                                            segment2.SetUserProperty(key, intVal);
+                                        else if (entry.Value is double dblVal)
+                                            segment2.SetUserProperty(key, dblVal);
+                                    }
+                                }
+                            }
+
+                            segment2.Modify();
+                            _teklaModel.Commit();
+                            Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Split successful (Hooks & UDAs verified).");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Split error: " + ex.Message);
+            }
+        }
+
         public void DrawOpeningDiagonal()
         {
             var dh = new Tekla.Structures.Drawing.DrawingHandler();
@@ -204,13 +350,13 @@ namespace TeklaApp.ViewModels
 
                     // Vẽ đường chéo 1
                     var line1 = new Tekla.Structures.Drawing.Line(view, corner1, corner2);
-                    line1.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.DashedLine;
+                    line1.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SlashedLine;
                     line1.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Black;
                     line1.Insert();
 
                     // Vẽ đường chéo 2
                     var line2 = new Tekla.Structures.Drawing.Line(view, corner3, corner4);
-                    line2.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.DashedLine;
+                    line2.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SlashedLine;
                     line2.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Black;
                     line2.Insert();
 

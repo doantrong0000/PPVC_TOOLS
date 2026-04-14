@@ -14,6 +14,17 @@ namespace TeklaApp.Views
         {
             InitializeComponent();
             _viewModel = new MainViewModel();
+
+            // Auto-detect: if a drawing is open, switch to Drawing view
+            try
+            {
+                var dh = new Tekla.Structures.Drawing.DrawingHandler();
+                if (dh.GetActiveDrawing() != null)
+                {
+                    rbDrawing.IsChecked = true;
+                }
+            }
+            catch { /* Not in drawing mode, stay on Model */ }
         }
 
         private void Mode_Checked(object sender, RoutedEventArgs e)
@@ -25,32 +36,27 @@ namespace TeklaApp.Views
                 pnlModelMenu.Visibility = Visibility.Visible;
                 pnlDrawingMenu.Visibility = Visibility.Collapsed;
                 if (MainContentControl != null) MainContentControl.Content = null;
-                if (txtCurrentTool != null) txtCurrentTool.Text = "Model Features Dashboard";
             }
             else if (rbDrawing?.IsChecked == true)
             {
                 pnlModelMenu.Visibility = Visibility.Collapsed;
                 pnlDrawingMenu.Visibility = Visibility.Visible;
                 if (MainContentControl != null) MainContentControl.Content = null;
-                if (txtCurrentTool != null) txtCurrentTool.Text = "Drawing Features Dashboard";
             }
         }
 
         private void BtnStepTag_Click(object sender, RoutedEventArgs e)
         {
-            txtCurrentTool.Text = "Step Tag Generator (Drawing)";
             MainContentControl.Content = new StepTagPage();
         }
 
         private void BtnRebarTagScanner_Click(object sender, RoutedEventArgs e)
         {
-            txtCurrentTool.Text = "Drawing Rebar Tag Scanner";
             MainContentControl.Content = new DrawingRebarTagScannerPage();
         }
 
         private void BtnRebarTools_Click(object sender, RoutedEventArgs e)
         {
-            txtCurrentTool.Text = "Rebar Tools 🌟";
             MainContentControl.Content = new RebarToolsPage();
         }
 

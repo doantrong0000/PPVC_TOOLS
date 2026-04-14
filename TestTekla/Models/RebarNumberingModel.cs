@@ -10,52 +10,54 @@ namespace TeklaApp.Models
     {
         public string GetRebarSignature(Reinforcement rebar)
         {
-            // 1. Name
-            string name = rebar.Name ?? "";
-
-            // 2. Size (Diameter)
+            // 1. Size (Diameter)
             string size = "";
             rebar.GetReportProperty("SIZE", ref size);
 
-            // 3. Length (Total Length)
+            // 2. Length (Total Length) - round to nearest 5mm for tolerance
             double length = 0;
             rebar.GetReportProperty("LENGTH", ref length);
-            string lengthStr = Math.Round(length, 0).ToString();
+            string lengthStr = (Math.Round(length / 5.0, 0) * 5).ToString();
 
-            // 4. Shape (Geometric Key)
+            // 3. Shape (Geometric Key)
             string shapeKey = GetShapeKey(rebar);
 
-            // 5. Hooks
+            // 4. Hooks
             string hookKey = GetHookKey(rebar);
 
-            // Filter/Grouping Rule: Identical name, size, hook, length, shape
-            return $"{name}|{size}|{lengthStr}|{shapeKey}|{hookKey}";
+            // Grouping: size, length(±5mm), shape(±5mm), hooks — NOT name (fabrication doesn't care about name)
+            return $"{size}|{lengthStr}|{shapeKey}|{hookKey}";
         }
 
-        public void AutoAssignPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
+        public string GetAutoPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
         {
             string prefix = "";
 
             if (hostPart != null)
             {
                 string hostName = (hostPart.Name ?? "").ToUpper();
-                bool isSlab = MatchesKeywords(hostName, slabKeys) || hostPart is ContourPlate;
                 bool isWall = MatchesKeywords(hostName, wallKeys);
                 bool isBeam = MatchesKeywords(hostName, beamKeys);
+                bool isSlab = MatchesKeywords(hostName, slabKeys);
+
+                if (!isWall && !isBeam && !isSlab)
+                {
+                    if (hostPart is ContourPlate) isSlab = true;
+                }
 
                 if (isSlab)
                 {
                     // For Slabs: Prefix depends on the REBAR orientation
                     prefix = GetRebarDirectionPrefix(rebar, false);
                 }
-                else if (isWall)
+                else if (isWall || isBeam)
                 {
-                    // For Walls: Prefix depends on REBAR orientation (Z=V, X/Y=H)
-                    prefix = GetRebarDirectionPrefix(rebar, true);
+                    // For Walls and Beams: Prefix depends on the HOST orientation (Y=V, X=H)
+                    prefix = GetPartDirectionPrefix(hostPart);
                 }
                 else
                 {
-                    // For Beams and others fallback: Prefix depends on the HOST orientation
+                    // Fallback
                     prefix = GetPartDirectionPrefix(hostPart);
                 }
             }
@@ -65,9 +67,16 @@ namespace TeklaApp.Models
                 prefix = GetRebarDirectionPrefix(rebar, false);
             }
 
+            return prefix;
+        }
+
+        public void AutoAssignPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
+        {
+            string prefix = GetAutoPrefix(rebar, hostPart, slabKeys, beamKeys, wallKeys);
+
             if (!string.IsNullOrEmpty(prefix))
             {
-                if (rebar.NumberingSeries != null)
+                if (rebar.NumberingSeries != null && rebar.NumberingSeries.Prefix != prefix)
                 {
                     rebar.NumberingSeries.Prefix = prefix;
                     rebar.Modify();
@@ -145,6 +154,28 @@ namespace TeklaApp.Models
             {
                 vec = new Vector(beam.EndPoint.X - beam.StartPoint.X, beam.EndPoint.Y - beam.StartPoint.Y, 0);
             }
+            else if (part is ContourPlate cp)
+            {
+                double maxLen = -1;
+                Vector bestVec = null;
+                var points = cp.Contour.ContourPoints;
+                if (points != null && points.Count > 1)
+                {
+                    for (int i = 0; i < points.Count; i++)
+                    {
+                        var p1 = points[i] as ContourPoint;
+                        var p2 = points[(i + 1) % points.Count] as ContourPoint;
+                        if (p1 != null && p2 != null)
+                        {
+                            Vector v = new Vector(p2.X - p1.X, p2.Y - p1.Y, 0);
+                            double len = v.GetLength();
+                            if (len > maxLen) { maxLen = len; bestVec = v; }
+                        }
+                    }
+                }
+                if (bestVec != null) vec = bestVec;
+                else vec = part.GetCoordinateSystem().AxisX;
+            }
             else
             {
                 // For other parts, use coordinate system main axis
@@ -174,10 +205,16 @@ namespace TeklaApp.Models
                     {
                         var p1 = poly.Points[i] as Tekla.Structures.Geometry3d.Point;
                         var p2 = poly.Points[i + 1] as Tekla.Structures.Geometry3d.Point;
-                        double len = Math.Round(Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2) + Math.Pow(p2.Z - p1.Z, 2)), 0);
+                        double len = Math.Round(Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2) + Math.Pow(p2.Z - p1.Z, 2)) / 5.0, 0) * 5;
                         lengths.Add(len);
                     }
-                    polyKeys.Add(string.Join("-", lengths));
+                    // Normalize: chọn thứ tự nhỏ hơn giữa thuận/đảo
+                    // để "10-20-30" và "30-20-10" ra cùng 1 key
+                    string forward = string.Join("-", lengths);
+                    var reversed = new List<double>(lengths);
+                    reversed.Reverse();
+                    string backward = string.Join("-", reversed);
+                    polyKeys.Add(string.Compare(forward, backward, StringComparison.Ordinal) <= 0 ? forward : backward);
                 }
             }
             return string.Join(";", polyKeys);
