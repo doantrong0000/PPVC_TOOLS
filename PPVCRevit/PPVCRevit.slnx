@@ -65,4 +65,8 @@
     <File Path="Changelog.md" />
     <File Path="Readme.md" />
   </Folder>
+  <Project Path="PPVCREVIT/PPVCREVIT.csproj">
+    <BuildType Solution="Debug|*" Project="Debug.R22" />
+    <BuildType Solution="Release|*" Project="Release.R22" />
+  </Project>
 </Solution>
