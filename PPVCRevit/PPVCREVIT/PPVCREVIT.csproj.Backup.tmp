@@ -11,6 +11,14 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <None Remove="Family\COG_Marker.rfa" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Family\COG_Marker.rfa" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!-- Revit Platform -->
         <PackageReference Include="Nice3point.Revit.Toolkit" Version="$(RevitVersion).*" />
         <PackageReference Include="Nice3point.Revit.Extensions" Version="$(RevitVersion).*" />
@@ -50,14 +58,6 @@
     <ItemGroup>
       <Folder Include="Commands\Drawing\" />
       <Folder Include="Commands\Rebar\" />
-    </ItemGroup>
-
-    <!-- Copy Family files (.rfa) to output directory -->
-    <ItemGroup>
-      <None Include="Family\*.rfa">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <Link>Family\%(Filename)%(Extension)</Link>
-      </None>
     </ItemGroup>
 
 </Project>
