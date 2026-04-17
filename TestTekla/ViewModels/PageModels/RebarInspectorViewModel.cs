@@ -53,9 +53,9 @@ namespace TeklaApp.ViewModels
                 _slabKeywords = settings.SlabKeywords;
                 _beamKeywords = settings.BeamKeywords;
                 _wallKeywords = settings.WallKeywords;
-                
+
                 LoadSizeColorMapping(settings);
-                
+
                 OnPropertyChanged(nameof(StartingNumber));
                 OnPropertyChanged(nameof(SizeColorTable));
             }
@@ -284,7 +284,7 @@ namespace TeklaApp.ViewModels
 
                     if (item.Name != item.OriginalName) rebar.Name = item.Name;
                     // Size and Grade are report properties, set via class if possible
-                    if (item.Grade != item.OriginalGrade) rebar.Grade = item.Grade;
+                    //if (item.Grade != item.OriginalGrade) rebar.Grade = item.Grade;
 
                     // Apply Seq number
                     if (item.Seq != item.OriginalSeq)
@@ -305,6 +305,15 @@ namespace TeklaApp.ViewModels
                     {
                         if (rebar.NumberingSeries != null)
                             rebar.NumberingSeries.Prefix = item.Position;
+                    }
+
+                    // Apply Radius
+                    if (item.RadiusStr != item.OriginalRadiusStr)
+                    {
+                        if (double.TryParse(item.RadiusStr, out double radNum))
+                        {
+                            rebar.RadiusValues = new System.Collections.ArrayList { radNum };
+                        }
                     }
 
                     rebar.Modify();
@@ -365,12 +374,23 @@ namespace TeklaApp.ViewModels
                             spacing = spacingList.GroupBy(s => s).OrderByDescending(g => g.Count()).First().Key.ToString();
                     }
 
+                    string radiusVal = "";
+                    if (r.RadiusValues != null && r.RadiusValues.Count > 0) radiusVal = r.RadiusValues[0].ToString();
+
                     var item = new RebarInfoItem
                     {
-                        Name = name, Size = size, Grade = grade, Length = length,
-                        Position = pos, Seq = seq, Quantity = dQty, Id = idStr,
-                        TargetSpacing = spacing, HostName = hostMap.ContainsKey(idStr) ? hostMap[idStr] : "",
-                        ClassStr = r.Class.ToString()
+                        Name = name,
+                        Size = size,
+                        Grade = grade,
+                        Length = length,
+                        Position = pos,
+                        Seq = seq,
+                        Quantity = dQty,
+                        Id = idStr,
+                        TargetSpacing = spacing,
+                        HostName = hostMap.ContainsKey(idStr) ? hostMap[idStr] : "",
+                        ClassStr = r.Class.ToString(),
+                        RadiusStr = radiusVal
                     };
                     item.SaveOriginals();
                     Rebars.Add(item);
@@ -535,6 +555,9 @@ namespace TeklaApp.ViewModels
                         }
                     }
 
+                    string radiusVal = "";
+                    if (r.RadiusValues != null && r.RadiusValues.Count > 0) radiusVal = r.RadiusValues[0].ToString();
+
                     var item = new RebarInfoItem
                     {
                         Name = name,
@@ -547,7 +570,8 @@ namespace TeklaApp.ViewModels
                         Id = id,
                         TargetSpacing = spacing,
                         HostName = rebarToHostMap[id],
-                        ClassStr = r.Class.ToString()
+                        ClassStr = r.Class.ToString(),
+                        RadiusStr = radiusVal
                     };
                     item.SaveOriginals();
                     results.Add(item);
@@ -885,10 +909,10 @@ namespace TeklaApp.ViewModels
         public string PreviewAutoColor()
         {
             if (Rebars.Count == 0) return "No rebars loaded.";
-            
+
             var settings = SettingsService.LoadSettings();
             LoadSizeColorMapping(settings);
-            
+
             if (SizeColorTable == null || SizeColorTable.Count == 0) return "No mapping rules defined in Settings.";
 
             int count = 0;
@@ -908,6 +932,58 @@ namespace TeklaApp.ViewModels
             }
 
             return $"Preview: {count} rebars assigned Color Class based on rule. Click APPLY to commit.";
+        }
+
+        private double GetManualBendingRadius(double sizeNum)
+        {
+            int size = (int)Math.Round(sizeNum);
+            switch (size)
+            {
+                case 6: return 12.00;
+                case 8: return 16.00;
+                case 10: return 20.00;
+                case 12: return 24.00;
+                case 13: return 24.00;
+                case 14: return 28.00;
+                case 16: return 32.00;
+                case 18: return 63.00; // 3.5 * size
+                case 20: return 70.00;
+                case 22: return 80.00;
+                case 25: return 87.00;
+                case 28: return 100.00;
+                case 32: return 112.00;
+                case 40: return 140.00;
+                case 50: return 175.00;
+                default:
+                    if (size <= 16) return size * 2.0;
+                    return size * 3.5;
+            }
+        }
+
+        public string PreviewAutoRadius()
+        {
+            if (Rebars.Count == 0) return "No rebars loaded.";
+            int count = 0;
+
+            foreach (var item in Rebars)
+            {
+                if (item.SizeNum > 0)
+                {
+                    double targetRadius = GetManualBendingRadius(item.SizeNum);
+
+                    if (targetRadius > 0)
+                    {
+                        string newRadiusStr = targetRadius.ToString("0.##");
+                        if (item.RadiusStr != newRadiusStr)
+                        {
+                            item.RadiusStr = newRadiusStr;
+                            count++;
+                        }
+                    }
+                }
+            }
+
+            return $"Preview: {count} rebars assigned manual bending radius. Click APPLY to commit.";
         }
 
         // ==============================================================================
@@ -1017,43 +1093,48 @@ namespace TeklaApp.ViewModels
 
             double length = 0;
             rebar.GetReportProperty("LENGTH", ref length);
-            string lengthStr = (Math.Round(length / 5.0, 0) * 5).ToString();
 
             string shapeKey = GetShapeKey(rebar);
             string hookKey = GetHookKey(rebar);
 
-            return $"{size}|{lengthStr}|{shapeKey}|{hookKey}";
+            return $"{size}|{length}|{shapeKey}|{hookKey}";
         }
 
         private string GetShapeKey(Reinforcement rebar)
         {
-            System.Collections.ArrayList polygons = null;
-            if (rebar is RebarGroup group) polygons = group.Polygons;
-            else if (rebar is SingleRebar single) polygons = new System.Collections.ArrayList { single.Polygon };
+            // 1. Lấy mã Shape (ví dụ: 0, 1, 2, 14...) hoặc tên Shape
+            string shapeInternalName = "";
+            rebar.GetReportProperty("SHAPE", ref shapeInternalName);
 
-            if (polygons == null || polygons.Count == 0) return "NoShape";
+            // 2. Danh sách các thuộc tính kích thước cần lấy
+            // Tekla có tối đa từ A đến l (hoặc hơn tùy phiên bản), thông thường A-G là đủ
+            string[] dimProperties = { "DIM_A", "DIM_B", "DIM_C", "DIM_D", "DIM_E", "DIM_F", "DIM_G" };
+            List<string> dimensions = new List<string>();
 
-            List<string> polyKeys = new List<string>();
-            foreach (var obj in polygons)
+            foreach (var prop in dimProperties)
             {
-                if (obj is Tekla.Structures.Model.Polygon poly)
+                double val = 0;
+                if (rebar.GetReportProperty(prop, ref val) && val > 0)
                 {
-                    List<double> lengths = new List<double>();
-                    for (int i = 0; i < poly.Points.Count - 1; i++)
-                    {
-                        var p1 = poly.Points[i] as Tekla.Structures.Geometry3d.Point;
-                        var p2 = poly.Points[i + 1] as Tekla.Structures.Geometry3d.Point;
-                        double len = Math.Round(Math.Sqrt(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2) + Math.Pow(p2.Z - p1.Z, 2)) / 5.0, 0) * 5;
-                        lengths.Add(len);
-                    }
-                    string forward = string.Join("-", lengths);
-                    var reversed = new List<double>(lengths);
-                    reversed.Reverse();
-                    string backward = string.Join("-", reversed);
-                    polyKeys.Add(string.Compare(forward, backward, StringComparison.Ordinal) <= 0 ? forward : backward);
+                    // Làm tròn đến 5mm để đồng bộ như logic trước của bạn
+                    double roundedVal = Math.Round(val / 5.0, 0) * 5;
+                    dimensions.Add($"{prop.Last()}={roundedVal}");
                 }
             }
-            return string.Join(";", polyKeys);
+
+            // 3. Kết hợp mã Shape và các kích thước
+            // Ví dụ trả về: "2|A=500-B=2000-C=500"
+            string dimsJoined = string.Join("-", dimensions);
+
+            // Xử lý đảo chiều (Symmetry) - Tránh việc vẽ ngược đầu đuôi tạo ra key khác nhau
+            var reversedDims = new List<string>(dimensions);
+            reversedDims.Reverse();
+            string dimsBackward = string.Join("-", reversedDims);
+
+            string finalDims = string.Compare(dimsJoined, dimsBackward, StringComparison.Ordinal) <= 0
+                               ? dimsJoined : dimsBackward;
+
+            return $"{shapeInternalName}|{finalDims}";
         }
 
         private string GetHookKey(Reinforcement rebar)
@@ -1073,7 +1154,7 @@ namespace TeklaApp.ViewModels
     public class RebarInfoItem : INotifyPropertyChanged
     {
         // === Backing fields ===
-        private string _position, _seq, _name, _size, _grade, _classStr, _targetSpacing, _hostName, _id;
+        private string _position, _seq, _name, _size, _grade, _classStr, _targetSpacing, _hostName, _id, _radiusStr;
         private double _length;
         private int _quantity;
         private bool _isIncluded = true;
@@ -1085,6 +1166,7 @@ namespace TeklaApp.ViewModels
         public string OriginalSize { get; private set; }
         public string OriginalGrade { get; private set; }
         public string OriginalClassStr { get; private set; }
+        public string OriginalRadiusStr { get; private set; }
 
         // === Editable properties ===
         public string Position { get => _position; set { if (_position != value) { _position = value; Notify(); Notify(nameof(IsChanged)); } } }
@@ -1093,6 +1175,7 @@ namespace TeklaApp.ViewModels
         public string Size { get => _size; set { if (_size != value) { _size = value; Notify(); Notify(nameof(IsChanged)); Notify(nameof(SizeNum)); } } }
         public string Grade { get => _grade; set { if (_grade != value) { _grade = value; Notify(); Notify(nameof(IsChanged)); } } }
         public string ClassStr { get => _classStr; set { if (_classStr != value) { _classStr = value; Notify(); Notify(nameof(IsChanged)); } } }
+        public string RadiusStr { get => _radiusStr; set { if (_radiusStr != value) { _radiusStr = value; Notify(); Notify(nameof(IsChanged)); } } }
 
         // === Read-only (from Tekla, not editable) ===
         public double Length { get => _length; set { _length = value; Notify(); } }
@@ -1120,7 +1203,8 @@ namespace TeklaApp.ViewModels
             Position != OriginalPosition ||
             Size != OriginalSize ||
             Grade != OriginalGrade ||
-            ClassStr != OriginalClassStr;
+            ClassStr != OriginalClassStr ||
+            RadiusStr != OriginalRadiusStr;
 
         public bool IsIncluded
         {
@@ -1137,6 +1221,7 @@ namespace TeklaApp.ViewModels
             OriginalSize = Size;
             OriginalGrade = Grade;
             OriginalClassStr = ClassStr;
+            OriginalRadiusStr = RadiusStr;
             _isIncluded = true;
             Notify(nameof(IsChanged));
             Notify(nameof(IsIncluded));
@@ -1150,6 +1235,7 @@ namespace TeklaApp.ViewModels
             Size = OriginalSize;
             Grade = OriginalGrade;
             ClassStr = OriginalClassStr;
+            RadiusStr = OriginalRadiusStr;
             IsIncluded = true;
         }
 

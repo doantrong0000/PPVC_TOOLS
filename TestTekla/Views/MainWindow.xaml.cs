@@ -60,6 +60,11 @@ namespace TeklaApp.Views
             MainContentControl.Content = new RebarToolsPage();
         }
 
+        private void BtnCastUnitTools_Click(object sender, RoutedEventArgs e)
+        {
+            MainContentControl.Content = new CastUnitToolsPage();
+        }
+
 
         private void BtnOpeningX_Click(object sender, RoutedEventArgs e)
         {

@@ -29,11 +29,18 @@
             <StackPanel>
                 <!-- Title Row -->
                 <DockPanel LastChildFill="True">
-                    <Button DockPanel.Dock="Right"
-                            Content="PICK PART"
-                            Click="BtnPickPart_Click"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Width="120" Height="36"/>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="REFRESH"
+                                Click="BtnRefresh_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#0288D1" BorderBrush="#0277BD"
+                                Width="90" Height="36" Margin="0,0,8,0"
+                                ToolTip="Làm mới dữ liệu từ Tekla"/>
+                        <Button Content="PICK PART"
+                                Click="BtnPickPart_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Width="120" Height="36"/>
+                    </StackPanel>
 
                     <StackPanel>
                         <TextBlock Text="REBAR MANAGER" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
@@ -58,14 +65,20 @@
                                 Click="BtnAutoColor_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#8E24AA" BorderBrush="#7B1FA2"
-                                Width="95" Height="36" Margin="0,0,4,4"
+                                Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Auto assign class based on rebar size"/>
-                                
+                        <Button Content="AUTO RADIUS"
+                                Click="BtnAutoRadius_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#D81B60" BorderBrush="#C2185B"
+                                Width="105" Height="36" Margin="0,0,4,4"
+                                ToolTip="Lấy tự động hệ số uốn (Bending Radius) cho thép từ Tekla Catalog"/>
+
                         <Button Content="⚙ SETTINGS"
                                 Click="BtnSettings_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#FAFAFA" BorderBrush="#DDDDDD" Foreground="#333333"
-                                Width="95" Height="36" Margin="0,0,8,4"
+                                Width="105" Height="36" Margin="0,0,8,4"
                                 ToolTip="Configure Exclusions, Auto V/H Keywords, and Auto Color mappings"/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
@@ -80,7 +93,7 @@
 
                         <!-- Numbering -->
                         <TextBlock Text="Start:" FontSize="10" VerticalAlignment="Center" Margin="0,0,3,4" Foreground="#555" FontWeight="SemiBold"/>
-                        <TextBox Text="{Binding StartingNumber, UpdateSourceTrigger=PropertyChanged}" Width="40" Height="28" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,4,4" BorderBrush="#CCC"/>
+                        <TextBox Text="{Binding StartingNumber, UpdateSourceTrigger=PropertyChanged}" Width="50" Height="28" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" Margin="0,0,4,4" BorderBrush="#CCC"/>
                         <Button Content="NUMBERS"
                                 Click="BtnRunNumbering_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
@@ -193,6 +206,7 @@
                             <DataGridTextColumn x:Name="colSize" Header="Size" Binding="{Binding Size, UpdateSourceTrigger=PropertyChanged}" SortMemberPath="SizeNum" Width="Auto" MinWidth="45"/>
                             <DataGridTextColumn x:Name="colGrade" Header="Grade" Binding="{Binding Grade, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="45"/>
                             <DataGridTextColumn x:Name="colClass" Header="Class" Binding="{Binding ClassStr, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="45"/>
+                            <DataGridTextColumn x:Name="colRadius" Header="Radius" Binding="{Binding RadiusStr, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="50"/>
 
                             <!-- Read-only columns -->
                             <DataGridTextColumn x:Name="colLength" Header="Length" Binding="{Binding Length}" IsReadOnly="True" Width="Auto" MinWidth="55"/>
@@ -237,6 +251,7 @@
                         <CheckBox Content="Name" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colName" Margin="0,0,0,8"/>
                         <CheckBox Content="Size" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSize" Margin="0,0,0,8"/>
                         <CheckBox Content="Grade" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colGrade" Margin="0,0,0,8"/>
+                        <CheckBox Content="Radius" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colRadius" Margin="0,0,0,8"/>
                         <CheckBox Content="Length" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colLength" Margin="0,0,0,8"/>
                         <CheckBox Content="Spacing" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSpacing" Margin="0,0,0,8"/>
                         <CheckBox Content="Qty" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colQty" Margin="0,0,0,8"/>
@@ -254,6 +269,20 @@
                 <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryBlueBrush}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
+
+        <!-- Loading Overlay -->
+        <Grid x:Name="LoadingOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#99FFFFFF">
+            <Border Background="White" CornerRadius="8" Padding="20,15" HorizontalAlignment="Center" VerticalAlignment="Center" 
+                    BorderBrush="#DDDDDD" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect Color="#000000" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>
+                </Border.Effect>
+                <StackPanel>
+                    <ProgressBar IsIndeterminate="True" Width="120" Height="4" Margin="0,0,0,12" Foreground="#0288D1"/>
+                    <TextBlock x:Name="txtLoadingText" Text="Đang xử lý..." FontWeight="SemiBold" FontSize="14" Foreground="#333333" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>
 

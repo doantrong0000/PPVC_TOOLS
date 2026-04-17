@@ -59,12 +59,6 @@
       <Build Solution="Release.R26|*" Project="false" />
     </Project>
   </Folder>
-  <Folder Name="/Solution Items/">
-    <File Path=".gitignore" />
-    <File Path="build/appsettings.json" />
-    <File Path="Changelog.md" />
-    <File Path="Readme.md" />
-  </Folder>
   <Project Path="PPVCREVIT/PPVCREVIT.csproj">
     <BuildType Solution="Debug|*" Project="Debug.R22" />
     <BuildType Solution="Release|*" Project="Release.R22" />

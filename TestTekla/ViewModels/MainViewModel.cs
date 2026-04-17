@@ -408,5 +408,63 @@ namespace TeklaApp.ViewModels
             catch { return false; }
         }
 
+        public void AddPartsToCastUnit()
+        {
+            if (!_teklaModel.IsConnected()) return;
+
+            try
+            {
+                Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
+                
+                // 1. Pick the main part
+                ModelObject mainPartObj = picker.PickObject(Tekla.Structures.Model.UI.Picker.PickObjectEnum.PICK_ONE_PART, "Select the Main Part of the Cast Unit");
+                if (mainPartObj is Part mainPart)
+                {
+                    Assembly assembly = mainPart.GetAssembly();
+                    if (assembly != null)
+                    {
+                        // 2. Sweep select parts to add
+                        ModelObjectEnumerator subPartsEnum = picker.PickObjects(Tekla.Structures.Model.UI.Picker.PickObjectsEnum.PICK_N_PARTS, "Sweep select parts to add to Cast Unit (Main part and rebars will be ignored)");
+                        
+                        int addedCount = 0;
+                        while (subPartsEnum.MoveNext())
+                        {
+                            if (subPartsEnum.Current is Part subPart)
+                            {
+                                // Ignore the main part itself
+                                if (subPart.Identifier.ID != mainPart.Identifier.ID)
+                                {
+                                    if (assembly.Add(subPart))
+                                    {
+                                        addedCount++;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (addedCount > 0)
+                        {
+                            assembly.SetMainPart(mainPart);
+                            assembly.Modify();
+                            _teklaModel.Commit();
+                            Tekla.Structures.Model.Operations.Operation.DisplayPrompt($"[CAST UNIT] Successfully added {addedCount} parts to the Cast Unit. Main part reassigned.");
+                        }
+                        else
+                        {
+                            Tekla.Structures.Model.Operations.Operation.DisplayPrompt("[CAST UNIT] No new valid parts were selected to add.");
+                        }
+                    }
+                    else
+                    {
+                        Tekla.Structures.Model.Operations.Operation.DisplayPrompt("[CAST UNIT] Failed to get Assembly from selected Main Part.");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt("[CAST UNIT] Error: " + ex.Message);
+            }
+        }
+
     }
 }

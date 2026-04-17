@@ -52,7 +52,8 @@ namespace TeklaApp.ViewModels
         public string CreateStepTag(
             double textHeight, string fontName, string textColor,
             double surfLen, double stepHeight, double hatchLen,
-            string fillName = "ANSI31_13", double scaleX = 1.0, double scaleY = 1.0)
+            string fillName = "ANSI32_A", double scaleX = 0.05, double scaleY = 0.05)
+
         {
             DrawingHandler dh = new DrawingHandler();
             if (dh.GetActiveDrawing() == null)

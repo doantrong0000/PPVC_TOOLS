@@ -26,7 +26,7 @@ public sealed class CreateInstallerModule(IOptions<BuildOptions> buildOptions) :
         var versioningResult = await context.GetModule<ResolveVersioningModule>();
         var versioning = versioningResult.ValueOrDefault!;
 
-        var wixTarget = new File(Projects.PPVCRevit.FullName);
+        var wixTarget = new File(Projects.PPVCREVIT.FullName);
         var wixInstaller = new File(Projects.Installer.FullName);
         var wixToolFolder = await InstallWixAsync(context, cancellationToken);
 
@@ -53,7 +53,7 @@ public sealed class CreateInstallerModule(IOptions<BuildOptions> buildOptions) :
         await context.Shell.Command.ExecuteCommandLineTool(
             new GenericCommandLineToolOptions(builderFile.Path)
             {
-                Arguments = [versioning.Version, ..targetDirectories]
+                Arguments = [versioning.Version, .. targetDirectories]
             },
             new CommandExecutionOptions
             {

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
@@ -19,6 +19,9 @@
 		</Reference>
 		<Reference Include="Tekla.Structures.Model">
 			<HintPath>D:\Tekla Structure\2020.0\nt\bin\plugins\Tekla.Structures.Model.dll</HintPath>
+		</Reference>
+		<Reference Include="Tekla.Structures.Catalogs">
+			<HintPath>D:\Tekla Structure\2020.0\nt\bin\plugins\Tekla.Structures.Catalogs.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 

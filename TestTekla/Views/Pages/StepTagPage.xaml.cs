@@ -228,8 +228,8 @@ namespace TeklaApp.Views
                 string textColor = GetComboBoxText(cmbTextColor);
 
                 string result = _viewModel.CreateStepTag(
-                    V(txtTextHeight, 3.5), txtFontName.Text, textColor,
-                    V(txtSurfLen, 15), V(txtStepHeight, 10), V(txtHatchLen, 12), fillName, V(txtScaleX, 1.0), V(txtScaleY, 1.0));
+                    V(txtTextHeight, 1.5), txtFontName.Text, textColor,
+                    V(txtSurfLen, 150), V(txtStepHeight, 75), V(txtHatchLen, 75), fillName, V(txtScaleX, 0.05), V(txtScaleY, 0.05));
                 txtStatus.Text = result;
             }
             finally

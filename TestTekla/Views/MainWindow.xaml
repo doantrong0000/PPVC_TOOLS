@@ -54,6 +54,7 @@
                         <!-- Model Features (Views) -->
                         <TextBlock Text="MODEL FEATURES" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,0,0,10"/>
                         <Button Name="btnRebarTools" Content="Rebar Tools" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTools_Click"/>
+                        <Button Name="btnCastUnitTools" Content="Cast Unit Tools" Style="{StaticResource SideMenuButtonStyle}" Click="BtnCastUnitTools_Click"/>
 
 
                         <!-- Model Actions (Instant) -->

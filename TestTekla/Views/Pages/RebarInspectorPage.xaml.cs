@@ -17,12 +17,28 @@ namespace TeklaApp.Views.Pages
             dgRebars.ItemsSource = _viewModel.Rebars;
         }
 
-        private void BtnPickPart_Click(object sender, RoutedEventArgs e)
+        private async System.Threading.Tasks.Task ShowLoadingAsync(string message)
         {
-            try 
+            this.IsEnabled = false;
+            LoadingOverlay.Visibility = Visibility.Visible;
+            if (txtLoadingText != null) txtLoadingText.Text = message;
+            await System.Threading.Tasks.Task.Delay(50); // Cho phép UI update
+        }
+
+        private void HideLoading()
+        {
+            LoadingOverlay.Visibility = Visibility.Collapsed;
+            this.IsEnabled = true;
+        }
+
+        private async void BtnPickPart_Click(object sender, RoutedEventArgs e)
+        {
+            try
             {
                 var btn = sender as Button;
                 if (btn != null) btn.IsEnabled = false;
+
+                await ShowLoadingAsync("Vui lòng chọn đối tượng trong mô hình (Nhấn Esc hoặc chuột giữa để hoàn tất)...");
 
                 this.txtStatus.Text = "ACTIVE: Check Tekla selection...";
                 _viewModel.Rebars.Clear();
@@ -30,8 +46,8 @@ namespace TeklaApp.Views.Pages
 
                 string statusText;
                 var data = _viewModel.GetRebarData(out statusText);
-                
-                foreach (var item in data) 
+
+                foreach (var item in data)
                 {
                     _viewModel.Rebars.Add(item);
                 }
@@ -39,15 +55,81 @@ namespace TeklaApp.Views.Pages
                 this.txtSelectedPart.Text = _viewModel.SelectedObjectName;
                 this.txtStatus.Text = statusText;
                 this.txtNoData.Visibility = _viewModel.Rebars.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
-                
+
                 if (btn != null) btn.IsEnabled = true;
             }
             catch (Exception ex)
             {
                 this.txtSelectedPart.Text = "None";
                 this.txtStatus.Text = "Error: " + ex.Message;
+            }
+            finally
+            {
+                HideLoading();
                 var btn = sender as Button;
                 if (btn != null) btn.IsEnabled = true;
+            }
+        }
+
+        private async void BtnRefresh_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.Rebars.Count == 0) return;
+
+            bool hasChanges = false;
+            System.Text.StringBuilder changesInfo = new System.Text.StringBuilder();
+
+            foreach (var item in _viewModel.Rebars)
+            {
+                if (item.IsChanged)
+                {
+                    hasChanges = true;
+                    // Tóm tắt thay đổi
+                    string details = "";
+                    if (item.Name != item.OriginalName) details += $"Name: '{item.OriginalName}' -> '{item.Name}', ";
+                    if (item.Seq != item.OriginalSeq) details += $"Seq: '{item.OriginalSeq}' -> '{item.Seq}', ";
+                    if (item.Position != item.OriginalPosition) details += $"Pos: '{item.OriginalPosition}' -> '{item.Position}', ";
+                    if (item.Size != item.OriginalSize) details += $"Size: '{item.OriginalSize}' -> '{item.Size}', ";
+                    if (item.Grade != item.OriginalGrade) details += $"Grade: '{item.OriginalGrade}' -> '{item.Grade}', ";
+                    if (item.ClassStr != item.OriginalClassStr) details += $"Class: '{item.OriginalClassStr}' -> '{item.ClassStr}', ";
+                    if (item.RadiusStr != item.OriginalRadiusStr) details += $"Radius: '{item.OriginalRadiusStr}' -> '{item.RadiusStr}', ";
+
+                    if (details.EndsWith(", ")) details = details.Substring(0, details.Length - 2);
+
+                    changesInfo.AppendLine($"- ID {item.Id}: {details}");
+
+                    if (changesInfo.Length > 800)
+                    {
+                        changesInfo.AppendLine("... và các thay đổi khác nữa.");
+                        break;
+                    }
+                }
+            }
+
+            if (hasChanges)
+            {
+                var confirm = MessageBox.Show(
+                    $"Bạn có những thay đổi chưa được APPLY, nếu làm mới bây giờ sẽ bị mất:\n\n{changesInfo.ToString()}\n\nBạn có chắc chắn muốn làm mới (Refresh) không?",
+                    "Xác nhận Làm Mới",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Warning);
+
+                if (confirm != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            try
+            {
+                await ShowLoadingAsync("Đang tải lại dữ liệu từ Tekla...");
+                txtStatus.Text = "ACTIVE: Refreshing data from Tekla...";
+                string refreshResult = _viewModel.RefreshFromTekla();
+                txtStatus.Text = refreshResult;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
             }
         }
 
@@ -100,7 +182,7 @@ namespace TeklaApp.Views.Pages
             {
                 string colName = chk.Tag.ToString();
                 var column = this.dgRebars.FindName(colName) as DataGridColumn;
-                
+
                 if (column != null)
                 {
                     column.Visibility = chk.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
@@ -115,27 +197,67 @@ namespace TeklaApp.Views.Pages
 
         // ===== Preview Actions (update grid only, no Tekla write) =====
 
-        private void BtnAutoName_Click(object sender, RoutedEventArgs e)
+        private async void BtnAutoName_Click(object sender, RoutedEventArgs e)
         {
-            _viewModel.PreviewAutoName();
+            await ShowLoadingAsync("Đang tự động đánh tên...");
+            try
+            {
+                _viewModel.PreviewAutoName();
+            }
+            finally
+            {
+                HideLoading();
+            }
         }
 
-        private void BtnAutoVH_Click(object sender, RoutedEventArgs e)
+        private async void BtnAutoVH_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            txtStatus.Text = "Preview: Assigning V/H prefixes...";
-            string result = _viewModel.PreviewAutoVH();
-            txtStatus.Text = result;
-            dgRebars.Items.Refresh();
+            await ShowLoadingAsync("Đang gắn V/H...");
+            try
+            {
+                txtStatus.Text = "Preview: Assigning V/H prefixes...";
+                string result = _viewModel.PreviewAutoVH();
+                txtStatus.Text = result;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
+            }
         }
 
-        private void BtnAutoColor_Click(object sender, RoutedEventArgs e)
+        private async void BtnAutoColor_Click(object sender, RoutedEventArgs e)
         {
-            txtStatus.Text = "Preview: Assigning Class by Size...";
-            string result = _viewModel.PreviewAutoColor();
-            txtStatus.Text = result;
-            dgRebars.Items.Refresh();
+            await ShowLoadingAsync("Đang áp dụng tự động Auto Color theo bảng Size...");
+            try
+            {
+                txtStatus.Text = "Preview: Assigning Class by Size...";
+                string result = _viewModel.PreviewAutoColor();
+                txtStatus.Text = result;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
+            }
+        }
+
+        private async void BtnAutoRadius_Click(object sender, RoutedEventArgs e)
+        {
+            await ShowLoadingAsync("Đang áp dụng tự động Auto Radius theo bảng Size...");
+            try
+            {
+                txtStatus.Text = "Preview: Assigning Bending Radius by Size...";
+                string result = _viewModel.PreviewAutoRadius();
+                txtStatus.Text = result;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
+            }
         }
 
         private void BtnSettings_Click(object sender, RoutedEventArgs e)
@@ -144,24 +266,40 @@ namespace TeklaApp.Views.Pages
             window.ShowDialog();
         }
 
-        private void BtnRunNumbering_Click(object sender, RoutedEventArgs e)
+        private async void BtnRunNumbering_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            txtStatus.Text = "Preview: Numbering (skip existing)...";
-            string result = _viewModel.PreviewNumbering(false);
-            txtStatus.Text = result;
-            dgRebars.Items.Refresh();
+            await ShowLoadingAsync("Đang chạy tính toán chuỗi Numbering...");
+            try
+            {
+                txtStatus.Text = "Preview: Numbering (skip existing)...";
+                string result = _viewModel.PreviewNumbering(false);
+                txtStatus.Text = result;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
+            }
         }
 
-        private void BtnReassignAll_Click(object sender, RoutedEventArgs e)
+        private async void BtnReassignAll_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            txtStatus.Text = "Preview: Reassigning all numbers...";
-            string result = _viewModel.PreviewNumbering(true);
-            txtStatus.Text = result;
-            dgRebars.Items.Refresh();
+            await ShowLoadingAsync("Đang ép gán lại mới toàn bộ chuỗi Numbering...");
+            try
+            {
+                txtStatus.Text = "Preview: Reassigning all numbers...";
+                string result = _viewModel.PreviewNumbering(true);
+                txtStatus.Text = result;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
+            }
         }
 
         // ===== Row-level actions =====
@@ -205,7 +343,7 @@ namespace TeklaApp.Views.Pages
             txtStatus.Text = count > 0 ? $"Reverted {count} rebars to original values." : "No pending changes to revert.";
         }
 
-        private void BtnApply_Click(object sender, RoutedEventArgs e)
+        private async void BtnApply_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded."; return; }
 
@@ -229,13 +367,21 @@ namespace TeklaApp.Views.Pages
 
             if (confirm == MessageBoxResult.Yes)
             {
-                txtStatus.Text = "APPLYING changes to Tekla...";
-                string result = _viewModel.CommitChangesToTekla();
+                await ShowLoadingAsync("Đang áp dụng thay đổi vào Tekla...");
+                try
+                {
+                    txtStatus.Text = "APPLYING changes to Tekla...";
+                    string result = _viewModel.CommitChangesToTekla();
 
-                // Refresh from Tekla to show actual state
-                string refreshResult = _viewModel.RefreshFromTekla();
-                txtStatus.Text = result + " " + refreshResult;
-                dgRebars.Items.Refresh();
+                    // Refresh from Tekla to show actual state
+                    string refreshResult = _viewModel.RefreshFromTekla();
+                    txtStatus.Text = result + " " + refreshResult;
+                    dgRebars.Items.Refresh();
+                }
+                finally
+                {
+                    HideLoading();
+                }
             }
         }
     }

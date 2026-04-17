@@ -1,0 +1,46 @@
+<UserControl x:Class="TeklaApp.Views.Pages.CastUnitToolsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="Transparent">
+    <Grid Margin="10">
+        <StackPanel>
+            <!-- Guide -->
+            <Expander Header="📖 Guide - Cast Unit Tools" IsExpanded="True" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
+                <StackPanel Margin="10,5,10,10">
+                    <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
+                        <Run Text="Quickly manage and update Cast Units in your Tekla model." />
+                    </TextBlock>
+
+                    <TextBlock Text="INSTRUCTIONS - Add to Cast Unit:" FontWeight="Bold" Foreground="#107C41" FontSize="13" Margin="0,0,0,2"/>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="1. Run Tool:" />
+                        <Run Text=" Click the Add to Cast Unit button below."/>
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="2. Select Main Part:" />
+                        <Run Text=" Click the main part of the Cast Unit you want to add objects to."/>
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
+                        <Run FontWeight="Bold" Text="3. Sweep Select Objects:" />
+                        <Run Text=" Sweep select the parts you want to add. Rebars and the main part are automatically ignored. Press Middle Mouse Button to finish."/>
+                    </TextBlock>
+                </StackPanel>
+            </Expander>
+
+            <!-- Tools -->
+            <Border Background="#F9FEFF" BorderBrush="#B2EBF2" BorderThickness="1" Padding="10" CornerRadius="4">
+                <StackPanel>
+                    <TextBlock Text="CAST UNIT ACTIONS" FontSize="12" FontWeight="Bold" Foreground="#005A9E" Margin="0,0,0,10"/>
+                    <WrapPanel Orientation="Horizontal">
+                        <Button Name="btnAddPartsToCastUnit" Content="Add Parts to Cast Unit" Margin="0,0,10,10" Width="180" Height="40" Click="BtnAddPartsToCastUnit_Click" Background="#E1DFDD" BorderBrush="#CCCCCC" ToolTip="Select Main Part, then sweep select parts to add"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>
