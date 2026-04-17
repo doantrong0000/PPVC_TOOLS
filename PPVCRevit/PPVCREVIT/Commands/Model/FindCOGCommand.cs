@@ -14,6 +14,8 @@ namespace PPVCREVIT.Commands.Model
     [UsedImplicitly]
     [Transaction(TransactionMode.Manual)]
     public class FindCOGCommand : IExternalCommand
+
+
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -94,6 +96,7 @@ namespace PPVCREVIT.Commands.Model
         // Giá trị mặc định (fallback) nếu không lấy được từ vật liệu
         private const double DefaultDensitySteel = 7850.0;    // kg/m³
         private const double DefaultDensityConcrete = 2400.0;  // kg/m³
+        private const string CogMarkerFamilyName = "COG_Marker";
 
         /// <summary>
         /// Lấy khối lượng riêng (Density) từ vật liệu của cấu kiện.
@@ -333,25 +336,42 @@ namespace PPVCREVIT.Commands.Model
         }
 
         /// <summary>
-        /// Đặt Family Instance COG_Marker tại vị trí trọng tâm.
-        /// Kiểm tra family có trong project chưa, hiện thông báo nếu thiếu.
+        /// Kiểm tra family COG_Marker đã có trong project chưa.
+        /// Nếu có → trả về FamilySymbol đã activate.
+        /// Nếu chưa → trả về null.
         /// </summary>
-        private void PlaceCogMarkerInstance(Document doc, XYZ location)
+        public static FamilySymbol GetCogMarkerSymbol(Document doc)
         {
-            FamilySymbol symbol = FamilyLoaderService.GetCogMarkerSymbol(doc);
-
-            if (symbol == null)
-            {
-                TaskDialog.Show("Thiếu Family",
-                    "Không tìm thấy family 'COG_Marker' trong project.\n\n" +
-                    "Vui lòng load file COG_Marker.rfa vào project trước khi sử dụng chức năng này.\n" +
-                    "(Insert → Load Family → chọn file COG_Marker.rfa)");
-                return;
-            }
-
-            doc.Create.NewFamilyInstance(location, symbol, StructuralType.NonStructural);
+            return GetFamilySymbol(doc, CogMarkerFamilyName);
         }
+
+        /// <summary>
+        /// Tìm Family trong project theo tên và trả về FamilySymbol đầu tiên (đã activate).
+        /// Trả về null nếu không tìm thấy.
+        /// </summary>
+        public static FamilySymbol GetFamilySymbol(Document doc, string familyName)
+        {
+            Family family = new FilteredElementCollector(doc)
+                .OfClass(typeof(Family))
+                .Cast<Family>()
+                .FirstOrDefault(f => f.Name.Equals(familyName, StringComparison.OrdinalIgnoreCase));
+
+            if (family == null)
+                return null;
+
+            ElementId symbolId = family.GetFamilySymbolIds().FirstOrDefault();
+            if (symbolId == null || symbolId == ElementId.InvalidElementId)
+                return null;
+
+            FamilySymbol symbol = doc.GetElement(symbolId) as FamilySymbol;
+
+            if (symbol != null && !symbol.IsActive)
+                symbol.Activate();
+
+            return symbol;
+        }
+
     }
 
-  
-    }
+
+}

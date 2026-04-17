@@ -1,63 +1,63 @@
 ﻿<Project Sdk="Nice3point.Revit.Sdk/6.1.2">
 
-    <PropertyGroup>
-        <UseWPF>true</UseWPF>
-        <DeployAddin>false</DeployAddin>
-        <LaunchRevit>true</LaunchRevit>
-        <IsRepackable>false</IsRepackable>
-        <EnableDynamicLoading>true</EnableDynamicLoading>
-        <Configurations>Debug.R22;Debug.R23;Debug.R24;Debug.R25;Debug.R26</Configurations>
-        <Configurations>$(Configurations);Release.R22;Release.R23;Release.R24;Release.R25;Release.R26</Configurations>
-    </PropertyGroup>
+	<PropertyGroup>
+		<UseWPF>true</UseWPF>
+		<DeployAddin>false</DeployAddin>
+		<LaunchRevit>true</LaunchRevit>
+		<IsRepackable>false</IsRepackable>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<Configurations>Debug.R25;Debug.R26</Configurations>
+		<Configurations>$(Configurations);Release.R25;Release.R26</Configurations>
+	</PropertyGroup>
 
-    <ItemGroup>
-        <!-- Revit Platform -->
-        <PackageReference Include="Nice3point.Revit.Toolkit" Version="$(RevitVersion).*" />
-        <PackageReference Include="Nice3point.Revit.Extensions" Version="$(RevitVersion).*" />
-        <PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
-        <PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
+	<ItemGroup>
+		<!-- Revit Platform -->
+		<PackageReference Include="Nice3point.Revit.Toolkit" Version="$(RevitVersion).*" />
+		<PackageReference Include="Nice3point.Revit.Extensions" Version="$(RevitVersion).*" />
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPI" Version="$(RevitVersion).*" />
+		<PackageReference Include="Nice3point.Revit.Api.RevitAPIUI" Version="$(RevitVersion).*" />
 
-        <!-- Development References -->
-        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all" />
-    </ItemGroup>
+		<!-- Development References -->
+		<PackageReference Include="JetBrains.Annotations" Version="2025.2.4" PrivateAssets="all" />
+	</ItemGroup>
 
-    <ItemGroup>
-        <!-- Model Panel Icons -->
-        <Resource Include="Resources\Icons\CreateModule16.png" />
-        <Resource Include="Resources\Icons\CreateModule32.png" />
-        <Resource Include="Resources\Icons\EditModule16.png" />
-        <Resource Include="Resources\Icons\EditModule32.png" />
-        <Resource Include="Resources\Icons\ModuleManager16.png" />
-        <Resource Include="Resources\Icons\ModuleManager32.png" />
+	<ItemGroup>
+		<!-- Model Panel Icons -->
+		<Resource Include="Resources\Icons\CreateModule16.png" />
+		<Resource Include="Resources\Icons\CreateModule32.png" />
+		<Resource Include="Resources\Icons\EditModule16.png" />
+		<Resource Include="Resources\Icons\EditModule32.png" />
+		<Resource Include="Resources\Icons\ModuleManager16.png" />
+		<Resource Include="Resources\Icons\ModuleManager32.png" />
 
-        <!-- Rebar Panel Icons -->
-        <Resource Include="Resources\Icons\PlaceRebar16.png" />
-        <Resource Include="Resources\Icons\PlaceRebar32.png" />
-        <Resource Include="Resources\Icons\RebarSchedule16.png" />
-        <Resource Include="Resources\Icons\RebarSchedule32.png" />
-        <Resource Include="Resources\Icons\RebarSettings16.png" />
-        <Resource Include="Resources\Icons\RebarSettings32.png" />
+		<!-- Rebar Panel Icons -->
+		<Resource Include="Resources\Icons\PlaceRebar16.png" />
+		<Resource Include="Resources\Icons\PlaceRebar32.png" />
+		<Resource Include="Resources\Icons\RebarSchedule16.png" />
+		<Resource Include="Resources\Icons\RebarSchedule32.png" />
+		<Resource Include="Resources\Icons\RebarSettings16.png" />
+		<Resource Include="Resources\Icons\RebarSettings32.png" />
 
-        <!-- Drawing Panel Icons -->
-        <Resource Include="Resources\Icons\CreateDrawing16.png" />
-        <Resource Include="Resources\Icons\CreateDrawing32.png" />
-        <Resource Include="Resources\Icons\DrawingTemplate16.png" />
-        <Resource Include="Resources\Icons\DrawingTemplate32.png" />
-        <Resource Include="Resources\Icons\ExportDrawing16.png" />
-        <Resource Include="Resources\Icons\ExportDrawing32.png" />
-    </ItemGroup>
+		<!-- Drawing Panel Icons -->
+		<Resource Include="Resources\Icons\CreateDrawing16.png" />
+		<Resource Include="Resources\Icons\CreateDrawing32.png" />
+		<Resource Include="Resources\Icons\DrawingTemplate16.png" />
+		<Resource Include="Resources\Icons\DrawingTemplate32.png" />
+		<Resource Include="Resources\Icons\ExportDrawing16.png" />
+		<Resource Include="Resources\Icons\ExportDrawing32.png" />
+	</ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Commands\Drawing\" />
-      <Folder Include="Commands\Rebar\" />
-    </ItemGroup>
+	<ItemGroup>
+		<Folder Include="Commands\Drawing\" />
+		<Folder Include="Commands\Rebar\" />
+	</ItemGroup>
 
-    <!-- Copy Family files (.rfa) to output directory -->
-    <ItemGroup>
-      <None Include="Family\*.rfa">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <Link>Family\%(Filename)%(Extension)</Link>
-      </None>
-    </ItemGroup>
+	<!-- Copy Family files (.rfa) to output directory -->
+	<ItemGroup>
+		<None Include="Family\*.rfa">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>Family\%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
 
 </Project>

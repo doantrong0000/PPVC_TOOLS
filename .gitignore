@@ -60,3 +60,5 @@ nunit-*.xml
 TestTekla/output.txt
 *.slnx
 *.user
+*.sh
+*.ps1
