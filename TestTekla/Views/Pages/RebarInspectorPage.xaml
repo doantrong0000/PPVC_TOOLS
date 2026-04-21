@@ -34,12 +34,12 @@
                                 Click="BtnRefresh_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#0288D1" BorderBrush="#0277BD"
-                                Width="90" Height="36" Margin="0,0,8,0"
+                                Width="105" Height="36" Margin="0,0,8,0"
                                 ToolTip="Làm mới dữ liệu từ Tekla"/>
-                        <Button Content="PICK PART"
+                        <Button Content="PICK ELEMENT"
                                 Click="BtnPickPart_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Width="120" Height="36"/>
+                                Width="105" Height="36"/>
                     </StackPanel>
 
                     <StackPanel>
@@ -59,7 +59,7 @@
                                 Click="BtnAutoName_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#00897B" BorderBrush="#00796B"
-                                Width="95" Height="36" Margin="0,0,4,4"
+                                Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Preview auto-naming based on host type and position"/>
                         <Button Content="AUTO COLOR"
                                 Click="BtnAutoColor_Click"
@@ -88,7 +88,7 @@
                                 Click="BtnAutoVH_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#5C6BC0" BorderBrush="#3F51B5"
-                                Width="80" Height="36" Margin="0,0,8,4"
+                                Width="105" Height="36" Margin="0,0,8,4"
                                 ToolTip="Preview auto V/H prefix assignment"/>
 
                         <!-- Numbering -->
@@ -97,12 +97,12 @@
                         <Button Content="NUMBERS"
                                 Click="BtnRunNumbering_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Width="80" Height="36" Margin="0,0,4,4"/>
+                                Width="105" Height="36" Margin="0,0,4,4"/>
                         <Button Content="RENUM ALL"
                                 Click="BtnReassignAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#FF9800" BorderBrush="#E68A00"
-                                Width="95" Height="36" Margin="0,0,8,4"/>
+                                Width="105" Height="36" Margin="0,0,8,4"/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
@@ -111,13 +111,13 @@
                                 Click="BtnApply_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#D32F2F" BorderBrush="#B71C1C"
-                                Width="80" Height="36" Margin="0,0,4,4" FontWeight="Bold"
+                                Width="105" Height="36" Margin="0,0,4,4" FontWeight="Bold"
                                 ToolTip="Commit all highlighted changes to Tekla model"/>
                         <Button Content="↺ REVERT ALL"
                                 Click="BtnRevertAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#757575" BorderBrush="#616161"
-                                Width="100" Height="36" Margin="0,0,4,4"
+                                Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Undo all pending changes, restore original Tekla values"/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
@@ -126,7 +126,7 @@
                                 Click="BtnExportJson_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#4CAF50" BorderBrush="#45a049"
-                                Width="70" Height="36" Margin="0,0,0,4"/>
+                                Width="105" Height="36" Margin="0,0,0,4"/>
                     </WrapPanel>
                 </Border>
             </StackPanel>
@@ -272,7 +272,7 @@
 
         <!-- Loading Overlay -->
         <Grid x:Name="LoadingOverlay" Grid.RowSpan="3" Visibility="Collapsed" Background="#99FFFFFF">
-            <Border Background="White" CornerRadius="8" Padding="20,15" HorizontalAlignment="Center" VerticalAlignment="Center" 
+            <Border Background="White" CornerRadius="8" Padding="20,15" HorizontalAlignment="Center" VerticalAlignment="Center"
                     BorderBrush="#DDDDDD" BorderThickness="1">
                 <Border.Effect>
                     <DropShadowEffect Color="#000000" Opacity="0.1" BlurRadius="10" ShadowDepth="2"/>

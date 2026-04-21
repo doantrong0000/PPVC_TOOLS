@@ -54,6 +54,7 @@
                         <!-- Model Features (Views) -->
                         <TextBlock Text="MODEL FEATURES" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,0,0,10"/>
                         <Button Name="btnRebarTools" Content="Rebar Tools" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTools_Click"/>
+                        <Button Name="btnRebarRSQN" Content="Rebar Numbering" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarRSQN_Click"/>
                         <Button Name="btnCastUnitTools" Content="Cast Unit Tools" Style="{StaticResource SideMenuButtonStyle}" Click="BtnCastUnitTools_Click"/>
 
 
@@ -73,11 +74,11 @@
                     <StackPanel x:Name="pnlDrawingMenu" Grid.Row="1" Visibility="Collapsed">
                         <!-- Drawing Features (Views) -->
                         <TextBlock Text="DRAWING FEATURES" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,0,0,10"/>
-                        <Button Name="btnStepTag" Content="Step Tag (Beams/Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click"/>
                         <Button Name="btnRebarTagScanner" Content="Rebar Tag Scanner" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTagScanner_Click"/>
 
                         <!-- Drawing Actions (Instant) -->
                         <TextBlock Text="QUICK ACTIONS" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,20,0,10"/>
+                        <Button Name="btnStepTag" Content="Step Tag (Beams/Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click"/>
                         <Button Name="btnOpeningX" Content="Opening Mark" Style="{StaticResource SideMenuButtonStyle}" Click="BtnOpeningX_Click"/>
                     </StackPanel>
 

@@ -1,14 +1,17 @@
-using Fusion.Data.Query;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Security.Policy;
+using System.Linq;
+using Tekla.Structures.Drawing;
 using Tekla.Structures.Geometry3d;
 using Tekla.Structures.Model;
 using Tekla.Structures.Model.UI;
+using Tekla.Structures.Solid;
 using TeklaApp.Models;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ProgressBar;
+using ModelObject = Tekla.Structures.Model.ModelObject;
 using ModelObjectSelector = Tekla.Structures.Model.UI.ModelObjectSelector;
+using Part = Tekla.Structures.Model.Part;
+using Polygon = Tekla.Structures.Drawing.Polygon;
 
 namespace TeklaApp.ViewModels
 {
@@ -415,7 +418,7 @@ namespace TeklaApp.ViewModels
             try
             {
                 Tekla.Structures.Model.UI.Picker picker = new Tekla.Structures.Model.UI.Picker();
-                
+
                 // 1. Pick the main part
                 ModelObject mainPartObj = picker.PickObject(Tekla.Structures.Model.UI.Picker.PickObjectEnum.PICK_ONE_PART, "Select the Main Part of the Cast Unit");
                 if (mainPartObj is Part mainPart)
@@ -425,7 +428,7 @@ namespace TeklaApp.ViewModels
                     {
                         // 2. Sweep select parts to add
                         ModelObjectEnumerator subPartsEnum = picker.PickObjects(Tekla.Structures.Model.UI.Picker.PickObjectsEnum.PICK_N_PARTS, "Sweep select parts to add to Cast Unit (Main part and rebars will be ignored)");
-                        
+
                         int addedCount = 0;
                         while (subPartsEnum.MoveNext())
                         {
@@ -464,6 +467,257 @@ namespace TeklaApp.ViewModels
             {
                 Tekla.Structures.Model.Operations.Operation.DisplayPrompt("[CAST UNIT] Error: " + ex.Message);
             }
+        }
+
+
+        // ════════════════════════════════════════════════════
+        // STEP TAG GENERATION (Instant Action)
+        // ════════════════════════════════════════════════════
+        public void RunStepTag()
+        {
+            // Hardcoded parameters based on user request
+            double textHeight = 1.5;
+            string fontName = "Arial Narrow";
+            string textColor = "Green";
+            double surfLen = 150.0;
+            double stepHeight = 55;
+            double hatchLen = 55;
+            string fillName = "ANSI32_A";
+            double scaleX = 0.05;
+            double scaleY = 0.05;
+
+            var dh = new Tekla.Structures.Drawing.DrawingHandler();
+            if (dh.GetActiveDrawing() == null)
+            {
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Error: Please open a drawing first.");
+                return;
+            }
+
+            try
+            {
+                var selector = dh.GetDrawingObjectSelector();
+                var dObjectsEnum = selector.GetSelected();
+                Model model = new Model();
+
+                var dParts = new List<Tekla.Structures.Drawing.Part>();
+                foreach (var dObj in dObjectsEnum)
+                {
+                    if (dObj is Tekla.Structures.Drawing.Part dp)
+                        dParts.Add(dp);
+                }
+
+                if (dParts.Count < 1)
+                {
+                    Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Error: Please select at least one part.");
+                    return;
+                }
+
+                int tagCreatedCount = 0;
+
+                // A) Pair analysis
+                for (int i = 0; i < dParts.Count; i++)
+                {
+                    for (int j = i + 1; j < dParts.Count; j++)
+                    {
+                        var dp1 = dParts[i];
+                        var dp2 = dParts[j];
+
+                        var mPart1 = model.SelectModelObject(dp1.ModelIdentifier) as Tekla.Structures.Model.Part;
+                        var mPart2 = model.SelectModelObject(dp2.ModelIdentifier) as Tekla.Structures.Model.Part;
+                        if (mPart1 == null || mPart2 == null) continue;
+
+                        Solid solid1 = mPart1.GetSolid();
+                        Solid solid2 = mPart2.GetSolid();
+
+                        double z1 = solid1.MaximumPoint.Z;
+                        double z2 = solid2.MaximumPoint.Z;
+                        if (Math.Abs(z1 - z2) < 0.1) continue;
+
+                        Tekla.Structures.Drawing.ViewBase view = dp1.GetView();
+                        Matrix toViewMatrix = null;
+                        if (view is Tekla.Structures.Drawing.View realView)
+                        {
+                            toViewMatrix = MatrixFactory.ToCoordinateSystem(realView.DisplayCoordinateSystem);
+                        }
+
+                        Point s1Min = toViewMatrix != null ? toViewMatrix.Transform(solid1.MinimumPoint) : solid1.MinimumPoint;
+                        Point s1Max = toViewMatrix != null ? toViewMatrix.Transform(solid1.MaximumPoint) : solid1.MaximumPoint;
+                        Point s2Min = toViewMatrix != null ? toViewMatrix.Transform(solid2.MinimumPoint) : solid2.MinimumPoint;
+                        Point s2Max = toViewMatrix != null ? toViewMatrix.Transform(solid2.MaximumPoint) : solid2.MaximumPoint;
+
+                        double v1MinX = Math.Min(s1Min.X, s1Max.X); double v1MaxX = Math.Max(s1Min.X, s1Max.X);
+                        double v1MinY = Math.Min(s1Min.Y, s1Max.Y); double v1MaxY = Math.Max(s1Min.Y, s1Max.Y);
+                        double v2MinX = Math.Min(s2Min.X, s2Max.X); double v2MaxX = Math.Max(s2Min.X, s2Max.X);
+                        double v2MinY = Math.Min(s2Min.Y, s2Max.Y); double v2MaxY = Math.Max(s2Min.Y, s2Max.Y);
+
+                        double overMinX = Math.Max(v1MinX, v2MinX);
+                        double overMaxX = Math.Min(v1MaxX, v2MaxX);
+                        double overMinY = Math.Max(v1MinY, v2MinY);
+                        double overMaxY = Math.Min(v1MaxY, v2MaxY);
+
+                        if (overMinX > overMaxX + 1.0 || overMinY > overMaxY + 1.0) continue;
+
+                        if ((overMaxX - overMinX) + (overMaxY - overMinY) < 10) continue;
+
+                        Point pJ = new Point((overMinX + overMaxX) / 2.0, (overMinY + overMaxY) / 2.0, 0);
+
+                        Vector vAlong, vHigh, vLow;
+                        bool isJointHorizontal = (overMaxX - overMinX) >= (overMaxY - overMinY);
+                        bool isPart1High = z1 > z2;
+                        Point center1_view = new Point((v1MinX + v1MaxX) / 2.0, (v1MinY + v1MaxY) / 2.0, 0);
+
+                        if (isJointHorizontal)
+                        {
+                            vAlong = new Vector(1, 0, 0);
+                            Vector vUp = new Vector(0, 1, 0);
+                            bool isPart1Above = center1_view.Y > pJ.Y;
+                            vHigh = isPart1High ? (isPart1Above ? vUp : new Vector(0, -1, 0)) : (isPart1Above ? new Vector(0, -1, 0) : vUp);
+                        }
+                        else
+                        {
+                            vAlong = new Vector(0, -1, 0);
+                            Vector vRight = new Vector(1, 0, 0);
+                            bool isPart1OnLeft = center1_view.X < pJ.X;
+                            vHigh = isPart1High ? (isPart1OnLeft ? new Vector(-1, 0, 0) : vRight) : (isPart1OnLeft ? vRight : new Vector(-1, 0, 0));
+                        }
+                        vLow = new Vector(-vHigh.X, -vHigh.Y, -vHigh.Z);
+
+                        DrawStepSymbol(view, pJ, vAlong, vHigh, vLow, Math.Abs(z1 - z2),
+                            surfLen, stepHeight, hatchLen, textHeight, fontName, textColor, fillName, scaleX, scaleY);
+                        tagCreatedCount++;
+                    }
+                }
+
+                // B) Single-part analysis
+                foreach (var dp in dParts)
+                {
+                    tagCreatedCount += ProcessSinglePartSteps(dp, model, surfLen, stepHeight, hatchLen, textHeight, fontName, textColor, fillName, scaleX, scaleY);
+                }
+
+                if (tagCreatedCount > 0)
+                {
+                    dh.GetActiveDrawing().CommitChanges();
+                    Tekla.Structures.Model.Operations.Operation.DisplayPrompt($"Success: Created {tagCreatedCount} step tags.");
+                }
+                else Tekla.Structures.Model.Operations.Operation.DisplayPrompt("No valid step tags created.");
+            }
+            catch (Exception ex) { Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Error: " + ex.Message); }
+        }
+
+        private int ProcessSinglePartSteps(Tekla.Structures.Drawing.Part dp, Model model, double surfLen, double stepH, double hatchL, double txtH, string font, string color, string fill, double scX, double scY)
+        {
+            var mPart = model.SelectModelObject(dp.ModelIdentifier) as Tekla.Structures.Model.Part;
+            if (mPart == null) return 0;
+            Solid solid = mPart.GetSolid();
+            if (solid == null) return 0;
+
+            Tekla.Structures.Drawing.ViewBase view = dp.GetView();
+            Matrix toViewMatrix = null;
+            if (view is Tekla.Structures.Drawing.View realView)
+                toViewMatrix = MatrixFactory.ToCoordinateSystem(realView.DisplayCoordinateSystem);
+
+            var groups = FindTopFaceGroups(solid, toViewMatrix);
+            if (groups.Count < 2) return 0;
+
+            int count = 0;
+            for (int k = 0; k < groups.Count - 1; k++)
+            {
+                var hG = groups[k]; var lG = groups[k + 1];
+                double dZ = hG.ZLevel - lG.ZLevel;
+                if (dZ < 0.1) continue;
+
+                Point cH = hG.Centroid(); Point cL = lG.Centroid();
+                double dx = cL.X - cH.X; double dy = cL.Y - cH.Y;
+                if (Math.Sqrt(dx * dx + dy * dy) < 0.1) continue;
+
+                Vector vAlong, vHigh, vLow; Point pJ;
+                if (Math.Abs(dy) >= Math.Abs(dx))
+                {
+                    vAlong = new Vector(1, 0, 0);
+                    vHigh = (cH.Y > cL.Y) ? new Vector(0, 1, 0) : new Vector(0, -1, 0);
+                    pJ = new Point((Math.Max(hG.MinX, lG.MinX) + Math.Min(hG.MaxX, lG.MaxX)) / 2.0, (cH.Y > cL.Y) ? (hG.MinY + lG.MaxY) / 2.0 : (hG.MaxY + lG.MinY) / 2.0, 0);
+                }
+                else
+                {
+                    vAlong = new Vector(0, -1, 0);
+                    vHigh = (cH.X > cL.X) ? new Vector(1, 0, 0) : new Vector(-1, 0, 0);
+                    pJ = new Point((cH.X > cL.X) ? (hG.MinX + lG.MaxX) / 2.0 : (hG.MaxX + lG.MinX) / 2.0, (Math.Max(hG.MinY, lG.MinY) + Math.Min(hG.MaxY, lG.MaxY)) / 2.0, 0);
+                }
+                vLow = new Vector(-vHigh.X, -vHigh.Y, -vHigh.Z);
+                DrawStepSymbol(view, pJ, vAlong, vHigh, vLow, dZ, surfLen, stepH, hatchL, txtH, font, color, fill, scX, scY);
+                count++;
+            }
+            return count;
+        }
+
+        private List<TopFaceGroupInternal> FindTopFaceGroups(Solid solid, Matrix toViewMatrix)
+        {
+            var faceEnum = solid.GetFaceEnumerator();
+            var groups = new List<TopFaceGroupInternal>();
+            while (faceEnum.MoveNext())
+            {
+                if (faceEnum.Current is Face face && face.Normal.Z > 0.7)
+                {
+                    var pts = new List<Point>();
+                    var loopEnum = face.GetLoopEnumerator();
+                    while (loopEnum.MoveNext())
+                    {
+                        var vertEnum = (loopEnum.Current as Loop)?.GetVertexEnumerator();
+                        while (vertEnum != null && vertEnum.MoveNext()) pts.Add(vertEnum.Current as Point);
+                    }
+                    if (pts.Count == 0) continue;
+                    double z = pts.Average(p => p.Z);
+                    var match = groups.FirstOrDefault(g => Math.Abs(g.ZLevel - z) < 1.0);
+                    if (match == null) { match = new TopFaceGroupInternal { ZLevel = z }; groups.Add(match); }
+                    match.ViewVertices.AddRange(pts.Select(p => toViewMatrix != null ? toViewMatrix.Transform(p) : p));
+                }
+            }
+            foreach (var g in groups) g.ComputeBounds();
+            return groups.OrderByDescending(g => g.ZLevel).ToList();
+        }
+
+        private void DrawStepSymbol(Tekla.Structures.Drawing.ViewBase view, Point pJ, Vector vAlong, Vector vHigh, Vector vLow, double deltaZ, double surfLen, double stepH, double hatchL, double textH, string font, string color, string fill, double scX, double scY)
+        {
+            Point pHighEnd = new Point(pJ.X + vHigh.X * surfLen, pJ.Y + vHigh.Y * surfLen, 0);
+            Point pLowJ = new Point(pJ.X + vAlong.X * stepH, pJ.Y + vAlong.Y * stepH, 0);
+            Point pLowEnd = new Point(pLowJ.X + vLow.X * surfLen, pLowJ.Y + vLow.Y * surfLen, 0);
+
+
+            var hp = new Tekla.Structures.Drawing.PointList { pHighEnd, pJ, new Point(pJ.X + vAlong.X * hatchL, pJ.Y + vAlong.Y * hatchL, 0), new Point(pHighEnd.X + vAlong.X * hatchL, pHighEnd.Y + vAlong.Y * hatchL, 0), pHighEnd };
+            var hPoly = new Tekla.Structures.Drawing.Polygon(view, hp);
+            hPoly.Attributes.Hatch.Name = fill; hPoly.Attributes.Hatch.ScaleX = scX; hPoly.Attributes.Hatch.ScaleY = scY;
+            hPoly.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Invisible; hPoly.Insert();
+
+            var lp = new Tekla.Structures.Drawing.PointList { pLowJ, pLowEnd, new Point(pLowEnd.X + vAlong.X * hatchL, pLowEnd.Y + vAlong.Y * hatchL, 0), new Point(pLowJ.X + vAlong.X * hatchL, pLowJ.Y + vAlong.Y * hatchL, 0), pLowJ };
+            var lPoly = new Tekla.Structures.Drawing.Polygon(view, lp);
+            lPoly.Attributes.Hatch.Name = fill; lPoly.Attributes.Hatch.ScaleX = scX; lPoly.Attributes.Hatch.ScaleY = scY;
+            lPoly.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Invisible; lPoly.Insert();
+
+            Tekla.Structures.Drawing.PointList sk = new Tekla.Structures.Drawing.PointList { pHighEnd, pJ, pLowJ, pLowEnd };
+            var polyLine = new Tekla.Structures.Drawing.Polyline(view, sk);
+            polyLine.Attributes.Line.Color = DrawingColors.Black;
+            polyLine.Insert();
+
+            var text = new Tekla.Structures.Drawing.Text(view, new Point(pJ.X + vLow.X * surfLen * 0.5, pJ.Y + vLow.Y * surfLen * 0.5, 0), ((int)Math.Round(deltaZ)).ToString());
+            text.Attributes.Frame = new Frame(FrameTypes.None, DrawingColors.Black);
+            text.Attributes.Font.Height = textH; text.Attributes.Font.Name = font;
+
+            text.Placing = new PointPlacing(); // tắt leader line
+            if (Enum.TryParse(color, out Tekla.Structures.Drawing.DrawingColors c)) text.Attributes.Font.Color = c;
+            Vector vP = new Vector(vAlong.Y, -vAlong.X, 0); double ang = Math.Atan2(vP.Y, vP.X) * 180 / Math.PI;
+            text.Attributes.Angle = ang > 90 ? ang - 180 : (ang < -90 ? ang + 180 : ang); text.Insert();
+        }
+
+        private class TopFaceGroupInternal
+        {
+            public double ZLevel; public List<Point> ViewVertices = new List<Point>();
+            public double MinX, MaxX, MinY, MaxY;
+            public void ComputeBounds()
+            {
+                MinX = ViewVertices.Min(p => p.X); MaxX = ViewVertices.Max(p => p.X);
+                MinY = ViewVertices.Min(p => p.Y); MaxY = ViewVertices.Max(p => p.Y);
+            }
+            public Point Centroid() => new Point(ViewVertices.Average(p => p.X), ViewVertices.Average(p => p.Y), 0);
         }
 
     }

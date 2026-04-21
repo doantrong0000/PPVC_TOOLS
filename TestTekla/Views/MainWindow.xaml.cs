@@ -47,7 +47,15 @@ namespace TeklaApp.Views
 
         private void BtnStepTag_Click(object sender, RoutedEventArgs e)
         {
-            MainContentControl.Content = new StepTagPage();
+            this.Hide();
+            try
+            {
+                _viewModel.RunStepTag();
+            }
+            finally
+            {
+                this.Show();
+            }
         }
 
         private void BtnRebarTagScanner_Click(object sender, RoutedEventArgs e)
@@ -58,6 +66,11 @@ namespace TeklaApp.Views
         private void BtnRebarTools_Click(object sender, RoutedEventArgs e)
         {
             MainContentControl.Content = new RebarToolsPage();
+        }
+
+        private void BtnRebarRSQN_Click(object sender, RoutedEventArgs e)
+        {
+            MainContentControl.Content = new RebarRSQNPage();
         }
 
         private void BtnCastUnitTools_Click(object sender, RoutedEventArgs e)
