@@ -282,7 +282,16 @@ namespace TeklaApp.ViewModels
                     var obj = _model.SelectModelObject(new Tekla.Structures.Identifier(objId));
                     if (!(obj is Reinforcement rebar)) continue;
 
-                    if (item.Name != item.OriginalName) rebar.Name = item.Name;
+                    // Ensure all properties (like Cover Thickness) are fully loaded before modifying
+                    rebar.Select();
+
+                    bool needsModify = false;
+
+                    if (item.Name != item.OriginalName) 
+                    {
+                        rebar.Name = item.Name;
+                        needsModify = true;
+                    }
                     // Size and Grade are report properties, set via class if possible
                     //if (item.Grade != item.OriginalGrade) rebar.Grade = item.Grade;
 
@@ -297,14 +306,20 @@ namespace TeklaApp.ViewModels
                     if (item.ClassStr != item.OriginalClassStr)
                     {
                         if (int.TryParse(item.ClassStr, out int cls))
+                        {
                             rebar.Class = cls;
+                            needsModify = true;
+                        }
                     }
 
                     // Apply Position (NumberingSeries Prefix)
                     if (item.Position != item.OriginalPosition)
                     {
                         if (rebar.NumberingSeries != null)
+                        {
                             rebar.NumberingSeries.Prefix = item.Position;
+                            needsModify = true;
+                        }
                     }
 
                     // Apply Radius
@@ -313,10 +328,14 @@ namespace TeklaApp.ViewModels
                         if (double.TryParse(item.RadiusStr, out double radNum))
                         {
                             rebar.RadiusValues = new System.Collections.ArrayList { radNum };
+                            needsModify = true;
                         }
                     }
 
-                    rebar.Modify();
+                    if (needsModify)
+                    {
+                        rebar.Modify();
+                    }
                     committed++;
                 }
                 catch { }
@@ -987,6 +1006,133 @@ namespace TeklaApp.ViewModels
         }
 
         // ==============================================================================
+        // OVERLAP DETECTION
+        // ==============================================================================
+
+        /// <summary>
+        /// Returns a shape-only key (SIZE + SHAPE + HOOK), WITHOUT length,
+        /// used for fuzzy overlap grouping.
+        /// </summary>
+        private string GetOverlapShapeKey(Reinforcement rebar)
+        {
+            string size = "";
+            rebar.GetReportProperty("SIZE", ref size);
+            string shapeKey = GetShapeKey(rebar);
+            string hookKey = GetHookKey(rebar);
+            return $"{size}|{shapeKey}|{hookKey}";
+        }
+
+        /// <summary>
+        /// Finds rebars that share the same shape signature and have LENGTH difference
+        /// within the configured tolerance, but different SEQ numbers (overlap).
+        /// Reorders the Rebars collection so overlap pairs are placed at the top, side by side.
+        /// </summary>
+        public string FindOverlaps()
+        {
+            if (Rebars.Count == 0) return "No rebars loaded. Pick part first.";
+            if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
+
+            try
+            {
+                // Load tolerance from settings
+                var settings = SettingsService.LoadSettings();
+                double tolerance = settings.OverlapLengthTolerance;
+
+                // Reset all overlap flags
+                foreach (var item in Rebars) item.IsOverlap = false;
+
+                // Build shape keys + lengths for each rebar
+                var rebarShapeKeys = new Dictionary<string, string>();   // id -> shape key (no length)
+                var rebarLengths = new Dictionary<string, double>();     // id -> LENGTH
+                foreach (var item in Rebars)
+                {
+                    if (!int.TryParse(item.Id, out int objId)) continue;
+                    var obj = _model.SelectModelObject(new Tekla.Structures.Identifier(objId));
+                    if (obj is Reinforcement r)
+                    {
+                        rebarShapeKeys[item.Id] = GetOverlapShapeKey(r);
+                        double len = 0;
+                        r.GetReportProperty("LENGTH", ref len);
+                        rebarLengths[item.Id] = len;
+                    }
+                }
+
+                // Group by shape key (exact match on SIZE + SHAPE + HOOK, ignoring LENGTH)
+                var shapeGroups = Rebars
+                    .Where(r => rebarShapeKeys.ContainsKey(r.Id))
+                    .GroupBy(r => rebarShapeKeys[r.Id])
+                    .ToList();
+
+                // Find overlap groups using fuzzy length comparison
+                int overlapCount = 0;
+                var overlapItems = new List<RebarInfoItem>();
+                var nonOverlapItems = new List<RebarInfoItem>();
+
+                foreach (var group in shapeGroups)
+                {
+                    var items = group.ToList();
+
+                    // Within this shape group, find pairs with different SEQ but similar length
+                    var overlapSet = new HashSet<RebarInfoItem>();
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        for (int j = i + 1; j < items.Count; j++)
+                        {
+                            var a = items[i];
+                            var b = items[j];
+
+                            string seqA = (a.Seq ?? "").Trim();
+                            string seqB = (b.Seq ?? "").Trim();
+
+                            // Both must have valid SEQ and they must differ
+                            if (string.IsNullOrEmpty(seqA) || seqA == "0") continue;
+                            if (string.IsNullOrEmpty(seqB) || seqB == "0") continue;
+                            if (seqA == seqB) continue;
+
+                            // Check length tolerance
+                            double lenA = rebarLengths.ContainsKey(a.Id) ? rebarLengths[a.Id] : 0;
+                            double lenB = rebarLengths.ContainsKey(b.Id) ? rebarLengths[b.Id] : 0;
+
+                            if (Math.Abs(lenA - lenB) <= tolerance)
+                            {
+                                overlapSet.Add(a);
+                                overlapSet.Add(b);
+                            }
+                        }
+                    }
+
+                    if (overlapSet.Count > 0)
+                    {
+                        foreach (var item in overlapSet) item.IsOverlap = true;
+                        overlapItems.AddRange(overlapSet.OrderBy(r => r.SeqNum));
+                        overlapCount += overlapSet.Count;
+                        nonOverlapItems.AddRange(items.Where(r => !overlapSet.Contains(r)));
+                    }
+                    else
+                    {
+                        nonOverlapItems.AddRange(items);
+                    }
+                }
+
+                // Also add items without signatures to non-overlap
+                var itemsWithoutSig = Rebars.Where(r => !rebarShapeKeys.ContainsKey(r.Id)).ToList();
+                nonOverlapItems.AddRange(itemsWithoutSig);
+
+                // Rebuild Rebars collection: overlaps first, then the rest
+                Rebars.Clear();
+                foreach (var item in overlapItems) Rebars.Add(item);
+                foreach (var item in nonOverlapItems) Rebars.Add(item);
+
+                if (overlapCount > 0)
+                    return $"Found {overlapCount} overlap rebars (tolerance: {tolerance}mm). Moved to top.";
+                else
+                    return $"No overlaps found (tolerance: {tolerance}mm). All rebars have unique shapes or consistent SEQ.";
+            }
+            catch (Exception ex) { return "Error: " + ex.Message; }
+        }
+
+        // ==============================================================================
         // REBAR AUTO V/H DIRECTION LOGIC (Merged from RebarNumberingModel)
         // ==============================================================================
         public string GetAutoPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
@@ -1158,6 +1304,7 @@ namespace TeklaApp.ViewModels
         private double _length;
         private int _quantity;
         private bool _isIncluded = true;
+        private bool _isOverlap = false;
 
         // === Original values (from Tekla) ===
         public string OriginalName { get; private set; }
@@ -1210,6 +1357,12 @@ namespace TeklaApp.ViewModels
         {
             get => _isIncluded;
             set { _isIncluded = value; Notify(); }
+        }
+
+        public bool IsOverlap
+        {
+            get => _isOverlap;
+            set { _isOverlap = value; Notify(); }
         }
 
         /// <summary>Save current values as originals (called after loading from Tekla or after commit)</summary>

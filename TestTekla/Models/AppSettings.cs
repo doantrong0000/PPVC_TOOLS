@@ -44,5 +44,8 @@ namespace TeklaApp.Models
         // RebarInspectorPage Exclusion
         public string ExcludeNames { get; set; } = "LIFTING HOOK BAR,U BAR,ROOF RESTRAINT BAR,KERB REBAR_H10,RESTRAINT BAR,TRIMMER BAR";
         public bool UseExclusion { get; set; } = true;
+
+        // Overlap Detection
+        public double OverlapLengthTolerance { get; set; } = 10.0;
     }
 }

@@ -102,7 +102,13 @@
                                 Click="BtnReassignAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Background="#FF9800" BorderBrush="#E68A00"
-                                Width="105" Height="36" Margin="0,0,8,4"/>
+                                Width="105" Height="36" Margin="0,0,4,4"/>
+                        <Button Content="⚡ OVERLAP"
+                                Click="BtnFindOverlaps_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Background="#E65100" BorderBrush="#BF360C"
+                                Width="105" Height="36" Margin="0,0,8,4"
+                                ToolTip="Tìm các cặp thép trùng hình dạng nhưng khác SEQ (Overlap). Xếp lên đầu danh sách."/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
@@ -194,6 +200,12 @@
                                         <Setter Property="Foreground" Value="#BBBBBB"/>
                                         <Setter Property="FontStyle" Value="Italic"/>
                                     </MultiDataTrigger>
+                                    <!-- Overlap highlight → light orange -->
+                                    <DataTrigger Binding="{Binding IsOverlap}" Value="True">
+                                        <Setter Property="Background" Value="#FFF3E0"/>
+                                        <Setter Property="BorderBrush" Value="#FFB74D"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </DataGrid.RowStyle>

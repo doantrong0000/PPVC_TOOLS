@@ -302,6 +302,24 @@ namespace TeklaApp.Views.Pages
             }
         }
 
+        private async void BtnFindOverlaps_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
+
+            await ShowLoadingAsync("Đang tìm các cặp thép trùng lặp (Overlap)...");
+            try
+            {
+                txtStatus.Text = "Scanning for overlapping rebars...";
+                string result = _viewModel.FindOverlaps();
+                txtStatus.Text = result;
+                dgRebars.Items.Refresh();
+            }
+            finally
+            {
+                HideLoading();
+            }
+        }
+
         // ===== Row-level actions =====
 
         private void BtnRevertRow_Click(object sender, RoutedEventArgs e)

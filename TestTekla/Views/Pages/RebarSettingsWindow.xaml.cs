@@ -27,6 +27,7 @@ namespace TeklaApp.Views.Pages
             txtSlabKeywords.Text = settings.SlabKeywords;
             txtBeamKeywords.Text = settings.BeamKeywords;
             txtWallKeywords.Text = settings.WallKeywords;
+            txtOverlapTolerance.Text = settings.OverlapLengthTolerance.ToString();
         }
 
         private void BtnSave_Click(object sender, RoutedEventArgs e)
@@ -38,6 +39,8 @@ namespace TeklaApp.Views.Pages
             settings.SlabKeywords = txtSlabKeywords.Text;
             settings.BeamKeywords = txtBeamKeywords.Text;
             settings.WallKeywords = txtWallKeywords.Text;
+            if (double.TryParse(txtOverlapTolerance.Text, out double tol))
+                settings.OverlapLengthTolerance = tol;
 
             // Save settings via the ViewModel so it can update its own variables and the SizeClassMapping
             _viewModel.UpdateSettings(settings);
