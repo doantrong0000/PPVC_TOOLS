@@ -83,13 +83,13 @@
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
-                        <!-- Auto V/H -->
-                        <Button Content="AUTO V/H"
-                                Click="BtnAutoVH_Click"
+                        <!-- Check V/H -->
+                        <Button Content="CHECK V/H"
+                                Click="BtnCheckVH_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#5C6BC0" BorderBrush="#3F51B5"
+                                Background="#E53935" BorderBrush="#C62828"
                                 Width="105" Height="36" Margin="0,0,8,4"
-                                ToolTip="Preview auto V/H prefix assignment"/>
+                                ToolTip="Kiểm tra V/H cho thép trong tường/cột/sàn"/>
 
                         <!-- Numbering -->
                         <TextBlock Text="Start:" FontSize="10" VerticalAlignment="Center" Margin="0,0,3,4" Foreground="#555" FontWeight="SemiBold"/>
@@ -204,6 +204,12 @@
                                     <DataTrigger Binding="{Binding IsOverlap}" Value="True">
                                         <Setter Property="Background" Value="#FFF3E0"/>
                                         <Setter Property="BorderBrush" Value="#FFB74D"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    </DataTrigger>
+                                    <!-- Invalid V/H highlight → red -->
+                                    <DataTrigger Binding="{Binding IsVHInvalid}" Value="True">
+                                        <Setter Property="Background" Value="#FFCDD2"/>
+                                        <Setter Property="BorderBrush" Value="#EF5350"/>
                                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     </DataTrigger>
                                 </Style.Triggers>

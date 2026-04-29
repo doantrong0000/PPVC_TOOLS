@@ -210,15 +210,15 @@ namespace TeklaApp.Views.Pages
             }
         }
 
-        private async void BtnAutoVH_Click(object sender, RoutedEventArgs e)
+        private async void BtnCheckVH_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Đang gắn V/H...");
+            await ShowLoadingAsync("Đang kiểm tra V/H...");
             try
             {
-                txtStatus.Text = "Preview: Assigning V/H prefixes...";
-                string result = _viewModel.PreviewAutoVH();
+                txtStatus.Text = "Checking V/H prefixes...";
+                string result = _viewModel.CheckVH();
                 txtStatus.Text = result;
                 dgRebars.Items.Refresh();
             }

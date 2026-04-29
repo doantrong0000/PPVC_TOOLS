@@ -75,6 +75,7 @@
                         <!-- Drawing Features (Views) -->
                         <TextBlock Text="DRAWING FEATURES" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,0,0,10"/>
                         <Button Name="btnRebarTagScanner" Content="Rebar Tag Scanner" Style="{StaticResource SideMenuButtonStyle}" Click="BtnRebarTagScanner_Click"/>
+                        <Button Name="btnPPVCAutoDimTag" Content="PPVC Auto Dim Tag" Style="{StaticResource SideMenuButtonStyle}" Click="BtnPPVCAutoDimTag_Click"/>
 
                         <!-- Drawing Actions (Instant) -->
                         <TextBlock Text="QUICK ACTIONS" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,20,0,10"/>

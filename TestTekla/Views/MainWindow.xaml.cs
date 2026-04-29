@@ -78,6 +78,11 @@ namespace TeklaApp.Views
             MainContentControl.Content = new CastUnitToolsPage();
         }
 
+        private void BtnPPVCAutoDimTag_Click(object sender, RoutedEventArgs e)
+        {
+            MainContentControl.Content = new PPVCAutoDimTagPage();
+        }
+
 
         private void BtnOpeningX_Click(object sender, RoutedEventArgs e)
         {

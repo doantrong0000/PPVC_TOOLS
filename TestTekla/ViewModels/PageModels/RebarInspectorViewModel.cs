@@ -209,59 +209,111 @@ namespace TeklaApp.ViewModels
             catch (Exception ex) { return "Error: " + ex.Message; }
         }
 
-        /// <summary>Preview Auto V/H prefix: assigns V/H/X prefix to Position based on rebar direction and host type</summary>
-        public string PreviewAutoVH()
+        /// <summary>Kiểm tra V/H cho thép trong tường/cột/sàn và kiểm tra thép nằm ngoài host</summary>
+        public string CheckVH()
         {
             if (Rebars.Count == 0) return "No rebars loaded.";
             if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
 
-            var settings = SettingsService.LoadSettings();
-            var excludeList = new List<string>();
-            if (settings.UseExclusion && !string.IsNullOrWhiteSpace(settings.ExcludeNames))
-            {
-                excludeList = settings.ExcludeNames.Split(',')
-                    .Select(s => s.Trim().ToUpper())
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .ToList();
-            }
-
-            int count = 0;
-            int excludedCount = 0;
-
+            int invalidCount = 0;
             foreach (var item in Rebars)
             {
+                item.IsVHInvalid = false; // Reset
+
+                bool isOutsideHost = false;
+                string correctPrefix = "";
+
                 try
                 {
-                    if (!int.TryParse(item.Id, out int objId)) continue;
-
-                    // Check exclude list
-                    string currentName = (item.Name ?? "").Trim().ToUpper();
-                    if (excludeList.Count > 0 && !string.IsNullOrEmpty(currentName))
+                    if (int.TryParse(item.Id, out int objId))
                     {
-                        if (excludeList.Any(ex => currentName.Contains(ex))) { excludedCount++; continue; }
-                    }
+                        var obj = _model.SelectModelObject(new Tekla.Structures.Identifier(objId));
+                        if (obj is Reinforcement rebar)
+                        {
+                            ModelObject father = rebar.GetFatherComponent();
+                            Part hostPart = father as Part;
 
-                    var obj = _model.SelectModelObject(new Tekla.Structures.Identifier(objId));
-                    if (!(obj is Reinforcement rebar)) continue;
+                            if (hostPart != null)
+                            {
+                                correctPrefix = GetAutoPrefix(rebar, hostPart, _slabKeywords, _beamKeywords, _wallKeywords);
 
-                    ModelObject father = rebar.GetFatherComponent();
-                    Part hostPart = father as Part;
+                                Solid hostSolid = hostPart.GetSolid();
+                                Polygon rebarPoly = GetFirstPolygon(rebar);
 
-                    string prefix = GetAutoPrefix(rebar, hostPart, _slabKeywords, _beamKeywords, _wallKeywords);
+                                if (hostSolid != null && rebarPoly != null && rebarPoly.Points.Count > 0)
+                                {
+                                    double minX = double.MaxValue, maxX = double.MinValue;
+                                    double minY = double.MaxValue, maxY = double.MinValue;
+                                    double minZ = double.MaxValue, maxZ = double.MinValue;
 
-                    if (!string.IsNullOrEmpty(prefix) && prefix != item.Position)
-                    {
-                        item.Position = prefix;
-                        count++;
+                                    foreach (Tekla.Structures.Geometry3d.Point p in rebarPoly.Points)
+                                    {
+                                        if (p.X < minX) minX = p.X;
+                                        if (p.X > maxX) maxX = p.X;
+                                        if (p.Y < minY) minY = p.Y;
+                                        if (p.Y > maxY) maxY = p.Y;
+                                        if (p.Z < minZ) minZ = p.Z;
+                                        if (p.Z > maxZ) maxZ = p.Z;
+                                    }
+
+                                    double tol = 150.0; // Dung sai 150mm
+                                    if (minX > hostSolid.MaximumPoint.X + tol ||
+                                        maxX < hostSolid.MinimumPoint.X - tol ||
+                                        minY > hostSolid.MaximumPoint.Y + tol ||
+                                        maxY < hostSolid.MinimumPoint.Y - tol ||
+                                        minZ > hostSolid.MaximumPoint.Z + tol ||
+                                        maxZ < hostSolid.MinimumPoint.Z - tol)
+                                    {
+                                        isOutsideHost = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 catch { }
+
+                bool isInvalid = false;
+                
+                // Nếu thép nằm ngoài host -> đánh dấu lỗi đỏ
+                if (isOutsideHost)
+                {
+                    isInvalid = true;
+                }
+                else
+                {
+                    string hostName = (item.HostName ?? "").ToUpper();
+                    bool isWallColSlab = MatchesKeywords(hostName, _wallKeywords) || 
+                                         MatchesKeywords(hostName, _slabKeywords) || 
+                                         hostName.Contains("COLUMN") || 
+                                         hostName.Contains("CỘT") || 
+                                         hostName.Contains("COL");
+
+                    if (isWallColSlab)
+                    {
+                        string pos = (item.Position ?? "").Trim().ToUpper();
+                        
+                        // Nếu là X hoặc ký tự lạ khác V, H
+                        if (pos != "V" && pos != "H")
+                        {
+                            isInvalid = true;
+                        }
+                        // Hoặc nếu gán V/H nhưng không khớp với hướng hình học thực tế
+                        else if (!string.IsNullOrEmpty(correctPrefix) && correctPrefix != "X" && pos != correctPrefix)
+                        {
+                            isInvalid = true;
+                        }
+                    }
+                }
+
+                if (isInvalid)
+                {
+                    item.IsVHInvalid = true;
+                    invalidCount++;
+                }
             }
 
-            string msg = $"Preview: {count} rebars assigned V/H prefix.";
-            if (excludedCount > 0) msg += $" Excluded: {excludedCount}.";
-            msg += " Click APPLY to commit.";
-            return msg;
+            return $"Kiểm tra hoàn tất: {invalidCount} thép gán sai V/H hoặc nằm ngoài host.";
         }
 
         /// <summary>Commit all changed + included items to Tekla model</summary>
@@ -1305,6 +1357,7 @@ namespace TeklaApp.ViewModels
         private int _quantity;
         private bool _isIncluded = true;
         private bool _isOverlap = false;
+        private bool _isVHInvalid = false;
 
         // === Original values (from Tekla) ===
         public string OriginalName { get; private set; }
@@ -1363,6 +1416,12 @@ namespace TeklaApp.ViewModels
         {
             get => _isOverlap;
             set { _isOverlap = value; Notify(); }
+        }
+
+        public bool IsVHInvalid
+        {
+            get => _isVHInvalid;
+            set { _isVHInvalid = value; Notify(); }
         }
 
         /// <summary>Save current values as originals (called after loading from Tekla or after commit)</summary>
