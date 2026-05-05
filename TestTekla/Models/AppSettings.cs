@@ -32,9 +32,9 @@ namespace TeklaApp.Models
         public string StepScaleY { get; set; } = "1";
 
         // RebarNumberingPage
-        public string SlabKeywords { get; set; } = "SLAB, sàn";
-        public string BeamKeywords { get; set; } = "BEAM, dầm, TB";
-        public string WallKeywords { get; set; } = "WALL, tường, SW, TW";
+        public string SlabKeywords { get; set; } = "SLAB, FLOOR";
+        public string BeamKeywords { get; set; } = "BEAM, TB";
+        public string WallKeywords { get; set; } = "WALL, SW, TW";
         public string StartingNumber { get; set; } = "1";
         public string SizeClassMapping { get; set; } = "8:1;10:2;12:3;13:3;14:4;16:5;18:6;20:7;22:8;25:9;28:10;32:11";
 

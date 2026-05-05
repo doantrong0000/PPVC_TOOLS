@@ -17,7 +17,7 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Background="{StaticResource BackgroundLightGreyBrush}">
+    <Grid Background="{StaticResource BackgroundGreyBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -33,9 +33,8 @@
                         <Button Content="REFRESH"
                                 Click="BtnRefresh_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#0288D1" BorderBrush="#0277BD"
                                 Width="105" Height="36" Margin="0,0,8,0"
-                                ToolTip="Làm mới dữ liệu từ Tekla"/>
+                                ToolTip="Refresh data from Tekla"/>
                         <Button Content="PICK ELEMENT"
                                 Click="BtnPickPart_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
@@ -46,7 +45,7 @@
                         <TextBlock Text="REBAR MANAGER" Style="{StaticResource HeaderTextStyle}" Margin="0"/>
                         <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
                             <TextBlock Text="Selected Object: " FontSize="12" Foreground="#888888"/>
-                            <TextBlock x:Name="txtSelectedPart" Text="None" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}"/>
+                            <TextBlock x:Name="txtSelectedPart" Text="None" FontSize="12" FontWeight="Bold" Foreground="{StaticResource PrimaryDarkBrush}"/>
                         </StackPanel>
                     </StackPanel>
                 </DockPanel>
@@ -58,26 +57,22 @@
                         <Button Content="AUTO NAME"
                                 Click="BtnAutoName_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#00897B" BorderBrush="#00796B"
                                 Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Preview auto-naming based on host type and position"/>
                         <Button Content="AUTO COLOR"
                                 Click="BtnAutoColor_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#8E24AA" BorderBrush="#7B1FA2"
                                 Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Auto assign class based on rebar size"/>
                         <Button Content="AUTO RADIUS"
                                 Click="BtnAutoRadius_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#D81B60" BorderBrush="#C2185B"
                                 Width="105" Height="36" Margin="0,0,4,4"
-                                ToolTip="Lấy tự động hệ số uốn (Bending Radius) cho thép từ Tekla Catalog"/>
+                                ToolTip="Auto-assign Bending Radius from Tekla Catalog"/>
 
-                        <Button Content="⚙ SETTINGS"
+                        <Button Content="SETTINGS"
                                 Click="BtnSettings_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#FAFAFA" BorderBrush="#DDDDDD" Foreground="#333333"
                                 Width="105" Height="36" Margin="0,0,8,4"
                                 ToolTip="Configure Exclusions, Auto V/H Keywords, and Auto Color mappings"/>
 
@@ -87,9 +82,8 @@
                         <Button Content="CHECK V/H"
                                 Click="BtnCheckVH_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#E53935" BorderBrush="#C62828"
                                 Width="105" Height="36" Margin="0,0,8,4"
-                                ToolTip="Kiểm tra V/H cho thép trong tường/cột/sàn"/>
+                                ToolTip="Check V/H prefix for rebars in walls/columns/slabs"/>
 
                         <!-- Numbering -->
                         <TextBlock Text="Start:" FontSize="10" VerticalAlignment="Center" Margin="0,0,3,4" Foreground="#555" FontWeight="SemiBold"/>
@@ -101,28 +95,24 @@
                         <Button Content="RENUM ALL"
                                 Click="BtnReassignAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#FF9800" BorderBrush="#E68A00"
                                 Width="105" Height="36" Margin="0,0,4,4"/>
-                        <Button Content="⚡ OVERLAP"
+                        <Button Content="OVERLAP"
                                 Click="BtnFindOverlaps_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#E65100" BorderBrush="#BF360C"
                                 Width="105" Height="36" Margin="0,0,8,4"
-                                ToolTip="Tìm các cặp thép trùng hình dạng nhưng khác SEQ (Overlap). Xếp lên đầu danh sách."/>
+                                ToolTip="Find rebar pairs with same geometry but different SEQ (Overlap). Sorted to top."/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
                         <!-- APPLY TO TEKLA - prominent -->
-                        <Button Content="✔ APPLY"
+                        <Button Content="APPLY"
                                 Click="BtnApply_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#D32F2F" BorderBrush="#B71C1C"
-                                Width="105" Height="36" Margin="0,0,4,4" FontWeight="Bold"
+                                Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Commit all highlighted changes to Tekla model"/>
-                        <Button Content="↺ REVERT ALL"
+                        <Button Content="REVERT ALL"
                                 Click="BtnRevertAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#757575" BorderBrush="#616161"
                                 Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Undo all pending changes, restore original Tekla values"/>
 
@@ -131,7 +121,6 @@
                         <Button Content="EXPORT"
                                 Click="BtnExportJson_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Background="#4CAF50" BorderBrush="#45a049"
                                 Width="105" Height="36" Margin="0,0,0,4"/>
                     </WrapPanel>
                 </Border>
@@ -260,9 +249,9 @@
                 </Grid>
 
                 <!-- Column Visibility Sidebar -->
-                <Border Grid.Column="1" Width="150" Background="#FBFBFB" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="1,0,0,0">
+                <Border Grid.Column="1" Width="150" Background="#FBFBFB" BorderBrush="{StaticResource PrimaryBorderBrush}" BorderThickness="1,0,0,0">
                     <StackPanel Margin="12,12,8,12">
-                        <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,10,12"/>
+                        <TextBlock Text="COLUMNS" FontSize="11" FontWeight="Bold" Foreground="{StaticResource PrimaryDarkBrush}" Margin="0,0,10,12"/>
 
                         <CheckBox Content="Mark" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colMark" Margin="0,0,0,8"/>
                         <CheckBox Content="SEQ" IsChecked="True" Checked="ToggleCol_Click" Unchecked="ToggleCol_Click" Tag="colSeq" Margin="0,0,0,8"/>
@@ -281,10 +270,10 @@
         </Border>
 
         <!-- Footer - Status -->
-        <Border Grid.Row="2" Background="{DynamicResource BackgroundWhiteBrush}" BorderBrush="{StaticResource BorderGreyBrush}" BorderThickness="0,1,0,0" Padding="10,6">
+        <Border Grid.Row="2" Background="#FFFFFF" BorderBrush="#333333" BorderThickness="0,1,0,0" Padding="10,6">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Status:" Foreground="#999" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryBlueBrush}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                <TextBlock x:Name="txtStatus" Text="Ready" Foreground="{StaticResource PrimaryDarkBrush}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap"/>
             </StackPanel>
         </Border>
 
@@ -297,7 +286,7 @@
                 </Border.Effect>
                 <StackPanel>
                     <ProgressBar IsIndeterminate="True" Width="120" Height="4" Margin="0,0,0,12" Foreground="#0288D1"/>
-                    <TextBlock x:Name="txtLoadingText" Text="Đang xử lý..." FontWeight="SemiBold" FontSize="14" Foreground="#333333" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtLoadingText" Text="Processing..." FontWeight="SemiBold" FontSize="14" Foreground="#333333" HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
         </Grid>

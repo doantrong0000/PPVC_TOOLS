@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -23,9 +24,9 @@ namespace TeklaApp.ViewModels
         private TeklaModelMng _teklaModel = new TeklaModelMng();
 
         private int _startingNumber = 1;
-        private string _slabKeywords = "SLAB,SÀN,FLOOR";
-        private string _beamKeywords = "TB,DẦM,BEAM";
-        private string _wallKeywords = "TW,SW,VÁCH,WALL";
+        private string _slabKeywords = "SLAB,FLOOR";
+        private string _beamKeywords = "TB,BEAM";
+        private string _wallKeywords = "TW,SW,WALL";
 
         public int StartingNumber
         {
@@ -209,7 +210,7 @@ namespace TeklaApp.ViewModels
             catch (Exception ex) { return "Error: " + ex.Message; }
         }
 
-        /// <summary>Kiểm tra V/H cho thép trong tường/cột/sàn và kiểm tra thép nằm ngoài host</summary>
+        /// <summary>Check V/H for rebars in walls/columns/slabs and detect rebars outside host</summary>
         public string CheckVH()
         {
             if (Rebars.Count == 0) return "No rebars loaded.";
@@ -275,7 +276,7 @@ namespace TeklaApp.ViewModels
 
                 bool isInvalid = false;
                 
-                // Nếu thép nằm ngoài host -> đánh dấu lỗi đỏ
+                // If rebar is outside host -> mark as error (red)
                 if (isOutsideHost)
                 {
                     isInvalid = true;
@@ -286,19 +287,18 @@ namespace TeklaApp.ViewModels
                     bool isWallColSlab = MatchesKeywords(hostName, _wallKeywords) || 
                                          MatchesKeywords(hostName, _slabKeywords) || 
                                          hostName.Contains("COLUMN") || 
-                                         hostName.Contains("CỘT") || 
                                          hostName.Contains("COL");
 
                     if (isWallColSlab)
                     {
                         string pos = (item.Position ?? "").Trim().ToUpper();
                         
-                        // Nếu là X hoặc ký tự lạ khác V, H
+                        // If prefix is X or unknown character (not V, H)
                         if (pos != "V" && pos != "H")
                         {
                             isInvalid = true;
                         }
-                        // Hoặc nếu gán V/H nhưng không khớp với hướng hình học thực tế
+                        // Or if V/H is assigned but doesn't match actual geometric direction
                         else if (!string.IsNullOrEmpty(correctPrefix) && correctPrefix != "X" && pos != correctPrefix)
                         {
                             isInvalid = true;
@@ -313,7 +313,7 @@ namespace TeklaApp.ViewModels
                 }
             }
 
-            return $"Kiểm tra hoàn tất: {invalidCount} thép gán sai V/H hoặc nằm ngoài host.";
+            return $"Check complete: {invalidCount} rebars with wrong V/H or outside host.";
         }
 
         /// <summary>Commit all changed + included items to Tekla model</summary>
@@ -531,7 +531,7 @@ namespace TeklaApp.ViewModels
                 Dictionary<string, Reinforcement> uniqueRebars = new Dictionary<string, Reinforcement>();
                 Dictionary<string, string> rebarToHostMap = new Dictionary<string, string>();
 
-                // 1. Lấy thép từ các Part trước tiên để đảm bảo có host chính xác
+                // 1. Get rebars from Parts first to ensure correct host association
                 foreach (var obj in targetObjects)
                 {
                     if (obj is Part part)
@@ -552,7 +552,7 @@ namespace TeklaApp.ViewModels
                     }
                 }
 
-                // 2. Xét các thép (Reinforcement) được chọn rời mà chưa có trong danh sách
+                // 2. Process individually selected Reinforcement objects not yet in the list
                 foreach (var obj in targetObjects)
                 {
                     if (obj is Reinforcement rebar)
@@ -564,14 +564,14 @@ namespace TeklaApp.ViewModels
 
                             string hostName = "";
 
-                            // Thử lấy qua cha trực tiếp (Father) trong cấu trúc cây của Tekla
+                            // Try to get via direct parent (Father) in Tekla tree structure
                             ModelObject parent = rebar.GetFatherComponent();
                             if (parent is Part p)
                             {
                                 hostName = string.IsNullOrEmpty(p.Name) ? p.Profile.ProfileString : p.Name;
                             }
 
-                            // Nếu GetFatherComponent không ra, dùng Report Property dự phòng
+                            // If GetFatherComponent fails, use Report Property as fallback
                             if (string.IsNullOrEmpty(hostName))
                             {
                                 rebar.GetReportProperty("MAIN_PART.NAME", ref hostName);
@@ -582,7 +582,7 @@ namespace TeklaApp.ViewModels
                                 rebar.GetReportProperty("FATHER.NAME", ref hostName);
                             }
 
-                            rebarToHostMap[id] = string.IsNullOrEmpty(hostName) ? "Không có part" : hostName;
+                            rebarToHostMap[id] = string.IsNullOrEmpty(hostName) ? "No host part" : hostName;
                         }
                     }
                 }
@@ -598,7 +598,7 @@ namespace TeklaApp.ViewModels
                     string pos = r.NumberingSeries?.Prefix ?? "";
                     double length = 0; r.GetReportProperty("LENGTH", ref length);
 
-                    // Rebar Sequence Number (REBAR_SEQ_NO) thường là kiểu số nguyên (int) trong UDA
+                    // Rebar Sequence Number (REBAR_SEQ_NO) is typically an integer UDA
                     string seq = "";
                     int seqInt = 0;
                     if (r.GetUserProperty("REBAR_SEQ_NO", ref seqInt))
@@ -607,7 +607,7 @@ namespace TeklaApp.ViewModels
                     }
                     else if (!r.GetUserProperty("REBAR_SEQ_NO", ref seq))
                     {
-                        // Phương án dự phòng qua Report Property
+                        // Fallback via Report Property
                         r.GetReportProperty("USERDEFINED.REBAR_SEQ_NO", ref seq);
                     }
 
@@ -862,7 +862,7 @@ namespace TeklaApp.ViewModels
             double hostCogZ = 0;
             rebar.GetReportProperty("MAIN_PART.COG_Z", ref hostCogZ);
 
-            // Trường hợp không lấy được COG từ report property, thử cách khác
+            // If COG cannot be obtained from report property, try alternative method
             if (hostCogZ == 0)
             {
                 ModelObject parent = rebar.GetFatherComponent();
@@ -888,13 +888,13 @@ namespace TeklaApp.ViewModels
             double thickness = 0;
             rebar.GetReportProperty("MAIN_PART.HEIGHT", ref thickness);
 
-            // Nếu không lấy được HEIGHT, thử PROFILE.HEIGHT
+            // If HEIGHT is not available, try PROFILE.HEIGHT
             if (thickness == 0)
             {
                 rebar.GetReportProperty("MAIN_PART.PROFILE.HEIGHT", ref thickness);
             }
 
-            // Thử lấy trực tiếp từ host part
+            // Try getting directly from host part
             if (thickness == 0)
             {
                 ModelObject parent = rebar.GetFatherComponent();
@@ -908,11 +908,11 @@ namespace TeklaApp.ViewModels
                 }
             }
 
-            // Sàn mái: chiều dày ≈ 75mm
+            // Roof slab: thickness ~ 75mm
             if (Math.Abs(thickness - 75) < 5)
                 return "ROOF BOTTOM REBAR";
 
-            // So sánh vị trí Z rebar với tâm sàn
+            // Compare rebar Z position with slab center
             double rebarCogZ = 0;
             rebar.GetReportProperty("COG_Z", ref rebarCogZ);
 
@@ -1187,7 +1187,7 @@ namespace TeklaApp.ViewModels
         // ==============================================================================
         // REBAR AUTO V/H DIRECTION LOGIC (Merged from RebarNumberingModel)
         // ==============================================================================
-        public string GetAutoPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,SÀN,FLOOR", string beamKeys = "TB,DẦM,BEAM", string wallKeys = "TW,SW,VÁCH,WALL")
+        public string GetAutoPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,FLOOR", string beamKeys = "TB,BEAM", string wallKeys = "TW,SW,WALL")
         {
             string prefix = "";
             if (hostPart != null)
@@ -1300,12 +1300,12 @@ namespace TeklaApp.ViewModels
 
         private string GetShapeKey(Reinforcement rebar)
         {
-            // 1. Lấy mã Shape (ví dụ: 0, 1, 2, 14...) hoặc tên Shape
+            // 1. Get Shape code (e.g. 0, 1, 2, 14...) or Shape name
             string shapeInternalName = "";
             rebar.GetReportProperty("SHAPE", ref shapeInternalName);
 
-            // 2. Danh sách các thuộc tính kích thước cần lấy
-            // Tekla có tối đa từ A đến l (hoặc hơn tùy phiên bản), thông thường A-G là đủ
+            // 2. List of dimension properties to retrieve
+            // Tekla supports up to A-l (or more depending on version), typically A-G is sufficient
             string[] dimProperties = { "DIM_A", "DIM_B", "DIM_C", "DIM_D", "DIM_E", "DIM_F", "DIM_G" };
             List<string> dimensions = new List<string>();
 
@@ -1314,17 +1314,17 @@ namespace TeklaApp.ViewModels
                 double val = 0;
                 if (rebar.GetReportProperty(prop, ref val) && val > 0)
                 {
-                    // Làm tròn đến 5mm để đồng bộ như logic trước của bạn
+                    // Round to 5mm for consistency
                     double roundedVal = Math.Round(val / 5.0, 0) * 5;
                     dimensions.Add($"{prop.Last()}={roundedVal}");
                 }
             }
 
-            // 3. Kết hợp mã Shape và các kích thước
-            // Ví dụ trả về: "2|A=500-B=2000-C=500"
+            // 3. Combine Shape code and dimensions
+            // Example output: "2|A=500-B=2000-C=500"
             string dimsJoined = string.Join("-", dimensions);
 
-            // Xử lý đảo chiều (Symmetry) - Tránh việc vẽ ngược đầu đuôi tạo ra key khác nhau
+            // Handle reversal (Symmetry) - Prevent reversed start/end from creating different keys
             var reversedDims = new List<string>(dimensions);
             reversedDims.Reverse();
             string dimsBackward = string.Join("-", reversedDims);
@@ -1335,7 +1335,7 @@ namespace TeklaApp.ViewModels
             return $"{shapeInternalName}|{finalDims}";
         }
 
-        private string GetHookKey(Reinforcement rebar)
+        public string GetHookKey(Reinforcement rebar)
         {
             double startHookAngle = 0, endHookAngle = 0;
             double startHookLength = 0, endHookLength = 0;

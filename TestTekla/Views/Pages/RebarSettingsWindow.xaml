@@ -23,7 +23,7 @@
         <!-- General Settings -->
         <Border Grid.Row="0" Background="White" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,10">
             <StackPanel>
-                <TextBlock Text="GENERAL SETTINGS" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,0,10"/>
+                <TextBlock Text="GENERAL SETTINGS" FontWeight="Bold" Foreground="{StaticResource PrimaryDarkBrush}" Margin="0,0,0,10"/>
                 
                 <CheckBox x:Name="chkUseExclusion" Content="Enable Name Exclusion" ToolTip="Exclude rebars with specific names from Auto Name / Auto V/H" Margin="0,0,0,5"/>
                 <TextBlock Text="Exclude Names (comma separated):" FontSize="11" Foreground="#666"/>
@@ -74,7 +74,7 @@
         <!-- Color Class Mapping Table -->
         <Border Grid.Row="1" Background="White" BorderBrush="#DDDDDD" BorderThickness="1" CornerRadius="4" Padding="10">
             <StackPanel>
-                <TextBlock Text="AUTO COLOR: CLASS MAPPING" FontWeight="Bold" Foreground="{StaticResource PrimaryBlueBrush}" Margin="0,0,0,10"/>
+                <TextBlock Text="AUTO COLOR: CLASS MAPPING" FontWeight="Bold" Foreground="{StaticResource PrimaryDarkBrush}" Margin="0,0,0,10"/>
                 <TextBlock Text="Set rebar Class based on its diameter." Foreground="#666" FontSize="11" Margin="0,0,0,10"/>
                 
                 <DataGrid x:Name="dgSizeColor" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"

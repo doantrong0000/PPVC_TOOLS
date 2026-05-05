@@ -22,7 +22,7 @@ namespace TeklaApp.Views.Pages
             this.IsEnabled = false;
             LoadingOverlay.Visibility = Visibility.Visible;
             if (txtLoadingText != null) txtLoadingText.Text = message;
-            await System.Threading.Tasks.Task.Delay(50); // Cho phép UI update
+            await System.Threading.Tasks.Task.Delay(50); // Allow UI update
         }
 
         private void HideLoading()
@@ -38,7 +38,7 @@ namespace TeklaApp.Views.Pages
                 var btn = sender as Button;
                 if (btn != null) btn.IsEnabled = false;
 
-                await ShowLoadingAsync("Vui lòng chọn đối tượng trong mô hình (Nhấn Esc hoặc chuột giữa để hoàn tất)...");
+                await ShowLoadingAsync("Please select an object in the model (Press Esc or Middle Mouse to finish)...");
 
                 this.txtStatus.Text = "ACTIVE: Check Tekla selection...";
                 _viewModel.Rebars.Clear();
@@ -83,7 +83,7 @@ namespace TeklaApp.Views.Pages
                 if (item.IsChanged)
                 {
                     hasChanges = true;
-                    // Tóm tắt thay đổi
+                    // Summarize changes
                     string details = "";
                     if (item.Name != item.OriginalName) details += $"Name: '{item.OriginalName}' -> '{item.Name}', ";
                     if (item.Seq != item.OriginalSeq) details += $"Seq: '{item.OriginalSeq}' -> '{item.Seq}', ";
@@ -99,7 +99,7 @@ namespace TeklaApp.Views.Pages
 
                     if (changesInfo.Length > 800)
                     {
-                        changesInfo.AppendLine("... và các thay đổi khác nữa.");
+                        changesInfo.AppendLine("... and more changes.");
                         break;
                     }
                 }
@@ -108,8 +108,8 @@ namespace TeklaApp.Views.Pages
             if (hasChanges)
             {
                 var confirm = MessageBox.Show(
-                    $"Bạn có những thay đổi chưa được APPLY, nếu làm mới bây giờ sẽ bị mất:\n\n{changesInfo.ToString()}\n\nBạn có chắc chắn muốn làm mới (Refresh) không?",
-                    "Xác nhận Làm Mới",
+                    $"You have unapplied changes that will be lost if you refresh now:\n\n{changesInfo.ToString()}\n\nAre you sure you want to refresh?",
+                    "Confirm Refresh",
                     MessageBoxButton.YesNo,
                     MessageBoxImage.Warning);
 
@@ -121,7 +121,7 @@ namespace TeklaApp.Views.Pages
 
             try
             {
-                await ShowLoadingAsync("Đang tải lại dữ liệu từ Tekla...");
+                await ShowLoadingAsync("Reloading data from Tekla...");
                 txtStatus.Text = "ACTIVE: Refreshing data from Tekla...";
                 string refreshResult = _viewModel.RefreshFromTekla();
                 txtStatus.Text = refreshResult;
@@ -199,7 +199,7 @@ namespace TeklaApp.Views.Pages
 
         private async void BtnAutoName_Click(object sender, RoutedEventArgs e)
         {
-            await ShowLoadingAsync("Đang tự động đánh tên...");
+            await ShowLoadingAsync("Running Auto Name...");
             try
             {
                 _viewModel.PreviewAutoName();
@@ -214,7 +214,7 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Đang kiểm tra V/H...");
+            await ShowLoadingAsync("Checking V/H prefixes...");
             try
             {
                 txtStatus.Text = "Checking V/H prefixes...";
@@ -230,7 +230,7 @@ namespace TeklaApp.Views.Pages
 
         private async void BtnAutoColor_Click(object sender, RoutedEventArgs e)
         {
-            await ShowLoadingAsync("Đang áp dụng tự động Auto Color theo bảng Size...");
+            await ShowLoadingAsync("Running Auto Color by Size...");
             try
             {
                 txtStatus.Text = "Preview: Assigning Class by Size...";
@@ -246,7 +246,7 @@ namespace TeklaApp.Views.Pages
 
         private async void BtnAutoRadius_Click(object sender, RoutedEventArgs e)
         {
-            await ShowLoadingAsync("Đang áp dụng tự động Auto Radius theo bảng Size...");
+            await ShowLoadingAsync("Running Auto Radius by Size...");
             try
             {
                 txtStatus.Text = "Preview: Assigning Bending Radius by Size...";
@@ -270,7 +270,7 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Đang chạy tính toán chuỗi Numbering...");
+            await ShowLoadingAsync("Running Numbering sequence...");
             try
             {
                 txtStatus.Text = "Preview: Numbering (skip existing)...";
@@ -288,7 +288,7 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Đang ép gán lại mới toàn bộ chuỗi Numbering...");
+            await ShowLoadingAsync("Reassigning all Numbering sequence...");
             try
             {
                 txtStatus.Text = "Preview: Reassigning all numbers...";
@@ -306,7 +306,7 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Đang tìm các cặp thép trùng lặp (Overlap)...");
+            await ShowLoadingAsync("Scanning for overlapping rebars...");
             try
             {
                 txtStatus.Text = "Scanning for overlapping rebars...";
@@ -385,7 +385,7 @@ namespace TeklaApp.Views.Pages
 
             if (confirm == MessageBoxResult.Yes)
             {
-                await ShowLoadingAsync("Đang áp dụng thay đổi vào Tekla...");
+                await ShowLoadingAsync("Applying changes to Tekla...");
                 try
                 {
                     txtStatus.Text = "APPLYING changes to Tekla...";

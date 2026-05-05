@@ -2,8 +2,17 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Views/Styles/ModernTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid Margin="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -14,17 +23,33 @@
         <TextBlock Grid.Row="0" Text="PPVC Auto Dim Tag" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
         <TextBlock Grid.Row="0" HorizontalAlignment="Right" Name="txtStatus" Text="Ready." VerticalAlignment="Center" Foreground="#666"/>
 
+        <!-- Cast Unit Drawing -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
             <TextBlock Text="Settings:" VerticalAlignment="Center" Margin="0,0,10,0"/>
             <TextBox Name="txtSettings" Text="+ZRB_PPVC_CASTUNIT_DWG" Width="180" Height="28" VerticalContentAlignment="Center" Margin="0,0,15,0" Padding="5,0"/>
-            <Button Name="btnCreateCastUnitDrawing" Content="Create Cast Unit Drawing" Width="200" Height="36" Margin="0,0,10,0" Click="BtnCreateCastUnitDrawing_Click" Style="{DynamicResource PrimaryButtonStyle}"/>
+            <Button Name="btnCreateCastUnitDrawing" Content="Create Cast Unit Drawing" Width="200" Height="36" Margin="0,0,10,0" Click="BtnCreateCastUnitDrawing_Click" Style="{StaticResource PrimaryButtonStyle}"/>
         </StackPanel>
-        <TextBlock Grid.Row="2" Text="Select the main part of the cast unit, then click the button above to generate its drawing." Foreground="#888" VerticalAlignment="Top" Margin="0,10,0,0"/>
+        <TextBlock Grid.Row="2" Text="Select the main part of the cast unit, then click the button above to generate its drawing." Foreground="#888" VerticalAlignment="Top" Margin="0,0,0,10"/>
 
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,15,0,15">
-            <Button Name="btnCreateSections" Content="Create 3 Basic Sections" Width="200" Height="36" Margin="0,0,10,0" Click="BtnCreateSections_Click" Style="{DynamicResource PrimaryButtonStyle}"/>
+        <!-- Section Views -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,5,0,15">
+            <Button Name="btnCreateSections" Content="Create 3 Basic Sections" Width="200" Height="36" Margin="0,0,10,0" Click="BtnCreateSections_Click" Style="{StaticResource PrimaryButtonStyle}"/>
         </StackPanel>
-        
-        <TextBlock Grid.Row="4" Text="Open the generated Cast Unit Drawing, select an elevation view, then click the button above to cut Sàn, Tường, Mái sections." Foreground="#888" VerticalAlignment="Top" Margin="0,10,0,0"/>
+        <TextBlock Grid.Row="4" Text="Open the generated Cast Unit Drawing, select an elevation view, then click the button above to cut Floor, Wall, Roof sections." Foreground="#888" VerticalAlignment="Top" Margin="0,0,0,10"/>
+
+        <!-- Separator -->
+        <Separator Grid.Row="5" Margin="0,5,0,15" Background="#444"/>
+
+        <!-- Rebar Dimension -->
+        <StackPanel Grid.Row="6" Margin="0,0,0,10">
+            <TextBlock Text="Rebar Dimension" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Dim Property:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <TextBox Name="txtRebarProperty" Text="standard" Width="180" Height="28" VerticalContentAlignment="Center" Margin="0,0,15,0" Padding="5,0"/>
+                <Button Name="btnAddRebarDim" Content="Add Rebar Dim" Width="140" Height="36" Margin="0,0,10,0" Click="BtnAddRebarDim_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                <Button Name="btnAutoDimView" Content="Auto Dim View" Width="140" Height="36" Click="BtnAutoDimView_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+            </StackPanel>
+            <TextBlock Text="• Add Rebar Dim: Load property and apply to selected rebars.&#x0a;• Auto Dim View: Select a view first — auto finds all rebars and dimensions them." Foreground="#888" TextWrapping="Wrap"/>
+        </StackPanel>
     </Grid>
 </UserControl>

@@ -11,7 +11,7 @@ namespace TeklaApp
         [STAThread]
         static void Main(string[] args)
         {
-            // Tự động tìm đường dẫn cài đặt Tekla từ Registry và thư mục cấu hình
+            // Auto-detect Tekla install path from Registry and config directories
             AppDomain.CurrentDomain.AssemblyResolve += (sender, eventArgs) =>
             {
                 string assemblyName = new System.Reflection.AssemblyName(eventArgs.Name).Name;
@@ -28,7 +28,7 @@ namespace TeklaApp
                 return null;
             };
 
-            // Chạy giao diện riêng để tránh tải Tekla API trước khi hook sự kiện Resolving hoàn tất
+            // Run UI separately to avoid loading Tekla API before assembly resolve hook completes
             RunUI();
         }
 
@@ -36,7 +36,7 @@ namespace TeklaApp
         {
             var app = new System.Windows.Application();
 
-            // Gọi một hàm trung gian thay vì khởi tạo trực tiếp ở đây
+            // Call intermediate method instead of initializing directly here
             if (!CheckTeklaConnection())
             {
                 return;
@@ -50,7 +50,7 @@ namespace TeklaApp
             var connCheck = new TeklaApp.Models.TeklaModelMng();
             if (!connCheck.IsConnected())
             {
-                MessageBox.Show("Vui lòng mở Tekla trước!");
+                MessageBox.Show("Please open Tekla Structures first!");
                 return false;
             }
             return true;
@@ -60,11 +60,11 @@ namespace TeklaApp
         {
             var paths = new System.Collections.Generic.List<string>();
 
-            // 1. Thêm đường dẫn từ csproj (Tekla 2020.0)
+            // 1. Add paths from csproj (Tekla 2020.0)
             paths.Add(@"D:\Tekla Structure\2020.0\nt\bin\plugins");
             paths.Add(@"D:\Tekla Structure\2020.0\nt\bin");
 
-            // 2. Tìm đường dẫn InstallDir từ Registry (Tekla 2020.0)
+            // 2. Find InstallDir path from Registry (Tekla 2020.0)
             try
             {
                 using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Tekla\Structures\2020.0\setup"))

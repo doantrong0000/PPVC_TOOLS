@@ -6,7 +6,12 @@
 		<PlatformTarget>x64</PlatformTarget>
 		<UseWPF>true</UseWPF>
 		<Configurations>Debug;Release;</Configurations>
+		<ApplicationIcon>Views\icon.ico</ApplicationIcon>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Remove="GUIDE\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="System.Windows.Forms" />
@@ -28,6 +33,10 @@
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="TeklaFusion" Version="4.1.32" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Resource Include="Views\icon.ico" />
 	</ItemGroup>
 
 </Project>

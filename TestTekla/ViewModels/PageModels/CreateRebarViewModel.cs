@@ -39,11 +39,11 @@ namespace TeklaApp.ViewModels.PageModels
             {
                 Picker picker = new Picker();
 
-                // 1. Chọn thép mẫu (Source)
-                ModelObject pickedObject = picker.PickObject(Picker.PickObjectEnum.PICK_ONE_OBJECT, "Chọn thép mẫu để nhân bản");
+                // 1. Pick source rebar
+                ModelObject pickedObject = picker.PickObject(Picker.PickObjectEnum.PICK_ONE_OBJECT, "Pick source rebar to clone");
                 if (!(pickedObject is Reinforcement sourceRebar)) return;
 
-                // Lấy Polygon hình dạng thép
+                // Get rebar shape polygon
                 Polygon shapePolygon = null;
                 if (sourceRebar is RebarGroup rgSource && rgSource.Polygons.Count > 0)
                     shapePolygon = rgSource.Polygons[0] as Polygon;
@@ -52,17 +52,17 @@ namespace TeklaApp.ViewModels.PageModels
 
                 if (shapePolygon == null) return;
 
-                // 2. Chọn các cặp điểm rải (P1-P2, P3-P4...)
-                ArrayList distPointsList = picker.PickPoints(Picker.PickPointEnum.PICK_POLYGON, "Chọn các cặp điểm rải: P1-P2 (Nghỉ) P3-P4... Chuột giữa để kết thúc");
+                // 2. Pick distribution point pairs (P1-P2, P3-P4...)
+                ArrayList distPointsList = picker.PickPoints(Picker.PickPointEnum.PICK_POLYGON, "Pick distribution point pairs: P1-P2 (gap) P3-P4... Middle mouse to finish");
                 if (distPointsList.Count < 2) return;
 
                 List<Point> distPoints = distPointsList.Cast<Point>().ToList();
-                if (distPoints.Count % 2 != 0) distPoints.RemoveAt(distPoints.Count - 1); // Đảm bảo đi theo cặp
+                if (distPoints.Count % 2 != 0) distPoints.RemoveAt(distPoints.Count - 1); // Ensure pairs
 
                 List<RebarGroup> createdGroups = new List<RebarGroup>();
                 int segmentCount = distPoints.Count / 2;
-                double fixedSpacing = 400.0; // Khoảng rải mục tiêu
-                double coverValue = 30.0;    // Lớp bảo vệ 2 đầu mút
+                double fixedSpacing = 400.0; // Target spacing
+                double coverValue = 30.0;    // End cover offset
 
                 for (int i = 0; i < segmentCount; i++)
                 {
@@ -77,17 +77,17 @@ namespace TeklaApp.ViewModels.PageModels
                     rg.EndPoint = segEnd;
 
                     // --- FIX CHO TEKLA 2020: OFFSET ---
-                    // Sử dụng StartOffset và EndOffset để lùi thép 30mm
+                    // Use StartOffset and EndOffset to offset rebar 30mm
                     rg.StartFromPlaneOffset = (i == 0) ? coverValue : 0;
                     rg.EndFromPlaneOffset = (i == segmentCount - 1) ? coverValue : 0;
 
                     // --- FIX CHO TEKLA 2020: ENUM SPACING ---
-                    // Thêm chữ S vào cuối EXACT_SPACINGS
+                    // Append 'S' to EXACT_SPACINGS
                     rg.SpacingType = BaseRebarGroup.RebarGroupSpacingTypeEnum.SPACING_TYPE_TARGET_SPACE;
                     rg.Spacings.Clear();
                     rg.Spacings.Add(fixedSpacing);
 
-                    // Copy các thuộc tính khác như cũ...
+                    // Copy other properties from source
                     rg.Name = sourceRebar.Name;
                     rg.Class = sourceRebar.Class;
                     rg.NumberingSeries = sourceRebar.NumberingSeries;
@@ -104,7 +104,7 @@ namespace TeklaApp.ViewModels.PageModels
 
                 _model.CommitChanges();
 
-                // 3. Gộp nhóm và xử lý UDA
+                // 3. Merge groups and handle UDA
                 if (mergeGroups && createdGroups.Count > 1)
                 {
                     RebarGroup combinedGroup = createdGroups[0];
@@ -114,14 +114,14 @@ namespace TeklaApp.ViewModels.PageModels
                         if (result != null) combinedGroup = result;
                     }
 
-                    // Gán giá trị 400 vào UDA để hiển thị trên bản vẽ (tránh số lẻ do Tekla tính toán lại)
-                    // Bạn có thể đổi USER_FIELD_2 thành UDA bất kỳ bạn dùng trong Mark
+                    // Set spacing value to UDA for drawing display (avoid rounding from Tekla recalculation)
+                    // You can change USER_FIELD_2 to any UDA used in your Mark
                     combinedGroup.SetUserProperty("USER_FIELD_2", fixedSpacing.ToString());
 
                     combinedGroup.Modify();
                     _model.CommitChanges();
 
-                    // Chọn đối tượng cuối cùng sau khi gộp
+                    // Select the final merged object
                     ArrayList selectList = new ArrayList { combinedGroup };
                     new Tekla.Structures.Model.UI.ModelObjectSelector().Select(selectList);
                 }
@@ -132,7 +132,7 @@ namespace TeklaApp.ViewModels.PageModels
             }
             catch (Exception ex)
             {
-                // Ghi log lỗi nếu cần
+                // Log error if needed
                 Console.WriteLine(ex.Message);
             }
         }
@@ -164,7 +164,7 @@ namespace TeklaApp.ViewModels.PageModels
                 Model myModel = new Model();
 
 
-                // 1. Lấy toàn bộ đối tượng thép (Reinforcement) trong mô hình
+                // 1. Get all reinforcement objects from the model
                 ModelObjectEnumerator enumerator = myModel.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.REBARGROUP);
                 ArrayList foundObjects = new ArrayList();
                 ModelObjectEnumerator enumerator2 = myModel.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.SINGLEREBAR);

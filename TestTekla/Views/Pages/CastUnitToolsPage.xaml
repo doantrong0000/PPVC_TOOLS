@@ -6,10 +6,17 @@
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
              Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Views/Styles/ModernTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid Margin="10">
         <StackPanel>
             <!-- Guide -->
-            <Expander Header="📖 Guide - Cast Unit Tools" IsExpanded="True" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
+            <Expander Header="Guide - Cast Unit Tools" IsExpanded="True" Margin="0,0,0,10" Background="#F4F8FA" BorderBrush="#C4D7E2">
                 <StackPanel Margin="10,5,10,10">
                     <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
                     <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
@@ -37,7 +44,7 @@
                 <StackPanel>
                     <TextBlock Text="CAST UNIT ACTIONS" FontSize="12" FontWeight="Bold" Foreground="#005A9E" Margin="0,0,0,10"/>
                     <WrapPanel Orientation="Horizontal">
-                        <Button Name="btnAddPartsToCastUnit" Content="Add Parts to Cast Unit" Margin="0,0,10,10" Width="180" Height="40" Click="BtnAddPartsToCastUnit_Click" Background="#E1DFDD" BorderBrush="#CCCCCC" ToolTip="Select Main Part, then sweep select parts to add"/>
+                        <Button Name="btnAddPartsToCastUnit" Content="Add Parts to Cast Unit" Margin="0,0,10,10" Width="180" Height="40" Click="BtnAddPartsToCastUnit_Click" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Select Main Part, then sweep select parts to add"/>
                     </WrapPanel>
                 </StackPanel>
             </Border>

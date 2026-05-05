@@ -45,5 +45,37 @@ namespace TeklaApp.Views.Pages
                 txtStatus.Text = "Error: " + ex.Message;
             }
         }
+
+        private void BtnAddRebarDim_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                txtStatus.Text = "Adding rebar dimension...";
+                string rebarProp = txtRebarProperty.Text;
+                if (string.IsNullOrWhiteSpace(rebarProp)) rebarProp = "standard";
+                _viewModel.AddRebarDimension(rebarProp, out string status);
+                txtStatus.Text = status;
+            }
+            catch (Exception ex)
+            {
+                txtStatus.Text = "Error: " + ex.Message;
+            }
+        }
+
+        private void BtnAutoDimView_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                txtStatus.Text = "Auto dimensioning rebars in selected view...";
+                string rebarProp = txtRebarProperty.Text;
+                if (string.IsNullOrWhiteSpace(rebarProp)) rebarProp = "standard";
+                _viewModel.AutoDimSelectedView(rebarProp, out string status);
+                txtStatus.Text = status;
+            }
+            catch (Exception ex)
+            {
+                txtStatus.Text = "Error: " + ex.Message;
+            }
+        }
     }
 }

@@ -41,13 +41,13 @@ namespace TeklaApp.ViewModels.PageModels
                     {
                         string viewName = string.IsNullOrEmpty(view.Name) ? "Unnamed View" : view.Name;
 
-                        // Quét tất cả Mark trong View
+                        // Scan all Marks in this View
                         DrawingObjectEnumerator markEnum = view.GetObjects(new Type[] { typeof(Mark) });
                         while (markEnum.MoveNext())
                         {
                             if (markEnum.Current is Mark mark)
                             {
-                                // Lấy đối tượng Model mà Mark này trỏ tới
+                                // Get the Model object that this Mark refers to
                                 DrawingObjectEnumerator relatedObjects = mark.GetRelatedObjects();
                                 while (relatedObjects.MoveNext())
                                 {
@@ -60,15 +60,15 @@ namespace TeklaApp.ViewModels.PageModels
                             }
                         }
 
-                        // Xử lý Rebar Dimension Mark (thường dùng cho nhóm thép)
+                        // Process Rebar Dimension Mark (commonly used for rebar groups)
                         DrawingObjectEnumerator allObjEnum = view.GetObjects();
                         while (allObjEnum.MoveNext())
                         {
-                            // Kiểm tra bằng tên Type nếu không muốn dùng thư viện Internal
+                            // Check by Type name if not using Internal library
                             if (allObjEnum.Current.GetType().Name.Contains("RebarDimensionMark"))
                             {
                                 var dimMark = allObjEnum.Current;
-                                // Dùng Reflection an toàn để gọi GetRelatedObjects
+                                // Use safe Reflection to call GetRelatedObjects
                                 var method = dimMark.GetType().GetMethod("GetRelatedObjects", Type.EmptyTypes);
                                 if (method != null)
                                 {
@@ -101,12 +101,12 @@ namespace TeklaApp.ViewModels.PageModels
 
         private string GetRebarMarkContent(DrawingObject dobj, Tekla.Structures.Model.Model model)
         {
-            // Kiểm tra xem đối tượng có phải là Mark không
+            // Check if the object is a Mark
             if (dobj is Tekla.Structures.Drawing.Mark mark)
             {
                 List<string> parts = new List<string>();
 
-                // Lấy đối tượng thép từ Model để tra cứu giá trị thực tế (Pos, Grade, Size...)
+                // Get rebar object from Model to look up actual values (Pos, Grade, Size...)
                 Tekla.Structures.Model.ModelObject mObj = null;
                 var relatedEnum = mark.GetRelatedObjects();
                 if (relatedEnum.MoveNext() && relatedEnum.Current is ReinforcementBase dRebar)
@@ -114,8 +114,8 @@ namespace TeklaApp.ViewModels.PageModels
                     mObj = model.SelectModelObject(dRebar.ModelIdentifier);
                 }
 
-                // Duyệt qua các thành phần (Elements) bên trong Tag
-                // mark.Attributes.Content là cách gọi "chính quy" nhất, không bao giờ lỗi Ambiguous
+                // Iterate through elements inside the Tag
+                // mark.Attributes.Content is the most "official" call, never causes Ambiguous error
                 foreach (var element in mark.Attributes.Content)
                 {
                     if (element is Tekla.Structures.Drawing.TextElement textElem)
@@ -125,7 +125,7 @@ namespace TeklaApp.ViewModels.PageModels
                     else if (element is PropertyElement propElem && mObj != null)
                     {
                         string val = "";
-                        // Tra cứu thuộc tính từ Model (ví dụ: "REBAR_POS", "GRADE")
+                        // Look up property from Model (e.g.: "REBAR_POS", "GRADE")
                         if (mObj.GetReportProperty(propElem.Name, ref val) && !string.IsNullOrEmpty(val))
                         {
                             parts.Add(val);

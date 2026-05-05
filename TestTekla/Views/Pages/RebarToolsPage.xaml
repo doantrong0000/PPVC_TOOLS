@@ -6,12 +6,19 @@
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
              Background="Transparent">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Views/Styles/ModernTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid>
         <!-- DockPanel: top section is fixed, bottom fills remaining space -->
         <DockPanel LastChildFill="True" Margin="10">
 
             <!-- ===== COLLAPSIBLE: Guide ===== -->
-            <Expander DockPanel.Dock="Top" Header="📖 Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
+            <Expander DockPanel.Dock="Top" Header="Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
                 <StackPanel Margin="10,5,10,10">
                     <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
                     <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
@@ -41,14 +48,15 @@
             </Expander>
 
             <!-- ===== COLLAPSIBLE: Quick Rebar Tools ===== -->
-            <Expander DockPanel.Dock="Top" Header="⚡ Quick Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
+            <Expander DockPanel.Dock="Top" Header="Quick Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
                 <StackPanel Margin="10,5,10,10">
                     <!-- Action Buttons -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,5,8">
-                        <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnReverseRebar_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
-                        <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,5,0" Width="150" Height="40" Click="BtnRepickRebarRange_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
-                        <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSelectRebarsOfPart_Click" Background="#F3F3F3" BorderBrush="#CCCCCC"/>
-                        <Button Name="btnSplitRebar" Content="Split Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSplitRebar_Click" Background="#FFF1CC" BorderBrush="#FFC107"/>
+                        <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnReverseRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,5,0" Width="150" Height="40" Click="BtnRepickRebarRange_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSelectRebarsOfPart_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnAlignToPlane" Content="Align Rebar to Plane" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAlignToPlane_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnSplitRebar" Content="Split Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSplitRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                     </StackPanel>
 
                     <!-- Compact Single-Line Toolbar for Rebar Creation -->
@@ -57,11 +65,8 @@
                             <TextBlock Text="CREATE REBAR (CLONE FROM SOURCE):" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="36" Padding="12,0,12,0" Background="#0078D7" BorderThickness="0">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="⚡" FontSize="14" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                        <TextBlock Text="CLONE &amp; DISTRIBUTE" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
-                                    </StackPanel>
+                                <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="36" Padding="12,0,12,0" Style="{StaticResource PrimaryButtonStyle}">
+                                    <TextBlock Text="CLONE &amp; DISTRIBUTE" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </Button>
                                 <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
                             </StackPanel>
@@ -74,11 +79,8 @@
                             <TextBlock Text="FIND REBAR BY SEQ:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
                             <TextBlock Text="SEQ No:" FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="60" Height="36" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
-                            <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="36" Margin="10,0,0,0" Padding="12,0" Background="#0097A7" BorderThickness="0" ToolTip="Find and Select rebar in model by SEQ number">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🔍" FontSize="12" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                    <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource TextLightBrush}" VerticalAlignment="Center"/>
-                                </StackPanel>
+                            <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="36" Margin="10,0,0,0" Padding="12,0" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Find and Select rebar in model by SEQ number">
+                                <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
                             </Button>
                             <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>
                         </StackPanel>
@@ -90,7 +92,7 @@
 
             <!-- ===== Sub-page buttons ===== -->
             <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
-                <Button Name="btnShowRebarInspector" Content="Open Rebar Manager" Margin="0,0,5,5" Width="170" Height="40" Click="BtnShowRebarInspector_Click" Background="#E1DFDD" BorderBrush="#CCCCCC"/>
+                <Button Name="btnShowRebarInspector" Content="Open Rebar Manager" Margin="0,0,5,5" Width="170" Height="40" Click="BtnShowRebarInspector_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                 <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,5" Width="150" Height="40" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
             </WrapPanel>
 

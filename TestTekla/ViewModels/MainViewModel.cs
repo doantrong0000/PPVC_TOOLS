@@ -345,19 +345,19 @@ namespace TeklaApp.ViewModels
                     Tekla.Structures.Drawing.ViewBase view = result1.Item2;
                     Tekla.Structures.Geometry3d.Point p2 = result2.Item1;
 
-                    // Tạo 4 góc từ 2 điểm đối diện
+                    // Create 4 corners from 2 opposite points
                     var corner1 = new Tekla.Structures.Geometry3d.Point(p1.X, p1.Y, 0);
                     var corner2 = new Tekla.Structures.Geometry3d.Point(p2.X, p2.Y, 0);
                     var corner3 = new Tekla.Structures.Geometry3d.Point(p1.X, p2.Y, 0);
                     var corner4 = new Tekla.Structures.Geometry3d.Point(p2.X, p1.Y, 0);
 
-                    // Vẽ đường chéo 1
+                    // Draw diagonal 1
                     var line1 = new Tekla.Structures.Drawing.Line(view, corner1, corner2);
                     line1.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SlashedLine;
                     line1.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Black;
                     line1.Insert();
 
-                    // Vẽ đường chéo 2
+                    // Draw diagonal 2
                     var line2 = new Tekla.Structures.Drawing.Line(view, corner3, corner4);
                     line2.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SlashedLine;
                     line2.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Black;
@@ -467,6 +467,104 @@ namespace TeklaApp.ViewModels
             {
                 Tekla.Structures.Model.Operations.Operation.DisplayPrompt("[CAST UNIT] Error: " + ex.Message);
             }
+        }
+
+        public void AlignSelectedRebarsToPlane()
+        {
+            if (!_teklaModel.IsConnected()) return;
+
+            Model model = _teklaModel.GetModel();
+            Picker picker = new Picker();
+            try
+            {
+                // 1. Get targets
+                List<Reinforcement> targets = new List<Reinforcement>();
+                ModelObjectSelector selector = new ModelObjectSelector();
+                var selected = selector.GetSelectedObjects();
+                while (selected.MoveNext())
+                {
+                    if (selected.Current is Reinforcement r) targets.Add(r);
+                }
+
+                if (targets.Count == 0)
+                {
+                    var picked = picker.PickObjects(Picker.PickObjectsEnum.PICK_N_REINFORCEMENTS, "Select rebar groups to align (Esc to finish)");
+                    while (picked.MoveNext())
+                    {
+                        if (picked.Current is Reinforcement r) targets.Add(r);
+                    }
+                }
+
+                if (targets.Count == 0) return;
+
+                // 2. Pick 3 points to define plane
+                Point p1 = picker.PickPoint("Pick first point on the plane");
+                if (p1 == null) return;
+                Point p2 = picker.PickPoint("Pick second point on the plane");
+                if (p2 == null) return;
+                Point p3 = picker.PickPoint("Pick third point on the plane");
+                if (p3 == null) return;
+
+                // 3. Define Plane
+                Vector v1 = new Vector(p2.X - p1.X, p2.Y - p1.Y, p2.Z - p1.Z);
+                Vector v2 = new Vector(p3.X - p1.X, p3.Y - p1.Y, p3.Z - p1.Z);
+                Vector normal = v1.Cross(v2);
+                
+                double distance = Math.Sqrt(normal.X * normal.X + normal.Y * normal.Y + normal.Z * normal.Z);
+                if (distance < 0.001) { Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Error: Points are collinear."); return; }
+                normal = new Vector(normal.X / distance, normal.Y / distance, normal.Z / distance);
+
+                GeometricPlane plane = new GeometricPlane(p1, normal);
+
+                int count = 0;
+                foreach (var rebar in targets)
+                {
+                    bool success = false;
+                    if (rebar is SingleRebar sr)
+                    {
+                        var points = sr.Polygon.Points;
+                        sr.Polygon.Points = ProjectPointsToPlane(points, plane);
+                        success = sr.Modify();
+                    }
+                    else if (rebar is RebarGroup rg)
+                    {
+                        var polygons = rg.Polygons;
+                        if (polygons != null)
+                        {
+                            for (int i = 0; i < polygons.Count; i++)
+                            {
+                                if (polygons[i] is Tekla.Structures.Model.Polygon poly)
+                                {
+                                    poly.Points = ProjectPointsToPlane(poly.Points, plane);
+                                }
+                            }
+                            rg.Polygons = polygons;
+                            success = rg.Modify();
+                        }
+                    }
+                    
+                    if (success) count++;
+                }
+
+                model.CommitChanges();
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt($"Aligned {count} rebars to the selected plane.");
+            }
+            catch (Exception ex)
+            {
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Error: " + ex.Message);
+            }
+        }
+
+        private System.Collections.ArrayList ProjectPointsToPlane(System.Collections.ArrayList originalPoints, GeometricPlane plane)
+        {
+            System.Collections.ArrayList projectedPoints = new System.Collections.ArrayList();
+            foreach (Point p in originalPoints)
+            {
+                Vector v = new Vector(p.X - plane.Origin.X, p.Y - plane.Origin.Y, p.Z - plane.Origin.Z);
+                double distance = v.X * plane.Normal.X + v.Y * plane.Normal.Y + v.Z * plane.Normal.Z;
+                projectedPoints.Add(new Point(p.X - distance * plane.Normal.X, p.Y - distance * plane.Normal.Y, p.Z - distance * plane.Normal.Z));
+            }
+            return projectedPoints;
         }
 
 
@@ -702,7 +800,7 @@ namespace TeklaApp.ViewModels
             text.Attributes.Frame = new Frame(FrameTypes.None, DrawingColors.Black);
             text.Attributes.Font.Height = textH; text.Attributes.Font.Name = font;
 
-            text.Placing = new PointPlacing(); // tắt leader line
+            text.Placing = new PointPlacing(); // disable leader line
             if (Enum.TryParse(color, out Tekla.Structures.Drawing.DrawingColors c)) text.Attributes.Font.Color = c;
             Vector vP = new Vector(vAlong.Y, -vAlong.X, 0); double ang = Math.Atan2(vP.Y, vP.X) * 180 / Math.PI;
             text.Attributes.Angle = ang > 90 ? ang - 180 : (ang < -90 ? ang + 180 : ang); text.Insert();
