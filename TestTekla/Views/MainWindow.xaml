@@ -6,6 +6,7 @@
         MinWidth="1000" MinHeight="500"
         WindowStartupLocation="CenterScreen"
         Background="#F4F5F7"
+        Topmost="True"
         Icon="/Views/icon.ico">
 
     <Window.Resources>
@@ -23,10 +24,61 @@
 
         <!-- Top Toggle Bar -->
         <Border Grid.Row="0" Background="#FFFFFF" BorderBrush="#333333" BorderThickness="0,0,0,1">
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                <RadioButton x:Name="rbModel" Content="MODEL VIEW" Style="{StaticResource ToggleTabButtonStyle}" IsChecked="True" Checked="Mode_Checked"/>
-                <RadioButton x:Name="rbDrawing" Content="DRAWING VIEW" Style="{StaticResource ToggleTabButtonStyle}" Checked="Mode_Checked"/>
-            </StackPanel>
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                    <RadioButton x:Name="rbModel" Content="MODEL VIEW" Style="{StaticResource ToggleTabButtonStyle}" IsChecked="True" Checked="Mode_Checked"/>
+                    <RadioButton x:Name="rbDrawing" Content="DRAWING VIEW" Style="{StaticResource ToggleTabButtonStyle}" Checked="Mode_Checked"/>
+                </StackPanel>
+
+                <!-- Window Pin Toggle -->
+                <ToggleButton x:Name="btnTopmost" 
+                             Content="PIN TOP" 
+                             IsChecked="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Topmost}" 
+                             HorizontalAlignment="Right" 
+                             VerticalAlignment="Center" 
+                             Margin="0,0,20,0"
+                             Padding="12,5"
+                             Cursor="Hand">
+                    <ToggleButton.Style>
+                        <Style TargetType="ToggleButton">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Foreground" Value="#666666"/>
+                            <Setter Property="BorderThickness" Value="1"/>
+                            <Setter Property="BorderBrush" Value="#DDDDDD"/>
+                            <Setter Property="FontSize" Value="11"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border CornerRadius="15" 
+                                                Background="{TemplateBinding Background}" 
+                                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate.Value>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="BorderBrush" Value="#282C34"/>
+                                    <Setter Property="Foreground" Value="#282C34"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter Property="Background" Value="#282C34"/>
+                                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                                    <Setter Property="BorderBrush" Value="#282C34"/>
+                                    <Setter Property="Content" Value="PINNED"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Setter Property="Content" Value="PIN TOP"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ToggleButton.Style>
+                </ToggleButton>
+            </Grid>
         </Border>
 
         <!-- Main Workspace -->

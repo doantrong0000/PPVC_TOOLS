@@ -197,18 +197,8 @@ namespace TeklaApp.Views.Pages
 
         // ===== Preview Actions (update grid only, no Tekla write) =====
 
-        private async void BtnAutoName_Click(object sender, RoutedEventArgs e)
-        {
-            await ShowLoadingAsync("Running Auto Name...");
-            try
-            {
-                _viewModel.PreviewAutoName();
-            }
-            finally
-            {
-                HideLoading();
-            }
-        }
+
+
 
         private async void BtnCheckVH_Click(object sender, RoutedEventArgs e)
         {

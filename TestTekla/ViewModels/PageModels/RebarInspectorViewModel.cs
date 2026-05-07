@@ -132,6 +132,12 @@ namespace TeklaApp.ViewModels
                     double length = 0;
                     firstRebar.GetReportProperty("LENGTH", ref length);
 
+                    // Check USER_FIELD_4 for "BENDING" flag
+                    string userField4 = "";
+                    firstRebar.GetUserProperty("USER_FIELD_4", ref userField4);
+                    bool isBending = !string.IsNullOrWhiteSpace(userField4) &&
+                                     userField4.Trim().Equals("BENDING", StringComparison.OrdinalIgnoreCase);
+
                     groupSortData.Add(new RebarNumberingGroupInfo
                     {
                         Key = group.Key,
@@ -140,12 +146,15 @@ namespace TeklaApp.ViewModels
                         PartTypePriority = typePriority,
                         HostId = hostId,
                         HostName = hostName,
-                        Length = length
+                        Length = length,
+                        IsBending = isBending
                     });
                 }
 
+                // BENDING groups are sorted to the end so they receive the highest SEQ numbers
                 var sortedGroups = groupSortData
-                    .OrderBy(g => g.PartTypePriority)
+                    .OrderBy(g => g.IsBending ? 1 : 0)
+                    .ThenBy(g => g.PartTypePriority)
                     .ThenBy(g => g.HostName)
                     .ThenBy(g => g.HostId)
                     .ThenByDescending(g => g.Length)
@@ -178,15 +187,23 @@ namespace TeklaApp.ViewModels
                     foreach (var gInfo in sortedGroups) groupToNumberMap[gInfo.Key] = 0;
                 }
 
+                // Assign numbers: non-BENDING unassigned groups first, then BENDING unassigned groups
+                // This ensures BENDING groups always receive the highest SEQ numbers
                 int nextNum = StartingNumber;
-                foreach (var gInfo in sortedGroups)
+                var unassignedNormal = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && !g.IsBending).ToList();
+                var unassignedBending = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && g.IsBending).ToList();
+
+                foreach (var gInfo in unassignedNormal)
                 {
-                    if (groupToNumberMap[gInfo.Key] == 0)
-                    {
-                        while (usedNumbers.Contains(nextNum)) nextNum++;
-                        groupToNumberMap[gInfo.Key] = nextNum;
-                        usedNumbers.Add(nextNum);
-                    }
+                    while (usedNumbers.Contains(nextNum)) nextNum++;
+                    groupToNumberMap[gInfo.Key] = nextNum;
+                    usedNumbers.Add(nextNum);
+                }
+                foreach (var gInfo in unassignedBending)
+                {
+                    while (usedNumbers.Contains(nextNum)) nextNum++;
+                    groupToNumberMap[gInfo.Key] = nextNum;
+                    usedNumbers.Add(nextNum);
                 }
 
                 // Update GRID only (not Tekla)
@@ -698,243 +715,6 @@ namespace TeklaApp.ViewModels
                     selector.Select(objects);
                 }
             }
-        }
-
-        /// <summary>
-        /// Auto-names all loaded rebars based on host part type and rebar position/orientation.
-        /// Rules:
-        ///   Wall  → vertical(Z) = "WALL VER.BAR", horizontal = "WALL HOR.BAR"
-        ///   Beam  → stirrup(4+ poly pts) = "BEAM STIRRUP", else COG_Z comparison → "TOP BAR_H13" / "BOTTOM BAR_H13"
-        ///   Slab  → thickness=75 → "ROOF BOTTOM REBAR", else COG_Z comparison → "SLAB TOP REBAR" / "SLAB BOTTOM REBAR"
-        /// </summary>
-        public string PreviewAutoName()
-        {
-            if (Rebars.Count == 0) return "No rebars loaded.";
-            if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
-
-            var settings = SettingsService.LoadSettings();
-            var excludeList = new List<string>();
-            if (settings.UseExclusion && !string.IsNullOrWhiteSpace(settings.ExcludeNames))
-            {
-                excludeList = settings.ExcludeNames.Split(',')
-                    .Select(s => s.Trim().ToUpper())
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .ToList();
-            }
-
-            int namedCount = 0;
-            int skippedCount = 0;
-            int excludedCount = 0;
-
-            foreach (var item in Rebars)
-            {
-                try
-                {
-                    if (!int.TryParse(item.Id, out int objId)) { skippedCount++; continue; }
-
-                    Tekla.Structures.Identifier identifier = new Tekla.Structures.Identifier(objId);
-                    ModelObject obj = _model.SelectModelObject(identifier);
-                    if (!(obj is Reinforcement rebar)) { skippedCount++; continue; }
-
-                    // Check exclude list
-                    string currentName = (item.Name ?? "").Trim().ToUpper();
-                    if (excludeList.Count > 0 && !string.IsNullOrEmpty(currentName))
-                    {
-                        if (excludeList.Any(ex => currentName.Contains(ex))) { excludedCount++; continue; }
-                    }
-
-                    // Determine host type
-                    string hostName = (item.HostName ?? "").ToUpper();
-                    string partType = "OTHER";
-                    if (MatchesKeywords(hostName, _wallKeywords)) partType = "WALL";
-                    else if (MatchesKeywords(hostName, _beamKeywords)) partType = "BEAM";
-                    else if (MatchesKeywords(hostName, _slabKeywords)) partType = "SLAB";
-
-                    // Fallback: check actual Tekla Part type
-                    if (partType == "OTHER")
-                    {
-                        ModelObject father = rebar.GetFatherComponent();
-                        if (father == null)
-                        {
-                            string fatherType = "";
-                            rebar.GetReportProperty("MAIN_PART.OBJECT_TYPE", ref fatherType);
-                            fatherType = fatherType.ToUpper();
-                            if (fatherType.Contains("BEAM") || fatherType.Contains("COLUMN")) partType = "BEAM";
-                            else if (fatherType.Contains("PLATE") || fatherType.Contains("SLAB")) partType = "SLAB";
-                            else if (fatherType.Contains("PANEL") || fatherType.Contains("WALL")) partType = "WALL";
-                        }
-                        else if (father is Beam) partType = "BEAM";
-                        else if (father is ContourPlate)
-                        {
-                            Solid solid = ((Part)father).GetSolid();
-                            if (solid != null)
-                            {
-                                double hZ = solid.MaximumPoint.Z - solid.MinimumPoint.Z;
-                                double wXY = Math.Max(solid.MaximumPoint.X - solid.MinimumPoint.X, solid.MaximumPoint.Y - solid.MinimumPoint.Y);
-                                partType = (hZ < wXY * 0.3) ? "SLAB" : "WALL";
-                            }
-                            else partType = "SLAB";
-                        }
-                        else if (father is Part otherPart)
-                        {
-                            string fN = (otherPart.Name ?? "").ToUpper();
-                            if (fN.Contains("WALL") || fN.Contains("PANEL")) partType = "WALL";
-                            else if (fN.Contains("SLAB") || fN.Contains("FLOOR")) partType = "SLAB";
-                            else partType = "BEAM";
-                        }
-                    }
-
-                    if (partType == "OTHER") { skippedCount++; continue; }
-
-                    string newName = "";
-                    switch (partType)
-                    {
-                        case "WALL": newName = DetermineWallRebarName(rebar); break;
-                        case "BEAM": newName = DetermineBeamRebarName(rebar); break;
-                        case "SLAB": newName = DetermineSlabRebarName(rebar); break;
-                    }
-
-                    if (!string.IsNullOrEmpty(newName))
-                    {
-                        item.Name = newName; // Update GRID only, not Tekla
-                        namedCount++;
-                    }
-                }
-                catch { skippedCount++; }
-            }
-
-            string msg = $"Preview: {namedCount} rebars named.";
-            if (excludedCount > 0) msg += $" Excluded: {excludedCount}.";
-            if (skippedCount > 0) msg += $" Skipped: {skippedCount}.";
-            msg += " Click APPLY to commit.";
-            return msg;
-        }
-
-        // ======== Wall: check polygon dominant direction ========
-        private string DetermineWallRebarName(Reinforcement rebar)
-        {
-            Polygon poly = GetFirstPolygon(rebar);
-            if (poly == null || poly.Points.Count < 2)
-                return "WALL HOR.BAR";
-
-            // Find the longest segment direction in the polygon
-            double maxLen = -1;
-            Vector bestVec = null;
-
-            for (int i = 0; i < poly.Points.Count - 1; i++)
-            {
-                var pA = poly.Points[i] as Point;
-                var pB = poly.Points[i + 1] as Point;
-                if (pA == null || pB == null) continue;
-
-                Vector v = new Vector(pB.X - pA.X, pB.Y - pA.Y, pB.Z - pA.Z);
-                double len = v.GetLength();
-                if (len > maxLen) { maxLen = len; bestVec = v; }
-            }
-
-            if (bestVec == null) return "WALL HOR.BAR";
-
-            double absZ = Math.Abs(bestVec.Z);
-            double absXY = Math.Sqrt(bestVec.X * bestVec.X + bestVec.Y * bestVec.Y);
-
-            return absZ > absXY ? "WALL VER.BAR" : "WALL HOR.BAR";
-        }
-
-        // ======== Beam: stirrup detection + top/bottom ========
-        private string DetermineBeamRebarName(Reinforcement rebar)
-        {
-            // Build grade+size suffix like "_H13"
-            string grade = ""; rebar.GetReportProperty("GRADE", ref grade);
-            string size = ""; rebar.GetReportProperty("SIZE", ref size);
-            string suffix = $"_{grade}{size}";
-
-            // Stirrup detection: polygon with 4+ points = closed/U-shape
-            Polygon poly = GetFirstPolygon(rebar);
-            int polyPointCount = (poly != null) ? poly.Points.Count : 0;
-
-            if (polyPointCount >= 4)
-                return "BEAM STIRRUP";
-
-            // Longitudinal bar → compare Z position with host center
-            double rebarCogZ = 0;
-            rebar.GetReportProperty("COG_Z", ref rebarCogZ);
-
-            double hostCogZ = 0;
-            rebar.GetReportProperty("MAIN_PART.COG_Z", ref hostCogZ);
-
-            // If COG cannot be obtained from report property, try alternative method
-            if (hostCogZ == 0)
-            {
-                ModelObject parent = rebar.GetFatherComponent();
-                if (parent is Part hostPart)
-                {
-                    Solid solid = hostPart.GetSolid();
-                    if (solid != null)
-                    {
-                        hostCogZ = (solid.MaximumPoint.Z + solid.MinimumPoint.Z) / 2.0;
-                    }
-                }
-            }
-
-            return rebarCogZ < hostCogZ
-                ? "BOTTOM BAR" + suffix
-                : "TOP BAR" + suffix;
-        }
-
-        // ======== Slab: roof detection (thickness=75) + top/bottom ========
-        private string DetermineSlabRebarName(Reinforcement rebar)
-        {
-            // Detect slab thickness for roof
-            double thickness = 0;
-            rebar.GetReportProperty("MAIN_PART.HEIGHT", ref thickness);
-
-            // If HEIGHT is not available, try PROFILE.HEIGHT
-            if (thickness == 0)
-            {
-                rebar.GetReportProperty("MAIN_PART.PROFILE.HEIGHT", ref thickness);
-            }
-
-            // Try getting directly from host part
-            if (thickness == 0)
-            {
-                ModelObject parent = rebar.GetFatherComponent();
-                if (parent is Part hostPart)
-                {
-                    Solid solid = hostPart.GetSolid();
-                    if (solid != null)
-                    {
-                        thickness = solid.MaximumPoint.Z - solid.MinimumPoint.Z;
-                    }
-                }
-            }
-
-            // Roof slab: thickness ~ 75mm
-            if (Math.Abs(thickness - 75) < 5)
-                return "ROOF BOTTOM REBAR";
-
-            // Compare rebar Z position with slab center
-            double rebarCogZ = 0;
-            rebar.GetReportProperty("COG_Z", ref rebarCogZ);
-
-            double hostCogZ = 0;
-            rebar.GetReportProperty("MAIN_PART.COG_Z", ref hostCogZ);
-
-            if (hostCogZ == 0)
-            {
-                ModelObject parent = rebar.GetFatherComponent();
-                if (parent is Part hostPart)
-                {
-                    Solid solid = hostPart.GetSolid();
-                    if (solid != null)
-                    {
-                        hostCogZ = (solid.MaximumPoint.Z + solid.MinimumPoint.Z) / 2.0;
-                    }
-                }
-            }
-
-            return rebarCogZ >= hostCogZ
-                ? "SLAB TOP REBAR"
-                : "SLAB BOTTOM REBAR";
         }
 
         // ======== Utility: get first polygon from any rebar type ========
@@ -1466,6 +1246,8 @@ namespace TeklaApp.ViewModels
         public string HostName { get; set; }
         public int HostId { get; set; }
         public double Length { get; set; }
+        /// <summary>True if USER_FIELD_4 == "BENDING" — these groups are numbered last (highest SEQ)</summary>
+        public bool IsBending { get; set; }
     }
 
     public class SizeColorItem
