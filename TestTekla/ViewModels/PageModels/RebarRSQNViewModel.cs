@@ -99,6 +99,7 @@ namespace TeklaApp.ViewModels
                     Groups.Add(g);
                 }
 
+                CheckForDuplicates();
                 UpdateRowColors();
                 StatusMessage = $"Loaded {rebars.Count} rebars into {Groups.Count} groups.";
             }
@@ -213,12 +214,31 @@ namespace TeklaApp.ViewModels
             
             foreach (var g in Groups)
             {
-                if (g.Seq == 0 || g.Seq == 0.001)
+                var existing = g.ExistingSequences;
+                bool isNull = existing.All(x => x == 0);
+
+                if (existing.Count == 1 && existing[0] == 0)
                 {
                     double next = 1;
                     while (usedSeqs.Contains(next)) next++;
                     g.Seq = next;
                     usedSeqs.Add(next);
+                    g.Note = "";
+                }
+                else if (existing.Count > 1 && isNull)
+                {
+                    double next = 1;
+                    while (usedSeqs.Contains(next)) next++;
+                    g.Seq = next;
+                    usedSeqs.Add(next);
+                    g.Note = "";
+                }
+                else if (existing.Count > 1 && !isNull)
+                {
+                    double min = existing.Min();
+                    while (usedSeqs.Contains(min)) min++;
+                    g.Seq = min;
+                    usedSeqs.Add(min);
                     g.Note = "";
                 }
             }
@@ -271,17 +291,20 @@ namespace TeklaApp.ViewModels
             var groupsArr = Groups.ToArray();
             for (int i = 0; i < groupsArr.Length; i++)
             {
+                if (groupsArr[i].Note == "Check again") groupsArr[i].Note = "";
+
                 bool hasDuplicate = false;
                 for (int j = 0; j < groupsArr.Length; j++)
                 {
                     if (i == j) continue;
-                    if (groupsArr[i].Seq == groupsArr[j].Seq && groupsArr[i].Seq != 0)
+                    if (groupsArr[i].Seq == groupsArr[j].Seq && groupsArr[i].Seq != 0 && groupsArr[i].Seq != 0.001)
                     {
                         hasDuplicate = true;
                         break;
                     }
                 }
-                if (hasDuplicate) groupsArr[i].Note = "Check again";
+                if (hasDuplicate && string.IsNullOrEmpty(groupsArr[i].Note)) 
+                    groupsArr[i].Note = "Check again";
             }
         }
 

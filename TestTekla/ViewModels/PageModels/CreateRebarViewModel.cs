@@ -24,6 +24,13 @@ namespace TeklaApp.ViewModels.PageModels
             set { _findSeq = value; OnPropertyChanged(); }
         }
 
+        private string _findAsm = "";
+        public string FindAsm
+        {
+            get => _findAsm;
+            set { _findAsm = value; OnPropertyChanged(); }
+        }
+
         public string StatusMessage
         {
             get => _statusMessage;
@@ -137,6 +144,32 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
+        public void PickAssembly()
+        {
+            if (!_model.GetConnectionStatus()) return;
+            try
+            {
+                Picker picker = new Picker();
+                ModelObject pickedPart = picker.PickObject(Picker.PickObjectEnum.PICK_ONE_PART, "Pick a part to get its assembly/cast unit mark");
+                if (pickedPart is Part part)
+                {
+                    string asmName = "";
+                    Assembly asm = part.GetAssembly();
+                    if (asm != null)
+                    {
+                        asmName = asm.Name;
+                    }
+
+                    FindAsm = asmName;
+                    StatusMessage = $"Selected Assembly Name: {FindAsm}";
+                }
+            }
+            catch (Exception)
+            {
+                StatusMessage = "Pick cancelled or failed.";
+            }
+        }
+
         public void RunFindRebar()
         {
             if (!_model.GetConnectionStatus())
@@ -147,88 +180,82 @@ namespace TeklaApp.ViewModels.PageModels
 
             if (string.IsNullOrWhiteSpace(FindSeq))
             {
-                StatusMessage = "Please enter a SEQ number.";
+                StatusMessage = "Please enter SEQ number(s).";
                 return;
             }
 
-            if (!int.TryParse(FindSeq.Trim(), out int targetSeq))
+            // Support multiple SEQs separated by space (e.g. "1 6")
+            List<int> targetSeqs = FindSeq.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                                         .Select(s => int.TryParse(s, out int val) ? val : (int?)null)
+                                         .Where(v => v.HasValue)
+                                         .Select(v => v.Value)
+                                         .ToList();
+
+            if (targetSeqs.Count == 0)
             {
-                StatusMessage = "Invalid SEQ number. Please enter an integer.";
+                StatusMessage = "Invalid SEQ input. Use integers separated by space.";
                 return;
             }
 
-            StatusMessage = $"Searching for SEQ {targetSeq}...";
+            string targetAsmName = FindAsm?.Trim() ?? "";
+            string seqsDisplay = string.Join(", ", targetSeqs);
+            StatusMessage = string.IsNullOrEmpty(targetAsmName) ? $"Searching for SEQs: {seqsDisplay}..." : $"Searching for SEQs: {seqsDisplay} in Assembly: {targetAsmName}...";
 
             try
             {
                 Model myModel = new Model();
-
-
-                // 1. Get all reinforcement objects from the model
-                ModelObjectEnumerator enumerator = myModel.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.REBARGROUP);
                 ArrayList foundObjects = new ArrayList();
-                ModelObjectEnumerator enumerator2 = myModel.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.SINGLEREBAR);
 
-                while (enumerator.MoveNext())
+                // 1. Get all reinforcement objects (RebarGroup and SingleRebar separately)
+                ModelObject.ModelObjectEnum[] typesToSearch = { ModelObject.ModelObjectEnum.REBARGROUP, ModelObject.ModelObjectEnum.SINGLEREBAR };
+
+                foreach (var type in typesToSearch)
                 {
-                    if (enumerator.Current is Reinforcement rebar)
+                    ModelObjectEnumerator enumerator = myModel.GetModelObjectSelector().GetAllObjectsWithType(type);
+                    while (enumerator.MoveNext())
                     {
-                        bool isMatch = false;
-
-                        // Try Method 1: Integer UDA
-                        int valInt = 0;
-                        if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt) && valInt == targetSeq)
+                        if (enumerator.Current is Reinforcement rebar)
                         {
-                            isMatch = true;
-                        }
-
-                        // Try Method 2: String UDA fallback (common in custom configurations)
-                        if (!isMatch)
-                        {
-                            string valStr = "";
-                            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) &&
-                            int.TryParse(valStr, out int parsedStr) &&
-                            parsedStr == targetSeq)
+                            // Assembly Filter (by Name)
+                            if (!string.IsNullOrEmpty(targetAsmName))
                             {
-                                isMatch = true;
+                                string rebarAsmName = "";
+                                rebar.GetReportProperty("ASSEMBLY.NAME", ref rebarAsmName);
+                                if (string.IsNullOrEmpty(rebarAsmName))
+                                {
+                                    rebar.GetReportProperty("CAST_UNIT.NAME", ref rebarAsmName);
+                                }
+                                if (string.IsNullOrEmpty(rebarAsmName))
+                                {
+                                    rebar.GetReportProperty("NAME", ref rebarAsmName);
+                                }
+
+                                if (rebarAsmName != targetAsmName)
+                                    continue;
                             }
-                        }
 
-                        if (isMatch)
-                        {
-                            foundObjects.Add(rebar);
-                        }
-                    }
-                }
+                            // SEQ Check (support multiple)
+                            int valInt = 0;
+                            bool isMatch = false;
 
-                while (enumerator2.MoveNext())
-                {
-                    if (enumerator2.Current is Reinforcement rebar)
-                    {
-                        bool isMatch = false;
-
-                        // Try Method 1: Integer UDA
-                        int valInt = 0;
-                        if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt) && valInt == targetSeq)
-                        {
-                            isMatch = true;
-                        }
-
-                        // Try Method 2: String UDA fallback (common in custom configurations)
-                        if (!isMatch)
-                        {
-                            string valStr = "";
-                            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) &&
-                            int.TryParse(valStr, out int parsedStr) &&
-                            parsedStr == targetSeq)
+                            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt))
                             {
-                                isMatch = true;
+                                if (targetSeqs.Contains(valInt)) isMatch = true;
                             }
-                        }
 
-                        if (isMatch)
-                        {
-                            foundObjects.Add(rebar);
+                            if (!isMatch)
+                            {
+                                string valStr = "";
+                                if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) && int.TryParse(valStr, out int parsed))
+                                {
+                                    if (targetSeqs.Contains(parsed)) isMatch = true;
+                                }
+                            }
+
+                            if (isMatch)
+                            {
+                                foundObjects.Add(rebar);
+                            }
                         }
                     }
                 }
@@ -236,11 +263,11 @@ namespace TeklaApp.ViewModels.PageModels
                 if (foundObjects.Count > 0)
                 {
                     new Tekla.Structures.Model.UI.ModelObjectSelector().Select(foundObjects);
-                    StatusMessage = $"Found and selected {foundObjects.Count} rebar(s) with SEQ {targetSeq}.";
+                    StatusMessage = $"Found and selected {foundObjects.Count} rebar(s) matching SEQs: {seqsDisplay}.";
                 }
                 else
                 {
-                    StatusMessage = $"No rebar found with SEQ {targetSeq}.";
+                    StatusMessage = $"No rebar found matching SEQs: {seqsDisplay}.";
                 }
             }
             catch (Exception ex)

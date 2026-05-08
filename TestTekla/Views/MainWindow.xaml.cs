@@ -68,9 +68,14 @@ namespace TeklaApp.Views
             MainContentControl.Content = new RebarToolsPage();
         }
 
+        private RebarRSQNPage _rebarRSQNPage;
         private void BtnRebarRSQN_Click(object sender, RoutedEventArgs e)
         {
-            MainContentControl.Content = new RebarRSQNPage();
+            if (_rebarRSQNPage == null)
+            {
+                _rebarRSQNPage = new RebarRSQNPage();
+            }
+            MainContentControl.Content = _rebarRSQNPage;
         }
 
         private void BtnCastUnitTools_Click(object sender, RoutedEventArgs e)

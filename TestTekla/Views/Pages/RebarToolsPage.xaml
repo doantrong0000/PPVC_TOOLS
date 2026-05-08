@@ -17,35 +17,7 @@
         <!-- DockPanel: top section is fixed, bottom fills remaining space -->
         <DockPanel LastChildFill="True" Margin="10">
 
-            <!-- ===== COLLAPSIBLE: Guide ===== -->
-            <Expander DockPanel.Dock="Top" Header="Comprehensive Guide - Multi-Pt Rebar &amp; Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
-                <StackPanel Margin="10,5,10,10">
-                    <TextBlock Text="PURPOSE:" FontWeight="Bold" Foreground="#D83B01" FontSize="13" Margin="0,0,0,2"/>
-                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
-                        <Run Text="Allows you to distribute continuous rebar across multiple segments with voids in a single operation." />
-                        <Run Text="The result is a single "/> <Run FontWeight="Bold" Text="Unified Rebar Group"/>
-                        <Run Text=" containing all gaps, which is easy to adjust without relying on risky merge macros." />
-                    </TextBlock>
 
-                    <TextBlock Text="TEKLA OPERATION INSTRUCTIONS:" FontWeight="Bold" Foreground="#107C41" FontSize="13" Margin="0,0,0,2"/>
-                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
-                        <Run FontWeight="Bold" Text="1. Enter Parameters:" />
-                        <Run Text=" Fill the Spacing value in the tool UI (target Spacing) before clicking the button."/>
-                    </TextBlock>
-                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
-                        <Run FontWeight="Bold" Text="2. Pick Part:" />
-                        <Run Text=" Click over the concrete Part you want to reinforce."/>
-                    </TextBlock>
-                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,4" Foreground="#333333">
-                        <Run FontWeight="Bold" Text="3. Pick Shape Points:" />
-                        <Run Text=" Click points to define the physical cross-section geometry of the rebar. Press Middle Mouse Button to finish."/>
-                    </TextBlock>
-                    <TextBlock TextWrapping="Wrap" Margin="0,0,0,8" Foreground="#333333">
-                        <Run FontWeight="Bold" Text="4. Pick Distribution Points:" />
-                        <Run Text=" Click pairs of points: [P1, P2] for segment A, [P3, P4] for segment B, etc. Press Middle Mouse Button to finish."/>
-                    </TextBlock>
-                </StackPanel>
-            </Expander>
 
             <!-- ===== COLLAPSIBLE: Quick Rebar Tools ===== -->
             <Expander DockPanel.Dock="Top" Header="Quick Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
@@ -74,16 +46,28 @@
                     </Border>
 
                     <!-- FIND REBAR BY SEQ -->
-                    <Border Background="#F9FEFF" BorderBrush="#B2EBF2" BorderThickness="1" Padding="2" CornerRadius="4">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="FIND REBAR BY SEQ:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                            <TextBlock Text="SEQ No:" FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="60" Height="36" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
-                            <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="36" Margin="10,0,0,0" Padding="12,0" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Find and Select rebar in model by SEQ number">
-                                <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
-                            </Button>
-                            <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>
-                        </StackPanel>
+                    <Border Background="#F9FEFF" BorderBrush="#B2EBF2" BorderThickness="1" Padding="6" CornerRadius="4">
+                        <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Assembly Filter -->
+                            <StackPanel Orientation="Horizontal" Margin="0,0,30,0" VerticalAlignment="Center">
+                                <TextBlock Text="ASSEMBLY FILTER:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBox x:Name="txtFindAsm" Text="{Binding FindAsm, UpdateSourceTrigger=PropertyChanged}" Width="150" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" ToolTip="Assembly Mark (Leave empty for all assemblies)"/>
+                                <Button Name="btnPickAssembly" Click="BtnPickAssembly_Click" Height="32" Width="110" Margin="5,0,0,0" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Pick a part to get its assembly mark">
+                                    <TextBlock Text="PICK PART" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                </Button>
+                            </StackPanel>
+
+                            <!-- Find Seq -->
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="FIND REBAR BY SEQ:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="SEQ No:" FontSize="11" Foreground="#666" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="150" Height="32" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" BorderBrush="#00BCD4" KeyDown="TxtFindSeq_KeyDown"/>
+                                <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Height="32" Width="110" Margin="10,0,0,0" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Find and Select rebar in model by SEQ number">
+                                    <TextBlock Text="FIND &amp; SELECT" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                </Button>
+                                <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="15,0,0,0" VerticalAlignment="Center" FontSize="11" FontStyle="Italic" Foreground="#00796B"/>
+                            </StackPanel>
+                        </WrapPanel>
                     </Border>
                 </StackPanel>
             </Expander>

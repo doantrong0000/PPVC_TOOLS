@@ -73,6 +73,11 @@ namespace TeklaApp.Views.Pages
             _createVm.RunFindRebar();
         }
 
+        private void BtnPickAssembly_Click(object sender, RoutedEventArgs e)
+        {
+            _createVm.PickAssembly();
+        }
+
         private void TxtFindSeq_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == System.Windows.Input.Key.Enter)
