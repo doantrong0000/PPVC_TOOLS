@@ -16,49 +16,47 @@ namespace TeklaApp.Views.Pages
             this.DataContext = _viewModel;
         }
 
-        private void BtnCreateCastUnitDrawing_Click(object sender, RoutedEventArgs e)
+        private void BtnSaveProfile_Click(object sender, RoutedEventArgs e)
         {
-            try
+            _viewModel.SaveCurrentProfile();
+        }
+
+        private void BtnSaveAsProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(txtSaveAs.Text))
             {
-                txtStatus.Text = "Creating drawing...";
-                string settingName = txtSettings.Text;
-                if (string.IsNullOrWhiteSpace(settingName)) settingName = "+ZRB_PPVC_CASTUNIT_DWG";
-                _viewModel.CreateCastUnitDrawing(settingName, out string status);
-                txtStatus.Text = status;
+                _viewModel.SaveAsProfile(txtSaveAs.Text.Trim());
+                txtSaveAs.Clear();
             }
-            catch (Exception ex)
+            else
             {
-                txtStatus.Text = "Error: " + ex.Message;
+                MessageBox.Show("Please enter a profile name to save as.");
             }
         }
 
-        private void BtnCreateSections_Click(object sender, RoutedEventArgs e)
+        private void BtnAddRow_Click(object sender, RoutedEventArgs e)
         {
-            try
+            _viewModel.DimMappingRules.Add(new ViewModels.PageModels.DimMappingRule());
+        }
+
+        private void BtnDeleteRow_Click(object sender, RoutedEventArgs e)
+        {
+            if (dgMappingRules.SelectedItem is ViewModels.PageModels.DimMappingRule selectedRule)
             {
-                txtStatus.Text = "Creating sections...";
-                _viewModel.CreateBasicSections(out string status);
-                txtStatus.Text = status;
+                _viewModel.DimMappingRules.Remove(selectedRule);
             }
-            catch (Exception ex)
+            else
             {
-                txtStatus.Text = "Error: " + ex.Message;
+                MessageBox.Show("Vui lòng chọn một dòng để xóa!");
             }
         }
 
-        private void BtnAddRebarDim_Click(object sender, RoutedEventArgs e)
+        private void BtnAddProperty_Click(object sender, RoutedEventArgs e)
         {
-            try
+            if (!string.IsNullOrWhiteSpace(txtNewProperty.Text))
             {
-                txtStatus.Text = "Adding rebar dimension...";
-                string rebarProp = txtRebarProperty.Text;
-                if (string.IsNullOrWhiteSpace(rebarProp)) rebarProp = "standard";
-                _viewModel.AddRebarDimension(rebarProp, out string status);
-                txtStatus.Text = status;
-            }
-            catch (Exception ex)
-            {
-                txtStatus.Text = "Error: " + ex.Message;
+                _viewModel.AddNewProperty(txtNewProperty.Text.Trim());
+                txtNewProperty.Clear();
             }
         }
 
@@ -66,15 +64,11 @@ namespace TeklaApp.Views.Pages
         {
             try
             {
-                txtStatus.Text = "Auto dimensioning rebars in selected view...";
-                string rebarProp = txtRebarProperty.Text;
-                if (string.IsNullOrWhiteSpace(rebarProp)) rebarProp = "standard";
-                _viewModel.AutoDimSelectedView(rebarProp, out string status);
-                txtStatus.Text = status;
+                _viewModel.AutoDimSelectedView();
             }
             catch (Exception ex)
             {
-                txtStatus.Text = "Error: " + ex.Message;
+                MessageBox.Show("Error: " + ex.Message);
             }
         }
     }

@@ -1,359 +1,431 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using Tekla.Structures.Model;
-using Tekla.Structures.Model.UI;
-using Tekla.Structures.Drawing;
-using Tekla.Structures.Model.Operations;
 using System.Windows;
+
+// Alias cho Tekla Drawing API
+using TSD = Tekla.Structures.Drawing;
+using TSDUI = Tekla.Structures.Drawing.UI;
+using TSMO = Tekla.Structures.Model.Operations;
+using TSS = Tekla.Structures;
+using TSM = Tekla.Structures.Model;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using Newtonsoft.Json;
 
 namespace TeklaApp.ViewModels.PageModels
 {
-    public class PPVCAutoDimTagViewModel
+    public class DimMappingRule : INotifyPropertyChanged
     {
+        private string _rebarName;
+        public string RebarName
+        {
+            get { return _rebarName; }
+            set { _rebarName = value; OnPropertyChanged(); }
+        }
+
+        private string _prefix;
+        public string Prefix
+        {
+            get { return _prefix; }
+            set { _prefix = value; OnPropertyChanged(); }
+        }
+
+        private string _dimProperty;
+        public string DimProperty
+        {
+            get { return _dimProperty; }
+            set { _dimProperty = value; OnPropertyChanged(); }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+
+    public class PPVCAutoDimTagViewModel : INotifyPropertyChanged
+    {
+        public ObservableCollection<DimMappingRule> DimMappingRules { get; set; }
+        public ObservableCollection<string> AvailableDimProperties { get; set; }
+        public ObservableCollection<string> AvailableProfiles { get; set; }
+
+        private string _selectedProfile;
+        public string SelectedProfile
+        {
+            get => _selectedProfile;
+            set
+            {
+                _selectedProfile = value;
+                OnPropertyChanged();
+                LoadProfileRules(value);
+            }
+        }
+
+        private Dictionary<string, List<DimMappingRule>> _allProfiles;
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public PPVCAutoDimTagViewModel()
+        {
+            AvailableDimProperties = new ObservableCollection<string>();
+            AvailableProfiles = new ObservableCollection<string>();
+            DimMappingRules = new ObservableCollection<DimMappingRule>();
+            _allProfiles = new Dictionary<string, List<DimMappingRule>>();
+
+            LoadDimProperties();
+            LoadDimMappingRules();
+        }
+
+        private string GetJsonFilePath()
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string folderPath = Path.Combine(appData, "TeklaTools", "Json");
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            return Path.Combine(folderPath, "DimProperties.json");
+        }
+
+        private void LoadDimProperties()
+        {
+            string jsonFilePath = GetJsonFilePath();
+            AvailableDimProperties = new ObservableCollection<string>();
+
+            if (File.Exists(jsonFilePath))
+            {
+                try
+                {
+                    string jsonContent = File.ReadAllText(jsonFilePath);
+                    // Parse thủ công bằng Regex để đọc mảng chuỗi JSON mà không lo thiếu thư viện
+                    var matches = System.Text.RegularExpressions.Regex.Matches(jsonContent, "\"([^\"]+)\"");
+                    foreach (System.Text.RegularExpressions.Match m in matches)
+                    {
+                        AvailableDimProperties.Add(m.Groups[1].Value);
+                    }
+                }
+                catch { }
+            }
+
+            // Nếu chưa có file JSON hoặc đọc bị rỗng, tạo mặc định
+            if (AvailableDimProperties.Count == 0)
+            {
+                AvailableDimProperties.Add("A1");
+                AvailableDimProperties.Add("A2");
+                AvailableDimProperties.Add("A3");
+                AvailableDimProperties.Add("WH_ArialNarr_2mm_Trans_Links Dim_no pic_Bar Middle Group_LINKS TEXT");
+
+                string jsonFilePathCreate = GetJsonFilePath();
+                SaveDimProperties(jsonFilePathCreate);
+            }
+        }
+
+        private void SaveDimProperties(string jsonFilePath)
+        {
+            try
+            {
+                // Sinh chuỗi JSON chuẩn
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.AppendLine("[");
+                for (int i = 0; i < AvailableDimProperties.Count; i++)
+                {
+                    sb.Append("  \"");
+                    sb.Append(AvailableDimProperties[i]);
+                    sb.Append("\"");
+                    if (i < AvailableDimProperties.Count - 1) sb.AppendLine(",");
+                    else sb.AppendLine();
+                }
+                sb.AppendLine("]");
+                File.WriteAllText(jsonFilePath, sb.ToString());
+            }
+            catch { }
+        }
+
+        public void AddNewProperty(string newProperty)
+        {
+            if (!AvailableDimProperties.Contains(newProperty))
+            {
+                AvailableDimProperties.Add(newProperty);
+                string jsonFilePath = GetJsonFilePath();
+                SaveDimProperties(jsonFilePath);
+            }
+        }
+
+        private string GetMappingRulesJsonPath()
+        {
+            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string folderPath = Path.Combine(appData, "TeklaTools", "Json");
+            if (!Directory.Exists(folderPath))
+            {
+                Directory.CreateDirectory(folderPath);
+            }
+            return Path.Combine(folderPath, "DimMappingRules.json");
+        }
+
+        private void LoadDimMappingRules()
+        {
+            string jsonFilePath = GetMappingRulesJsonPath();
+
+            if (File.Exists(jsonFilePath))
+            {
+                try
+                {
+                    string jsonContent = File.ReadAllText(jsonFilePath);
+                    _allProfiles = JsonConvert.DeserializeObject<Dictionary<string, List<DimMappingRule>>>(jsonContent);
+                }
+                catch { } // Fallback if error or old format
+            }
+
+            if (_allProfiles == null || _allProfiles.Count == 0)
+            {
+                _allProfiles = new Dictionary<string, List<DimMappingRule>>();
+                _allProfiles["standard"] = new List<DimMappingRule>
+                {
+                    new DimMappingRule { RebarName = "STIRRUP", Prefix = "V", DimProperty = "A1" },
+                    new DimMappingRule { RebarName = "MAIN BAR", Prefix = "V", DimProperty = "A2" }
+                };
+                SaveAllProfiles();
+            }
+
+            AvailableProfiles.Clear();
+            foreach (var profile in _allProfiles.Keys)
+            {
+                AvailableProfiles.Add(profile);
+            }
+
+            SelectedProfile = AvailableProfiles.Contains("standard") ? "standard" : AvailableProfiles[0];
+        }
+
+        private void LoadProfileRules(string profileName)
+        {
+            if (string.IsNullOrEmpty(profileName) || _allProfiles == null) return;
+
+            DimMappingRules.Clear();
+            if (_allProfiles.TryGetValue(profileName, out var rules))
+            {
+                foreach (var r in rules)
+                {
+                    DimMappingRules.Add(new DimMappingRule { RebarName = r.RebarName, Prefix = r.Prefix, DimProperty = r.DimProperty });
+                }
+            }
+        }
+
+        private void SaveAllProfiles()
+        {
+            try
+            {
+                string jsonFilePath = GetMappingRulesJsonPath();
+                string json = JsonConvert.SerializeObject(_allProfiles, Formatting.Indented);
+                File.WriteAllText(jsonFilePath, json);
+            }
+            catch { }
+        }
+
+        public void SaveCurrentProfile(bool showSuccessMsg = true)
+        {
+            if (string.IsNullOrEmpty(SelectedProfile)) return;
+            _allProfiles[SelectedProfile] = new List<DimMappingRule>(DimMappingRules);
+            SaveAllProfiles();
+            if (showSuccessMsg)
+            {
+                MessageBox.Show($"Profile '{SelectedProfile}' saved.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        public void SaveAsProfile(string newProfileName)
+        {
+            _allProfiles[newProfileName] = new List<DimMappingRule>(DimMappingRules);
+            if (!AvailableProfiles.Contains(newProfileName))
+            {
+                AvailableProfiles.Add(newProfileName);
+            }
+            SelectedProfile = newProfileName;
+            SaveAllProfiles();
+            MessageBox.Show($"Profile saved as '{newProfileName}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         #region Rebar Dimension
 
+        // 1. THÊM TỪ KHÓA 'async' VÀO ĐÂY
         /// <summary>
-        /// Adds rebar dimension marks to selected rebars in the active drawing
-        /// using the specified rebar dimension property file.
-        /// Opens the rebar dim dialog via macro, loads the property, applies, and closes.
+        /// Tự động tạo Dimension cho tất cả cốt thép trong View đang được chọn
         /// </summary>
-        public void AddRebarDimension(string rebarPropertyName, out string status)
+        public async void AutoDimSelectedView()
         {
-            status = "";
-            var dh = new DrawingHandler();
-            var drawing = dh.GetActiveDrawing();
-            if (drawing == null)
-            {
-                status = "No active drawing open.";
-                return;
-            }
-
             try
             {
-                string macroBody =
-                    @"Tekla.Macros.Wpf.Runtime.IWpfMacroHost wpf = runtime.Get<Tekla.Macros.Wpf.Runtime.IWpfMacroHost>();" + "\r\n" +
-                    @"Tekla.Macros.Akit.IAkitScriptHost akit = runtime.Get<Tekla.Macros.Akit.IAkitScriptHost>();" + "\r\n" +
-                    @"wpf.InvokeCommand(""CommandRepository"", ""Dimensions.AddRebarDimensionMark"");" + "\r\n" +
-                    @"wpf.InvokeCommand(""CommandRepository"", ""Dimensions.AddRebarDimensionMark"");" + "\r\n" +
-                    @"akit.ValueChange(""rebar_dim_dial"", ""gr_dim_get_menu"", " + "\"" + rebarPropertyName + "\"" + ");" + "\r\n" +
-                    @"akit.PushButton(""gr_dim_get"", ""rebar_dim_dial"");" + "\r\n" +
-                    @"akit.PushButton(""dim_apply"", ""rebar_dim_dial"");" + "\r\n" +
-                    @"akit.PushButton(""dim_ok"", ""rebar_dim_dial"");" + "\r\n" +
-                    @"akit.CommandEnd();";
+                SaveCurrentProfile(false);
 
-                string macroScript = BuildMacroScript(macroBody);
-                bool result = WriteMacroAndRun("ppvc_rebar_dim", macroScript);
+                TSD.DrawingHandler dh = new TSD.DrawingHandler();
+                TSD.Drawing activeDrawing = dh.GetActiveDrawing();
+                TSM.Model myModel = new TSM.Model();
 
-                status = result
-                    ? "Rebar dimension applied: " + rebarPropertyName
-                    : "Failed to run rebar dimension macro.";
-            }
-            catch (Exception ex)
-            {
-                status = "Error: " + ex.Message;
-            }
-        }
-
-        /// <summary>
-        /// Gets the currently selected view in the drawing, finds all rebars,
-        /// selects them, and runs the rebar dimension macro.
-        /// </summary>
-        public void AutoDimSelectedView(string rebarPropertyName, out string status)
-        {
-            status = "";
-            var dh = new DrawingHandler();
-            var drawing = dh.GetActiveDrawing();
-            if (drawing == null)
-            {
-                status = "No active drawing open.";
-                return;
-            }
-
-            try
-            {
-                // Get the selected view from the drawing
-                var selector = dh.GetDrawingObjectSelector();
-                var selectedEnum = selector.GetSelected();
-
-                Tekla.Structures.Drawing.View selectedView = null;
-                while (selectedEnum.MoveNext())
+                if (activeDrawing == null)
                 {
-                    if (selectedEnum.Current is Tekla.Structures.Drawing.View v)
-                    {
-                        selectedView = v;
-                        break;
-                    }
-                }
-
-                if (selectedView == null)
-                {
-                    status = "Please select a view in the drawing first.";
+                    MessageBox.Show("Vui lòng mở một bản vẽ (Drawing) trước!");
                     return;
                 }
 
-                // Find all rebar objects in the selected view
-                var rebarObjects = new List<DrawingObject>();
-                var objEnum = selectedView.GetObjects(new Type[] { typeof(Tekla.Structures.Drawing.ReinforcementBase) });
-                while (objEnum.MoveNext())
+                TSDUI.DrawingObjectSelector objectSelector = dh.GetDrawingObjectSelector();
+                ArrayList selectedViews = new ArrayList();
+                TSD.DrawingObjectEnumerator selectedObjects = objectSelector.GetSelected();
+
+                while (selectedObjects.MoveNext())
                 {
-                    if (objEnum.Current is DrawingObject dObj)
+                    if (selectedObjects.Current is TSD.View view)
                     {
-                        rebarObjects.Add(dObj);
+                        selectedViews.Add(view);
                     }
                 }
 
-                if (rebarObjects.Count == 0)
+                if (selectedViews.Count == 0) return;
+
+                // Xử lý LẦN LƯỢT từng cấu hình (dòng) trong bảng
+                foreach (var rule in DimMappingRules)
                 {
-                    status = "No rebars found in the selected view.";
-                    return;
-                }
+                    if (string.IsNullOrEmpty(rule.DimProperty)) continue;
 
-                // Select all rebar objects
-                selector.UnselectAllObjects();
-                foreach (var rObj in rebarObjects)
-                {
-                    selector.SelectObject(rObj);
-                }
+                    ArrayList rebarsToDim = new ArrayList();
 
-                // Run the rebar dimension macro
-                AddRebarDimension(rebarPropertyName, out string dimStatus);
-                status = $"Found {rebarObjects.Count} rebars in view. {dimStatus}";
-            }
-            catch (Exception ex)
-            {
-                status = "Error: " + ex.Message;
-            }
-        }
-
-        private string BuildMacroScript(string body)
-        {
-            return
-                @"#pragma warning disable 1633 // Unrecognized #pragma directive" + "\r\n" +
-                @"#pragma reference ""Tekla.Macros.Wpf.Runtime""" + "\r\n" +
-                @"#pragma reference ""Tekla.Macros.Akit""" + "\r\n" +
-                @"#pragma reference ""Tekla.Macros.Runtime""" + "\r\n" +
-                @"#pragma warning restore 1633 // Unrecognized #pragma directive" + "\r\n" +
-                @"namespace UserMacros {" + "\r\n" +
-                    @"public sealed class Macro {" + "\r\n" +
-                        @"[Tekla.Macros.Runtime.MacroEntryPointAttribute()]" + "\r\n" +
-                        @"public static void Run(Tekla.Macros.Runtime.IMacroRuntime runtime) {" + "\r\n" +
-                        body +
-                        @"}" + "\r\n" +
-                    @"}" + "\r\n" +
-                @"}";
-        }
-
-        private bool WriteMacroAndRun(string macroName, string macroScript)
-        {
-            string macroPath = string.Empty;
-            Tekla.Structures.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroPath);
-            if (macroPath.IndexOf(';') > 0)
-                macroPath = macroPath.Remove(macroPath.IndexOf(";"));
-
-            string fullPath = Path.Combine(macroPath + @"\drawings", macroName);
-            File.WriteAllText(fullPath, macroScript);
-            return Operation.RunMacro(@"..\drawings\" + macroName);
-        }
-
-        #endregion
-
-        public void CreateCastUnitDrawing(string settingName, out string status)
-        {
-            status = "";
-            Model model = new Model();
-            if (!model.GetConnectionStatus())
-            {
-                status = "Not connected to Tekla Structures.";
-                return;
-            }
-
-            try
-            {
-                Picker picker = new Picker();
-                Tekla.Structures.Model.ModelObject pickedObj = picker.PickObject(Picker.PickObjectEnum.PICK_ONE_PART, "Select Main Part to create Cast Unit Drawing");
-                if (pickedObj is Tekla.Structures.Model.Part part)
-                {
-                    Assembly castUnit = part.GetAssembly();
-                    if (castUnit != null)
+                    // Quét thép trong các View được chọn
+                    foreach (TSD.View view in selectedViews)
                     {
-                        Tekla.Structures.Drawing.CastUnitDrawing cuDrawing = new Tekla.Structures.Drawing.CastUnitDrawing(castUnit.Identifier, settingName);
-                        if (cuDrawing.Insert())
+                        TSD.DrawingObjectEnumerator viewObjects = view.GetAllObjects();
+                        while (viewObjects.MoveNext())
                         {
-                            status = "Cast Unit drawing created successfully for: " + part.Name;
-                        }
-                        else
-                        {
-                            status = "Failed to insert Cast Unit drawing. Make sure drawing numbering is up to date.";
-                        }
-                    }
-                    else
-                    {
-                        status = "Failed to get Cast Unit from selected part.";
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                status = "Error: " + ex.Message;
-            }
-        }
-        public void CreateBasicSections(out string status)
-        {
-            status = "";
-            var dh = new DrawingHandler();
-            var drawing = dh.GetActiveDrawing();
-            if (drawing == null)
-            {
-                status = "No active drawing open.";
-                return;
-            }
-
-            try
-            {
-                var selector = dh.GetDrawingObjectSelector();
-                var selectedEnum = selector.GetSelected();
-
-                Tekla.Structures.Drawing.View elevationView = null;
-                while (selectedEnum.MoveNext())
-                {
-                    if (selectedEnum.Current is Tekla.Structures.Drawing.View v)
-                    {
-                        elevationView = v;
-                        break;
-                    }
-                }
-
-                if (elevationView == null)
-                {
-                    status = "Please select an elevation view in the drawing first.";
-                    return;
-                }
-
-                double minY = double.MaxValue;
-                double maxY = double.MinValue;
-                double minX = double.MaxValue;
-                double maxX = double.MinValue;
-                bool found = false;
-
-                Tekla.Structures.Model.Model model = new Tekla.Structures.Model.Model();
-                Tekla.Structures.Geometry3d.Matrix toViewMatrix = Tekla.Structures.Geometry3d.MatrixFactory.ToCoordinateSystem(elevationView.DisplayCoordinateSystem);
-
-                var partsEnum = elevationView.GetObjects(new Type[] { typeof(Tekla.Structures.Drawing.Part) });
-                while (partsEnum.MoveNext())
-                {
-                    if (partsEnum.Current is Tekla.Structures.Drawing.Part dp)
-                    {
-                        var mPart = model.SelectModelObject(dp.ModelIdentifier) as Tekla.Structures.Model.Part;
-                        if (mPart != null)
-                        {
-                            var solid = mPart.GetSolid();
-                            if (solid != null)
+                            if (viewObjects.Current is TSD.ReinforcementGroup rebar)
                             {
-                                var faceEnum = solid.GetFaceEnumerator();
-                                while (faceEnum.MoveNext())
+                                TSM.ModelObject modelObj = myModel.SelectModelObject(rebar.ModelIdentifier);
+                                if (modelObj is TSM.Reinforcement modelRebar)
                                 {
-                                    if (faceEnum.Current is Tekla.Structures.Solid.Face face)
+                                    string rName = modelRebar.Name ?? "";
+                                    string prefix = "";
+                                    modelRebar.GetReportProperty("PREFIX", ref prefix);
+
+                                    bool matchName = rule.RebarName != null && rName.IndexOf(rule.RebarName, StringComparison.OrdinalIgnoreCase) >= 0;
+                                    bool matchPrefix = string.IsNullOrEmpty(rule.Prefix) || rule.Prefix.Equals(prefix, StringComparison.OrdinalIgnoreCase);
+
+                                    if (matchName && matchPrefix)
                                     {
-                                        var loopEnum = face.GetLoopEnumerator();
-                                        while (loopEnum.MoveNext())
-                                        {
-                                            if (loopEnum.Current is Tekla.Structures.Solid.Loop loop)
-                                            {
-                                                var vertEnum = loop.GetVertexEnumerator();
-                                                while (vertEnum.MoveNext())
-                                                {
-                                                    if (vertEnum.Current is Tekla.Structures.Geometry3d.Point p)
-                                                    {
-                                                        var vp = toViewMatrix.Transform(p);
-                                                        if (vp.X < minX) minX = vp.X;
-                                                        if (vp.X > maxX) maxX = vp.X;
-                                                        if (vp.Y < minY) minY = vp.Y;
-                                                        if (vp.Y > maxY) maxY = vp.Y;
-                                                        found = true;
-                                                    }
-                                                }
-                                            }
-                                        }
+                                        rebarsToDim.Add(rebar);
                                     }
                                 }
                             }
                         }
                     }
+
+                    // Chạy Macro chỉ cho nhóm thép khớp với dòng thiết lập này
+                    if (rebarsToDim.Count > 0)
+                    {
+                        // 1. Highlight đối tượng thép
+                        objectSelector.SelectObjects(rebarsToDim, false);
+
+                        // 2. Lấy đường dẫn file Template
+                        string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
+                        string macroDir = GetMacroDirectory();
+
+
+                        string templatePath2 = Path.Combine(appFolder, "Macro", "DimForRebar.cs");
+                        string macroContent2 = File.ReadAllText(templatePath2);
+                        string tempMacroName2 = "Temp_AutoDim.cs";
+                        string tempRunPath2 = Path.Combine(macroDir, tempMacroName2);
+                        File.WriteAllText(tempRunPath2, macroContent2);
+                        TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName2);
+
+
+                        string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
+
+                        // 3. Đọc nội dung và "Bơm" tên thuộc tính tương ứng của Rule (VD: A1, A2) vào
+                        string macroContent = File.ReadAllText(templatePath);
+                        macroContent = macroContent.Replace("<TEN_THUOC_TINH>", rule.DimProperty);
+
+                        // 4. Lưu ra thư mục Macro của Tekla để Tekla có thể chạy được
+
+                        string tempMacroName = "Temp_Run_AutoDim.cs";
+                        string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                        File.WriteAllText(tempRunPath, macroContent);
+                        TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+
+
+
+
+
+                    }
                 }
-
-                if (!found)
-                {
-                    minY = elevationView.RestrictionBox.MinPoint.Y;
-                    maxY = elevationView.RestrictionBox.MaxPoint.Y;
-                    minX = elevationView.RestrictionBox.MinPoint.X;
-                    maxX = elevationView.RestrictionBox.MaxPoint.X;
-                }
-
-                double H = maxY - minY;
-                if (H <= 0)
-                {
-                    status = "Invalid view height.";
-                    return;
-                }
-
-                // Roof: 1.1 down to 0.85
-                double yRoofCut = minY + 1.1 * H;
-                double yRoofTarget = minY + 0.85 * H;
-                CreateSingleSection(elevationView, minX, maxX, yRoofCut, yRoofTarget, "MAI", maxY + 2000 + H);
-
-                // Wall: 0.6 down to 0.4
-                double yWallCut = minY + 0.6 * H;
-                double yWallTarget = minY + 0.4 * H;
-                CreateSingleSection(elevationView, minX, maxX, yWallCut, yWallTarget, "TUONG", maxY + 2000);
-
-                // Floor: 0.3 down to -0.1
-                double yFloorCut = minY + 0.3 * H;
-                double yFloorTarget = minY - 0.1 * H;
-                CreateSingleSection(elevationView, minX, maxX, yFloorCut, yFloorTarget, "SAN", maxY + 2000 - H);
-
-                drawing.CommitChanges();
-                status = "Created 3 sections successfully.";
+                MessageBox.Show("Đã hoàn thành tạo Dimension cho các thép đã chọn theo profile '" + SelectedProfile + "'.", "Hoàn thành", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                status = "Error: " + ex.Message;
+                // MessageBox.Show("Lỗi thực thi: " + ex.Message);
             }
         }
 
-        private void CreateSingleSection(Tekla.Structures.Drawing.View elevationView, double minX, double maxX, double cutY, double targetY, string markName, double insertY)
+        /// <summary>
+        /// SỬ DỤNG LẠI MACRO MỞ UI ĐÃ ĐƯỢC CHỨNG MINH LÀ CHẠY ĐÚNG THUỘC TÍNH
+        /// </summary>
+        private void CreateFastExecuteDimMacro(string macroName, string propertyName)
         {
-            // To look down, we set depthDown to the absolute difference
-            double depthDown = Math.Abs(cutY - targetY);
-            double depthUp = 200;
+            string macroPath = GetMacroDirectory();
+            if (string.IsNullOrEmpty(macroPath)) return;
 
-            var p1 = new Tekla.Structures.Geometry3d.Point(minX - 200, cutY, 0);
-            var p2 = new Tekla.Structures.Geometry3d.Point(maxX + 200, cutY, 0);
+            string fullPath = Path.Combine(macroPath, macroName);
 
-            // Insertion point in global drawing coordinates. We place them to the right.
-            var insertionPoint = new Tekla.Structures.Geometry3d.Point(maxX + 3000, insertY, 0);
+            string macros =
+               @"#pragma warning disable 1633 // Unrecognized #pragma directive" + "\r\n" +
+               @"#pragma reference ""Tekla.Macros.Wpf.Runtime""" + "\r\n" +
+               @"#pragma reference ""Tekla.Macros.Akit""" + "\r\n" +
+               @"#pragma reference ""Tekla.Macros.Runtime""" + "\r\n" +
+               @"#pragma warning restore 1633 // Unrecognized #pragma directive" + "\r\n" +
 
-            var viewAttr = new Tekla.Structures.Drawing.View.ViewAttributes();
-            viewAttr.LoadAttributes("standard");
+               @"namespace UserMacros {" + "\r\n" +
+                   @"public sealed class Macro {" + "\r\n" +
 
-            var markAttr = new Tekla.Structures.Drawing.SectionMarkBase.SectionMarkAttributes();
-            markAttr.LoadAttributes("standard");
-            markAttr.MarkName = markName;
+                       @"[Tekla.Macros.Runtime.MacroEntryPointAttribute()]" + "\r\n" +
+                       @"public static void Run(Tekla.Macros.Runtime.IMacroRuntime runtime) {" + "\r\n" +
+                           @"Tekla.Macros.Akit.IAkitScriptHost akit = runtime.Get<Tekla.Macros.Akit.IAkitScriptHost>();" + "\r\n" +
 
-            Tekla.Structures.Drawing.View sectionView;
-            Tekla.Structures.Drawing.SectionMark sectionMark;
+                           @"Tekla.Macros.Wpf.Runtime.IWpfMacroHost wpf = runtime.Get<Tekla.Macros.Wpf.Runtime.IWpfMacroHost>();" + "\r\n" +
+                              @"System.Threading.Thread.Sleep(1000);" + "\r\n" +
+                            @"akit.ValueChange(""rebar_dim_dial"", ""gr_dim_get_menu"", " + "\"" + propertyName + "\"" + ");" + "\r\n" +
 
-            Tekla.Structures.Drawing.View.CreateSectionView(
-                elevationView,
-                p1,
-                p2,
-                insertionPoint,
-                depthUp,
-                depthDown,
-                viewAttr,
-                markAttr,
-                out sectionView,
-                out sectionMark);
+                           @"akit.PushButton(""gr_dim_get"", ""rebar_dim_dial"");" + "\r\n" +
+
+                           @"akit.PushButton(""dim_apply"", ""rebar_dim_dial"");" + "\r\n" +
+
+                           @"akit.PushButton(""dim_ok"", ""rebar_dim_dial"");" + "\r\n" +
+
+
+
+                           @"wpf.InvokeCommand(""CommandRepository"", ""Dimensions.AddRebarDimensionMark"");" + "\r\n" +
+
+                           @"akit.CommandEnd();" + "\r\n" +
+                       @"}" + "\r\n" +
+                   @"}" + "\r\n" +
+               @"}";
+            File.WriteAllText(fullPath, macros);
         }
+
+        private string GetMacroDirectory()
+        {
+            string macroDir = string.Empty;
+            TSS.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroDir);
+            if (string.IsNullOrEmpty(macroDir)) return string.Empty;
+            if (macroDir.Contains(";")) macroDir = macroDir.Split(';')[0];
+
+            string drawingMacroPath = Path.Combine(macroDir, "drawings");
+            if (!Directory.Exists(drawingMacroPath)) Directory.CreateDirectory(drawingMacroPath);
+
+            return drawingMacroPath;
+        }
+
+        #endregion
     }
 }

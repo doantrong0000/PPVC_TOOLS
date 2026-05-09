@@ -14,8 +14,31 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Compile Remove="Macro\ChangeProperty.cs" />
+	  <Compile Remove="Macro\DimForRebar.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="Macro\DimForRebar.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Include="Macro\ChangeProperty.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Reference Include="System.Windows.Forms" />
 		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="Tekla.Macros.Akit">
+		  <HintPath>D:\Tekla Structure\2020.0\nt\bin\applications\Tekla\Model\ObjectBrowser\Tekla.Macros.Akit.dll</HintPath>
+		</Reference>
+		<Reference Include="Tekla.Macros.Runtime">
+		  <HintPath>D:\Tekla Structure\2020.0\nt\bin\applications\Tekla\Model\ObjectBrowser\Tekla.Macros.Runtime.dll</HintPath>
+		</Reference>
+		<Reference Include="Tekla.Macros.Wpf.Runtime">
+		  <HintPath>D:\Tekla Structure\2020.0\nt\bin\applications\Tekla\Model\ObjectBrowser\Tekla.Macros.Wpf.Runtime.dll</HintPath>
+		</Reference>
 		<Reference Include="Tekla.Structures">
 			<HintPath>D:\Tekla Structure\2020.0\nt\bin\plugins\Tekla.Structures.dll</HintPath>
 		</Reference>

@@ -7,6 +7,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Views/Styles/ModernTheme.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <CollectionViewSource x:Key="DimPropertiesCollection" Source="{Binding AvailableDimProperties}"/>
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid Margin="20">
@@ -14,42 +15,46 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="PPVC Auto Dim Tag" FontSize="20" FontWeight="Bold" Margin="0,0,0,10"/>
-        <TextBlock Grid.Row="0" HorizontalAlignment="Right" Name="txtStatus" Text="Ready." VerticalAlignment="Center" Foreground="#666"/>
+        <TextBlock Grid.Row="0" Text="PPVC Auto Dim Tag" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
 
-        <!-- Cast Unit Drawing -->
+        <!-- Add Property Section -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
-            <TextBlock Text="Settings:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox Name="txtSettings" Text="+ZRB_PPVC_CASTUNIT_DWG" Width="180" Height="28" VerticalContentAlignment="Center" Margin="0,0,15,0" Padding="5,0"/>
-            <Button Name="btnCreateCastUnitDrawing" Content="Create Cast Unit Drawing" Width="200" Height="36" Margin="0,0,10,0" Click="BtnCreateCastUnitDrawing_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+            <TextBlock Text="Add Property Name:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
+            <TextBox Name="txtNewProperty" Width="250" Height="32" VerticalContentAlignment="Center" Margin="0,0,15,0" Padding="5,0"/>
+            <Button Name="btnAddProperty" Content="Add to List" Width="120" Height="32" Click="BtnAddProperty_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
         </StackPanel>
-        <TextBlock Grid.Row="2" Text="Select the main part of the cast unit, then click the button above to generate its drawing." Foreground="#888" VerticalAlignment="Top" Margin="0,0,0,10"/>
 
-        <!-- Section Views -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,5,0,15">
-            <Button Name="btnCreateSections" Content="Create 3 Basic Sections" Width="200" Height="36" Margin="0,0,10,0" Click="BtnCreateSections_Click" Style="{StaticResource PrimaryButtonStyle}"/>
-        </StackPanel>
-        <TextBlock Grid.Row="4" Text="Open the generated Cast Unit Drawing, select an elevation view, then click the button above to cut Floor, Wall, Roof sections." Foreground="#888" VerticalAlignment="Top" Margin="0,0,0,10"/>
-
-        <!-- Separator -->
-        <Separator Grid.Row="5" Margin="0,5,0,15" Background="#444"/>
-
-        <!-- Rebar Dimension -->
-        <StackPanel Grid.Row="6" Margin="0,0,0,10">
-            <TextBlock Text="Rebar Dimension" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+        <!-- Rebar Dimension Mapping -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+            <TextBlock Text="Rebar Dimension Mapping" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+            
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                <TextBlock Text="Dim Property:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                <TextBox Name="txtRebarProperty" Text="standard" Width="180" Height="28" VerticalContentAlignment="Center" Margin="0,0,15,0" Padding="5,0"/>
-                <Button Name="btnAddRebarDim" Content="Add Rebar Dim" Width="140" Height="36" Margin="0,0,10,0" Click="BtnAddRebarDim_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                <TextBlock Text="Profile:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <ComboBox Name="cmbProfiles" Width="150" Height="32" Margin="0,0,10,0" ItemsSource="{Binding AvailableProfiles}" SelectedItem="{Binding SelectedProfile}" />
+                <Button Name="btnSaveProfile" Content="Save" Width="80" Height="32" Margin="0,0,10,0" Click="BtnSaveProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+                <TextBox Name="txtSaveAs" Width="150" Height="32" VerticalContentAlignment="Center" Margin="0,0,10,0" Padding="5,0"/>
+                <Button Name="btnSaveAsProfile" Content="Save As" Width="80" Height="32" Margin="0,0,15,0" Click="BtnSaveAsProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+                <Button Name="btnAddRow" Content="Thêm dòng" Width="90" Height="32" Margin="0,0,10,0" Click="BtnAddRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+                <Button Name="btnDeleteRow" Content="Xóa dòng" Width="90" Height="32" Click="BtnDeleteRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+            </StackPanel>
+
+            <DataGrid Name="dgMappingRules" ItemsSource="{Binding DimMappingRules}" AutoGenerateColumns="False" CanUserAddRows="True" Margin="0,0,0,10" Height="150" HeadersVisibility="Column">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Tên thép" Binding="{Binding RebarName}" Width="150"/>
+                    <DataGridTextColumn Header="Number (V/H)" Binding="{Binding Prefix}" Width="100"/>
+                    <DataGridComboBoxColumn Header="Kiểu tag gán vô" 
+                                            SelectedValueBinding="{Binding DimProperty}" 
+                                            ItemsSource="{Binding Source={StaticResource DimPropertiesCollection}}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                 <Button Name="btnAutoDimView" Content="Auto Dim View" Width="140" Height="36" Click="BtnAutoDimView_Click" Style="{StaticResource PrimaryButtonStyle}"/>
             </StackPanel>
-            <TextBlock Text="• Add Rebar Dim: Load property and apply to selected rebars.&#x0a;• Auto Dim View: Select a view first — auto finds all rebars and dimensions them." Foreground="#888" TextWrapping="Wrap"/>
+            <TextBlock Text="• Auto Dim View: Select a view first — auto finds all rebars and dimensions them based on the mapping rules above." Foreground="#888" TextWrapping="Wrap"/>
         </StackPanel>
     </Grid>
 </UserControl>
