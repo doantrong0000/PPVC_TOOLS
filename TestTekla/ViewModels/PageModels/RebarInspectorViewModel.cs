@@ -292,7 +292,7 @@ namespace TeklaApp.ViewModels
                 catch { }
 
                 bool isInvalid = false;
-                
+
                 // If rebar is outside host -> mark as error (red)
                 if (isOutsideHost)
                 {
@@ -301,15 +301,15 @@ namespace TeklaApp.ViewModels
                 else
                 {
                     string hostName = (item.HostName ?? "").ToUpper();
-                    bool isWallColSlab = MatchesKeywords(hostName, _wallKeywords) || 
-                                         MatchesKeywords(hostName, _slabKeywords) || 
-                                         hostName.Contains("COLUMN") || 
+                    bool isWallColSlab = MatchesKeywords(hostName, _wallKeywords) ||
+                                         MatchesKeywords(hostName, _slabKeywords) ||
+                                         hostName.Contains("COLUMN") ||
                                          hostName.Contains("COL");
 
                     if (isWallColSlab)
                     {
                         string pos = (item.Position ?? "").Trim().ToUpper();
-                        
+
                         // If prefix is X or unknown character (not V, H)
                         if (pos != "V" && pos != "H")
                         {
@@ -356,7 +356,7 @@ namespace TeklaApp.ViewModels
 
                     bool needsModify = false;
 
-                    if (item.Name != item.OriginalName) 
+                    if (item.Name != item.OriginalName)
                     {
                         rebar.Name = item.Name;
                         needsModify = true;
@@ -847,11 +847,19 @@ namespace TeklaApp.ViewModels
         /// </summary>
         private string GetOverlapShapeKey(Reinforcement rebar)
         {
-            string size = "";
-            rebar.GetReportProperty("SIZE", ref size);
-            string shapeKey = GetShapeKey(rebar);
-            string hookKey = GetHookKey(rebar);
-            return $"{size}|{shapeKey}|{hookKey}";
+            string size = ""; rebar.GetReportProperty("SIZE", ref size);
+            string grade = ""; rebar.GetReportProperty("GRADE", ref grade);
+            string name = rebar.Name;
+            string prefix = rebar.NumberingSeries?.Prefix ?? "";
+
+            string shapeKey = "";
+            rebar.GetReportProperty("SHAPE", ref shapeKey);
+
+            double length = 0;
+            rebar.GetReportProperty("LENGTH", ref length);
+            double roundedLength = Math.Round(length / 5.0) * 5.0;
+
+            return $"{name}|{prefix}|{grade}|{size}|{shapeKey}|{roundedLength}";
         }
 
         /// <summary>
@@ -1072,61 +1080,13 @@ namespace TeklaApp.ViewModels
             double length = 0;
             rebar.GetReportProperty("LENGTH", ref length);
 
-            string shapeKey = GetShapeKey(rebar);
-            string hookKey = GetHookKey(rebar);
+            string shapeKey = "";
+            rebar.GetReportProperty("SHAPE", ref shapeKey);
 
-            return $"{size}|{length}|{shapeKey}|{hookKey}";
+            return $"{size}|{length}|{shapeKey}";
         }
 
-        private string GetShapeKey(Reinforcement rebar)
-        {
-            // 1. Get Shape code (e.g. 0, 1, 2, 14...) or Shape name
-            string shapeInternalName = "";
-            rebar.GetReportProperty("SHAPE", ref shapeInternalName);
 
-            // 2. List of dimension properties to retrieve
-            // Tekla supports up to A-l (or more depending on version), typically A-G is sufficient
-            string[] dimProperties = { "DIM_A", "DIM_B", "DIM_C", "DIM_D", "DIM_E", "DIM_F", "DIM_G" };
-            List<string> dimensions = new List<string>();
-
-            foreach (var prop in dimProperties)
-            {
-                double val = 0;
-                if (rebar.GetReportProperty(prop, ref val) && val > 0)
-                {
-                    // Round to 5mm for consistency
-                    double roundedVal = Math.Round(val / 5.0, 0) * 5;
-                    dimensions.Add($"{prop.Last()}={roundedVal}");
-                }
-            }
-
-            // 3. Combine Shape code and dimensions
-            // Example output: "2|A=500-B=2000-C=500"
-            string dimsJoined = string.Join("-", dimensions);
-
-            // Handle reversal (Symmetry) - Prevent reversed start/end from creating different keys
-            var reversedDims = new List<string>(dimensions);
-            reversedDims.Reverse();
-            string dimsBackward = string.Join("-", reversedDims);
-
-            string finalDims = string.Compare(dimsJoined, dimsBackward, StringComparison.Ordinal) <= 0
-                               ? dimsJoined : dimsBackward;
-
-            return $"{shapeInternalName}|{finalDims}";
-        }
-
-        public string GetHookKey(Reinforcement rebar)
-        {
-            double startHookAngle = 0, endHookAngle = 0;
-            double startHookLength = 0, endHookLength = 0;
-
-            rebar.GetReportProperty("HOOK_START_ANGLE", ref startHookAngle);
-            rebar.GetReportProperty("HOOK_END_ANGLE", ref endHookAngle);
-            rebar.GetReportProperty("HOOK_START_LENGTH", ref startHookLength);
-            rebar.GetReportProperty("HOOK_END_LENGTH", ref endHookLength);
-
-            return $"S:{Math.Round(startHookAngle, 0)}-{Math.Round(startHookLength, 0)}|E:{Math.Round(endHookAngle, 0)}-{Math.Round(endHookLength, 0)}";
-        }
     }
 
     public class RebarInfoItem : INotifyPropertyChanged

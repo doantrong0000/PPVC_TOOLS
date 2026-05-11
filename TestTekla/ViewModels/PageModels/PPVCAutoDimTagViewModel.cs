@@ -1,19 +1,22 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Data;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Security.Policy;
 using System.Windows;
-
+using Tekla.Structures.Drawing;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 // Alias cho Tekla Drawing API
 using TSD = Tekla.Structures.Drawing;
 using TSDUI = Tekla.Structures.Drawing.UI;
+using TSM = Tekla.Structures.Model;
 using TSMO = Tekla.Structures.Model.Operations;
 using TSS = Tekla.Structures;
-using TSM = Tekla.Structures.Model;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using Newtonsoft.Json;
 
 namespace TeklaApp.ViewModels.PageModels
 {
@@ -258,7 +261,7 @@ namespace TeklaApp.ViewModels.PageModels
         /// <summary>
         /// Tự động tạo Dimension cho tất cả cốt thép trong View đang được chọn
         /// </summary>
-        public async void AutoDimSelectedView()
+        public void AutoDimSelectedView()
         {
             try
             {
@@ -326,11 +329,67 @@ namespace TeklaApp.ViewModels.PageModels
                     if (rebarsToDim.Count > 0)
                     {
                         // 1. Highlight đối tượng thép
-                        objectSelector.SelectObjects(rebarsToDim, false);
 
                         // 2. Lấy đường dẫn file Template
                         string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
                         string macroDir = GetMacroDirectory();
+
+                        System.Threading.Thread.Sleep(2000);
+
+                        objectSelector.UnselectAllObjects();
+
+                        string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
+                        string macroContent = File.ReadAllText(templatePath);
+                        macroContent = macroContent.Replace("<TEN_THUOC_TINH>", rule.DimProperty);
+                        string tempMacroName = "Temp_Run_AutoDim.cs";
+                        string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                        File.WriteAllText(tempRunPath, macroContent);
+                        TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+
+                        if (rebarsToDim.Count == 1)
+                        {
+                            // 1. Ép kiểu rõ ràng về TSD.ReinforcementBase thay vì TSD.DrawingObject
+                            TSD.ReinforcementBase theOnlyRebar = rebarsToDim[0] as TSD.ReinforcementBase;
+                            bool foundDummy = false;
+
+                            foreach (TSD.View v in selectedViews)
+                            {
+                                TSD.DrawingObjectEnumerator allObjs = v.GetAllObjects();
+                                while (allObjs.MoveNext())
+                                {
+                                    if (allObjs.Current is TSD.ReinforcementBase dummyRebar)
+                                    {
+                                        // 2. Đảm bảo khác ID với thanh thép đang cần Dim
+                                        if (dummyRebar.ModelIdentifier.ID != theOnlyRebar.ModelIdentifier.ID)
+                                        {
+                                            // 3. Truy xuất ngược về Model để check số lượng (Quantity)
+                                            TSM.ModelObject dummyModelObj = myModel.SelectModelObject(dummyRebar.ModelIdentifier);
+
+                                            if (dummyModelObj is TSM.Reinforcement dummyRebarModel)
+                                            {
+                                                int barCount = 0;
+                                                // Lấy số lượng thanh thép thực tế trong mô hình
+                                                dummyRebarModel.GetReportProperty("NUMBER", ref barCount);
+
+                                                // 4. ĐIỀU KIỆN KIÊN QUYẾT: Chỉ lấy thanh có số lượng ĐÚNG BẰNG 1
+                                                if (barCount == 1)
+                                                {
+                                                    rebarsToDim.Add(dummyRebar); // Thêm vào để Count = 2
+                                                    foundDummy = true;
+                                                    break; // Đã tìm được 1 thanh thỏa mãn, thoát vòng lặp while
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (foundDummy) break; // Thoát vòng lặp foreach (view)
+                            }
+                        }
+
+                        if (rebarsToDim.Count == 1) { continue; }
+
+                        objectSelector.SelectObjects(rebarsToDim, false);
+
 
 
                         string templatePath2 = Path.Combine(appFolder, "Macro", "DimForRebar.cs");
@@ -339,24 +398,6 @@ namespace TeklaApp.ViewModels.PageModels
                         string tempRunPath2 = Path.Combine(macroDir, tempMacroName2);
                         File.WriteAllText(tempRunPath2, macroContent2);
                         TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName2);
-
-
-                        string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
-
-                        // 3. Đọc nội dung và "Bơm" tên thuộc tính tương ứng của Rule (VD: A1, A2) vào
-                        string macroContent = File.ReadAllText(templatePath);
-                        macroContent = macroContent.Replace("<TEN_THUOC_TINH>", rule.DimProperty);
-
-                        // 4. Lưu ra thư mục Macro của Tekla để Tekla có thể chạy được
-
-                        string tempMacroName = "Temp_Run_AutoDim.cs";
-                        string tempRunPath = Path.Combine(macroDir, tempMacroName);
-                        File.WriteAllText(tempRunPath, macroContent);
-                        TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName);
-
-
-
-
 
                     }
                 }
@@ -368,50 +409,8 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
-        /// <summary>
-        /// SỬ DỤNG LẠI MACRO MỞ UI ĐÃ ĐƯỢC CHỨNG MINH LÀ CHẠY ĐÚNG THUỘC TÍNH
-        /// </summary>
-        private void CreateFastExecuteDimMacro(string macroName, string propertyName)
-        {
-            string macroPath = GetMacroDirectory();
-            if (string.IsNullOrEmpty(macroPath)) return;
-
-            string fullPath = Path.Combine(macroPath, macroName);
-
-            string macros =
-               @"#pragma warning disable 1633 // Unrecognized #pragma directive" + "\r\n" +
-               @"#pragma reference ""Tekla.Macros.Wpf.Runtime""" + "\r\n" +
-               @"#pragma reference ""Tekla.Macros.Akit""" + "\r\n" +
-               @"#pragma reference ""Tekla.Macros.Runtime""" + "\r\n" +
-               @"#pragma warning restore 1633 // Unrecognized #pragma directive" + "\r\n" +
-
-               @"namespace UserMacros {" + "\r\n" +
-                   @"public sealed class Macro {" + "\r\n" +
-
-                       @"[Tekla.Macros.Runtime.MacroEntryPointAttribute()]" + "\r\n" +
-                       @"public static void Run(Tekla.Macros.Runtime.IMacroRuntime runtime) {" + "\r\n" +
-                           @"Tekla.Macros.Akit.IAkitScriptHost akit = runtime.Get<Tekla.Macros.Akit.IAkitScriptHost>();" + "\r\n" +
-
-                           @"Tekla.Macros.Wpf.Runtime.IWpfMacroHost wpf = runtime.Get<Tekla.Macros.Wpf.Runtime.IWpfMacroHost>();" + "\r\n" +
-                              @"System.Threading.Thread.Sleep(1000);" + "\r\n" +
-                            @"akit.ValueChange(""rebar_dim_dial"", ""gr_dim_get_menu"", " + "\"" + propertyName + "\"" + ");" + "\r\n" +
-
-                           @"akit.PushButton(""gr_dim_get"", ""rebar_dim_dial"");" + "\r\n" +
-
-                           @"akit.PushButton(""dim_apply"", ""rebar_dim_dial"");" + "\r\n" +
-
-                           @"akit.PushButton(""dim_ok"", ""rebar_dim_dial"");" + "\r\n" +
 
 
-
-                           @"wpf.InvokeCommand(""CommandRepository"", ""Dimensions.AddRebarDimensionMark"");" + "\r\n" +
-
-                           @"akit.CommandEnd();" + "\r\n" +
-                       @"}" + "\r\n" +
-                   @"}" + "\r\n" +
-               @"}";
-            File.WriteAllText(fullPath, macros);
-        }
 
         private string GetMacroDirectory()
         {

@@ -12,12 +12,14 @@ namespace UserMacros
         public static void Run(Tekla.Macros.Runtime.IMacroRuntime runtime)
         {
             Tekla.Macros.Akit.IAkitScriptHost akit = runtime.Get<Tekla.Macros.Akit.IAkitScriptHost>();
-
-            System.Threading.Thread.Sleep(1000);
+            Tekla.Macros.Wpf.Runtime.IWpfMacroHost wpf = runtime.Get<Tekla.Macros.Wpf.Runtime.IWpfMacroHost>();
+            wpf.InvokeCommand("CommandRepository", "Dimensions.AddRebarDimensionMark");
+            wpf.InvokeCommand("CommandRepository", "Dimensions.AddRebarDimensionMark");
             akit.ValueChange("rebar_dim_dial", "gr_dim_get_menu", "<TEN_THUOC_TINH>");
             akit.PushButton("gr_dim_get", "rebar_dim_dial");
             akit.PushButton("dim_apply", "rebar_dim_dial");
             akit.PushButton("dim_ok", "rebar_dim_dial");
+            akit.CommandEnd();
         }
     }
 }

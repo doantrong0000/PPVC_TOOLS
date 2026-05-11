@@ -26,6 +26,10 @@
             <StackPanel>
                 <DockPanel LastChildFill="True">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <CheckBox x:Name="chkShowSelected" Content="Show only selected"
+                                  VerticalAlignment="Center" Margin="0,0,15,0"
+                                  Checked="ChkShowSelected_Checked" Unchecked="ChkShowSelected_Unchecked"
+                                  ToolTip="Filter grid to show only selected rows"/>
                         <Button Content="GET REBAR FROM MODEL"
                                 Click="BtnGetRebar_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
@@ -51,9 +55,13 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="250"/>
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
             <!-- DataGrid Area -->
-            <Border Grid.Column="0" Margin="10,5,5,5" Padding="0" Style="{StaticResource CardStyle}">
+            <Border Grid.Column="0" Grid.Row="0" Margin="10,5,5,5" Padding="0" Style="{StaticResource CardStyle}">
                 <DataGrid x:Name="dgvRebar"
                           ItemsSource="{Binding Groups}"
                           AutoGenerateColumns="False"
@@ -61,10 +69,13 @@
                           CanUserAddRows="False"
                           SelectionMode="Extended"
                           HeadersVisibility="Column"
-                          GridLinesVisibility="Horizontal"
+                          GridLinesVisibility="All"
+                          HorizontalGridLinesBrush="Black"
+                          VerticalGridLinesBrush="Black"
                           Background="Transparent"
                           BorderThickness="0"
                           RowHeight="32"
+                          SelectionChanged="DgvRebar_SelectionChanged"
                           MouseDoubleClick="DgvRebar_MouseDoubleClick">
                     <DataGrid.Resources>
                         <Style TargetType="DataGridColumnHeader">
@@ -105,8 +116,16 @@
                 </DataGrid>
             </Border>
 
+            <!-- Selected Text Area -->
+            <Border Grid.Column="0" Grid.Row="1" Margin="10,0,5,5" Style="{StaticResource CardStyle}" Padding="5">
+                <DockPanel>
+                    <TextBlock Text="Selected Seqs:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" Foreground="{StaticResource PrimaryDarkBrush}"/>
+                    <TextBox x:Name="txtSelectedInfo" Height="30" TextWrapping="NoWrap" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                </DockPanel>
+            </Border>
+
             <!-- Control Panel Sidebar -->
-            <StackPanel Grid.Column="1" Margin="5,5,10,5">
+            <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Margin="5,5,10,5">
                 <Border Style="{StaticResource CardStyle}" Padding="15">
                     <StackPanel>
                         <TextBlock Text="NUMBERING RSQN" FontWeight="Bold" FontSize="14" Margin="0,0,0,15" Foreground="{StaticResource PrimaryDarkBrush}"/>
@@ -134,6 +153,16 @@
                                 Click="BtnChange_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Height="50" Margin="0,0,0,10"/>
+
+                        <Button Content="FIND CHECK AGAIN"
+                                Click="BtnFindCheckAgain_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Height="50" Margin="0,0,0,5" ToolTip="Run Check Again logic and sort to top"/>
+                        
+                        <Button Content="FIND OVERLAP"
+                                Click="BtnFindOverlap_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Height="50" Margin="0,0,0,10" ToolTip="Run Overlap logic and sort to top"/>
 
                         <Button Content="UPDATE IN MODEL"
                                 Click="BtnUpdate_Click"

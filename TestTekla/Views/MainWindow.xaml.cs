@@ -10,10 +10,14 @@ namespace TeklaApp.Views
     {
         private MainViewModel _viewModel;
 
+        private CreateRebarViewModel _createVm;
+
         public MainWindow()
         {
             InitializeComponent();
             _viewModel = new MainViewModel();
+            _createVm = new CreateRebarViewModel();
+            FindRebarPanel.DataContext = _createVm;
 
             // Auto-detect: if a drawing is open, switch to Drawing view
             try
@@ -102,24 +106,21 @@ namespace TeklaApp.Views
             }
         }
 
-        private void BtnDeleteById_Click(object sender, RoutedEventArgs e)
+        private void BtnFindRebar_Click(object sender, RoutedEventArgs e)
         {
-            string idInput = txtDeleteId.Text;
-            if (string.IsNullOrWhiteSpace(idInput))
-            {
-                MessageBox.Show("Please enter an ID or GUID to delete.");
-                return;
-            }
+            _createVm.RunFindRebar();
+        }
 
-            bool success = _viewModel.DeleteObjectById(idInput);
-            if (success)
+        private void BtnPickAssembly_Click(object sender, RoutedEventArgs e)
+        {
+            _createVm.PickAssembly();
+        }
+
+        private void TxtFindSeq_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
             {
-                MessageBox.Show($"Successfully deleted object: {idInput}");
-                txtDeleteId.Text = string.Empty;
-            }
-            else
-            {
-                MessageBox.Show($"Could not find or delete object with ID: {idInput}");
+                _createVm.RunFindRebar();
             }
         }
     }

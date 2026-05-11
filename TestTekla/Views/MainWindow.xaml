@@ -126,12 +126,21 @@
                         <!-- Model Actions (Instant) -->
                         <TextBlock Text="QUICK ACTIONS" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,20,0,10"/>
 
-                        <StackPanel Margin="20,10,20,0">
-                            <TextBlock Text="Delete by ID/GUID:" Foreground="#CCCCCC" FontSize="12" Margin="0,0,0,5"/>
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox x:Name="txtDeleteId" Width="140" Height="28" Margin="0,0,5,0" VerticalContentAlignment="Center" Padding="5,0"/>
-                                <Button Name="btnDeleteById" Content="Delete" Click="BtnDeleteById_Click" Background="#FFFFFF" Foreground="#282C34" BorderThickness="0" Padding="15,0" FontWeight="Bold"/>
+                        <StackPanel Margin="20,10,20,0" x:Name="FindRebarPanel">
+                            <!-- Assembly Filter -->
+                            <TextBlock Text="ASSEMBLY FILTER:" Foreground="#CCCCCC" FontSize="11" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBox x:Name="txtFindAsm" Text="{Binding FindAsm, UpdateSourceTrigger=PropertyChanged}" Width="160" Height="28" Margin="0,0,5,0" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" ToolTip="Assembly Mark (Leave empty for all assemblies)"/>
+                                <Button Name="btnPickAssembly" Click="BtnPickAssembly_Click" Content="Pick" Background="#FFFFFF" Foreground="#282C34" BorderThickness="0" Padding="15,0" FontWeight="Bold" ToolTip="Pick a part to get its assembly mark"/>
                             </StackPanel>
+
+                            <!-- Find Seq -->
+                            <TextBlock Text="FIND REBAR BY SEQ:" Foreground="#CCCCCC" FontSize="11" FontWeight="Bold" Margin="0,0,0,5"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="160" Height="28" Margin="0,0,5,0" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" KeyDown="TxtFindSeq_KeyDown"/>
+                                <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Content="Find" Background="#FFFFFF" Foreground="#282C34" BorderThickness="0" Padding="15,0" FontWeight="Bold" ToolTip="Find and Select rebar in model by SEQ number"/>
+                            </StackPanel>
+                            <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="0,5,0,0" FontSize="11" FontStyle="Italic" Foreground="#4CD964" TextWrapping="Wrap"/>
                         </StackPanel>
                     </StackPanel>
 

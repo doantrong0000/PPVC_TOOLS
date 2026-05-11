@@ -99,7 +99,7 @@ namespace TeklaApp.ViewModels
                     Groups.Add(g);
                 }
 
-                CheckForDuplicates();
+                // CheckForDuplicates(); // Removed as per request to separate into buttons
                 UpdateRowColors();
                 StatusMessage = $"Loaded {rebars.Count} rebars into {Groups.Count} groups.";
             }
@@ -166,7 +166,7 @@ namespace TeklaApp.ViewModels
                 else if (item.ExistingSequences.Count > 1)
                 {
                     item.Seq = 0.001; // Marker for overlap as in original code
-                    item.Note = "Overlap";
+                    // Note is assigned when explicitly checking overlap
                 }
                 else
                 {
@@ -242,7 +242,7 @@ namespace TeklaApp.ViewModels
                     g.Note = "";
                 }
             }
-            CheckForDuplicates();
+            // CheckForDuplicates();
         }
 
         private void RenumberAllLogic()
@@ -258,7 +258,7 @@ namespace TeklaApp.ViewModels
                 g.Seq = start++;
                 g.Note = "";
             }
-            CheckForDuplicates();
+            // CheckForDuplicates();
         }
 
         private void RenumberSelectedLogic()
@@ -283,10 +283,10 @@ namespace TeklaApp.ViewModels
                 g.Seq = start++;
                 g.Note = "";
             }
-            CheckForDuplicates();
+            // CheckForDuplicates();
         }
 
-        private void CheckForDuplicates()
+        public void CheckAgainAndSort()
         {
             var groupsArr = Groups.ToArray();
             for (int i = 0; i < groupsArr.Length; i++)
@@ -306,6 +306,31 @@ namespace TeklaApp.ViewModels
                 if (hasDuplicate && string.IsNullOrEmpty(groupsArr[i].Note)) 
                     groupsArr[i].Note = "Check again";
             }
+
+            // Sort so "Check again" is at the top
+            var sorted = Groups.OrderBy(g => g.Note == "Check again" ? 0 : 1).ThenBy(g => g.Seq).ToList();
+            Groups.Clear();
+            foreach (var item in sorted) Groups.Add(item);
+            UpdateRowColors();
+        }
+
+        public void CheckOverlapAndSort()
+        {
+            foreach (var g in Groups)
+            {
+                if (g.Note == "Overlap") g.Note = "";
+                if (g.ExistingSequences.Count > 1)
+                {
+                    g.Seq = 0.001;
+                    if (string.IsNullOrEmpty(g.Note)) g.Note = "Overlap";
+                }
+            }
+
+            // Sort so "Overlap" is at the top
+            var sorted = Groups.OrderBy(g => g.Note == "Overlap" ? 0 : 1).ThenBy(g => g.Seq).ToList();
+            Groups.Clear();
+            foreach (var item in sorted) Groups.Add(item);
+            UpdateRowColors();
         }
 
         private void UpdateRowColors()
@@ -313,7 +338,7 @@ namespace TeklaApp.ViewModels
             foreach (var g in Groups)
             {
                 if (g.Seq == 0 || g.Seq == 0.001 || g.Note == "Check again" || g.Note == "Overlap")
-                    g.ColorBrush = "#CCE5FF"; // Light blue match original Color.FromArgb(204, 229, 255)
+                    g.ColorBrush = "#FFCDD2"; // Light red to distinguish from the blue selected color
                 else
                     g.ColorBrush = "Transparent";
             }
