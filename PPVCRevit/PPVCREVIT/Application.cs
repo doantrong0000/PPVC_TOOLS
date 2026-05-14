@@ -10,7 +10,7 @@ namespace PPVCREVIT
     /// <summary>
     ///     Application entry point - creates PPVC Tools ribbon tab
     /// </summary>
-    [UsedImplicitly]
+
     public class Application : ExternalApplication
     {
         private static readonly string AssemblyPath = typeof(Application).Assembly.Location;

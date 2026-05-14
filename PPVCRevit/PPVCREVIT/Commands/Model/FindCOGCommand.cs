@@ -4,14 +4,12 @@ using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using JetBrains.Annotations;
-using PPVCREVIT.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace PPVCREVIT.Commands.Model
 {
-    [UsedImplicitly]
     [Transaction(TransactionMode.Manual)]
     public class FindCOGCommand : IExternalCommand
 
@@ -25,7 +23,7 @@ namespace PPVCREVIT.Commands.Model
             try
             {
                 // 1. Kiểm tra family COG_Marker trước
-                FamilySymbol cogSymbol = FamilyLoaderService.GetCogMarkerSymbol(doc);
+                FamilySymbol cogSymbol = GetCogMarkerSymbol(doc);
                 if (cogSymbol == null)
                 {
                     TaskDialog.Show("Thiếu Family",

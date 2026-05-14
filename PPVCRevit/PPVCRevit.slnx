@@ -7,30 +7,10 @@
     <BuildType Name="Release.R25" />
     <BuildType Name="Release.R26" />
   </Configurations>
-  <Folder Name="/Automation/">
-    <Project Path="build/Build.csproj">
-      <BuildType Solution="Debug.R25|*" Project="Debug" />
-      <BuildType Solution="Debug.R26|*" Project="Debug" />
-      <BuildType Solution="Release.R25|*" Project="Release" />
-      <BuildType Solution="Release.R26|*" Project="Release" />
-      <Build Solution="Debug.R25|*" Project="false" />
-      <Build Solution="Debug.R26|*" Project="false" />
-      <Build Solution="Release.R25|*" Project="false" />
-      <Build Solution="Release.R26|*" Project="false" />
-    </Project>
-    <Project Path="install/Installer.csproj">
-      <BuildType Solution="Debug.R25|*" Project="Debug" />
-      <BuildType Solution="Debug.R26|*" Project="Debug" />
-      <BuildType Solution="Release.R25|*" Project="Release" />
-      <BuildType Solution="Release.R26|*" Project="Release" />
-      <Build Solution="Debug.R25|*" Project="false" />
-      <Build Solution="Debug.R26|*" Project="false" />
-      <Build Solution="Release.R25|*" Project="false" />
-      <Build Solution="Release.R26|*" Project="false" />
+  <Folder Name="/Solution Items/">
+    <Project Path="PPVCREVIT/PPVCREVIT.csproj">
+      <BuildType Solution="Debug|*" Project="Debug.R25" />
+      <BuildType Solution="Release|*" Project="Release.R25" />
     </Project>
   </Folder>
-  <Project Path="PPVCREVIT/PPVCREVIT.csproj">
-    <BuildType Solution="Debug|*" Project="Debug.R22" />
-    <BuildType Solution="Release|*" Project="Release.R22" />
-  </Project>
 </Solution>

@@ -62,3 +62,9 @@ TestTekla/output.txt
 *.user
 *.sh
 *.ps1
+*.log
+PPVCRevit/build/.editorconfig
+*.pdb
+*.wxs
+*.wixobj
+*.slnx
