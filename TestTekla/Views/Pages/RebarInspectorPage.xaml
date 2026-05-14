@@ -94,8 +94,13 @@
                         <Button Content="OVERLAP"
                                 Click="BtnFindOverlaps_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
-                                Width="105" Height="36" Margin="0,0,8,4"
+                                Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Find rebar pairs with same geometry but different SEQ (Overlap). Sorted to top."/>
+                        <Button Content="CHECK AGAIN"
+                                Click="BtnFindDuplicates_Click"
+                                Style="{StaticResource PrimaryButtonStyle}"
+                                Width="105" Height="36" Margin="0,0,8,4"
+                                ToolTip="Find rebar pairs with same SEQ but different geometry or mark. Sorted to top."/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
@@ -134,7 +139,7 @@
                 <Grid Grid.Column="0" Margin="0">
                     <DataGrid x:Name="dgRebars"
                               AutoGenerateColumns="False"
-                              IsReadOnly="False"
+                              IsReadOnly="True"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
                               SelectionMode="Single"
@@ -188,6 +193,12 @@
                                     <DataTrigger Binding="{Binding IsOverlap}" Value="True">
                                         <Setter Property="Background" Value="#FFF3E0"/>
                                         <Setter Property="BorderBrush" Value="#FFB74D"/>
+                                        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                    </DataTrigger>
+                                    <!-- Check again highlight → light red -->
+                                    <DataTrigger Binding="{Binding IsCheckAgain}" Value="True">
+                                        <Setter Property="Background" Value="#FFCDD2"/>
+                                        <Setter Property="BorderBrush" Value="#E57373"/>
                                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
                                     </DataTrigger>
                                     <!-- Invalid V/H highlight → red -->

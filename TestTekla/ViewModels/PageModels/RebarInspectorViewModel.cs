@@ -859,7 +859,88 @@ namespace TeklaApp.ViewModels
             rebar.GetReportProperty("LENGTH", ref length);
             double roundedLength = Math.Round(length / 5.0) * 5.0;
 
-            return $"{name}|{prefix}|{grade}|{size}|{shapeKey}|{roundedLength}";
+            string rebarPos = "";
+            rebar.GetReportProperty("REBAR_POS", ref rebarPos);
+
+            return $"{name}|{prefix}|{grade}|{size}|{shapeKey}|{roundedLength}|{rebarPos}";
+        }
+
+        public string FindDuplicates()
+        {
+            if (Rebars.Count == 0) return "No rebars loaded. Pick part first.";
+            if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
+
+            try
+            {
+                // Reset all check again flags
+                foreach (var item in Rebars) item.IsCheckAgain = false;
+
+                // Build shape keys + lengths for each rebar to compare
+                var rebarShapeKeys = new Dictionary<string, string>();
+                var rebarLengths = new Dictionary<string, double>();
+                var rebarMarks = new Dictionary<string, string>();
+                foreach (var item in Rebars)
+                {
+                    if (!int.TryParse(item.Id, out int objId)) continue;
+                    var obj = _model.SelectModelObject(new Tekla.Structures.Identifier(objId));
+                    if (obj is Reinforcement r)
+                    {
+                        rebarShapeKeys[item.Id] = GetOverlapShapeKey(r);
+                        double len = 0; r.GetReportProperty("LENGTH", ref len);
+                        rebarLengths[item.Id] = len;
+                        string mark = ""; r.GetReportProperty("REBAR_POS", ref mark);
+                        rebarMarks[item.Id] = mark;
+                    }
+                }
+
+                int duplicateCount = 0;
+                var duplicateItems = new HashSet<RebarInfoItem>();
+
+                for (int i = 0; i < Rebars.Count; i++)
+                {
+                    bool hasConflict = false;
+                    for (int j = i + 1; j < Rebars.Count; j++)
+                    {
+                        var a = Rebars[i];
+                        var b = Rebars[j];
+
+                        string seqA = (a.Seq ?? "").Trim();
+                        string seqB = (b.Seq ?? "").Trim();
+
+                        if (string.IsNullOrEmpty(seqA) || seqA == "0" || seqA == "0.001") continue;
+                        if (string.IsNullOrEmpty(seqB) || seqB == "0" || seqB == "0.001") continue;
+
+                        if (seqA == seqB)
+                        {
+                            // If SEQ is the same, verify Shape, Length, Mark
+                            string keyA = rebarShapeKeys.ContainsKey(a.Id) ? rebarShapeKeys[a.Id] : a.Id;
+                            string keyB = rebarShapeKeys.ContainsKey(b.Id) ? rebarShapeKeys[b.Id] : b.Id;
+                            
+                            // GetOverlapShapeKey includes shape, mark, length, so if keys differ, there's a conflict
+                            if (keyA != keyB)
+                            {
+                                hasConflict = true;
+                                duplicateItems.Add(a);
+                                duplicateItems.Add(b);
+                            }
+                        }
+                    }
+                }
+
+                if (duplicateItems.Count > 0)
+                {
+                    foreach (var item in duplicateItems) item.IsCheckAgain = true;
+                    var sortedList = Rebars.OrderByDescending(r => r.IsCheckAgain).ThenBy(r => r.SeqNum).ToList();
+                    Rebars.Clear();
+                    foreach (var item in sortedList) Rebars.Add(item);
+                    return $"Found {duplicateItems.Count} rebars with conflicting SEQ (Check again).";
+                }
+                else
+                {
+                    return "No SEQ conflicts found.";
+                }
+            }
+            catch (Exception ex) { return "Error: " + ex.Message; }
         }
 
         /// <summary>
@@ -878,8 +959,8 @@ namespace TeklaApp.ViewModels
                 var settings = SettingsService.LoadSettings();
                 double tolerance = settings.OverlapLengthTolerance;
 
-                // Reset all overlap flags
-                foreach (var item in Rebars) item.IsOverlap = false;
+                // Reset all overlap and check again flags
+                foreach (var item in Rebars) { item.IsOverlap = false; item.IsCheckAgain = false; }
 
                 // Build shape keys + lengths for each rebar
                 var rebarShapeKeys = new Dictionary<string, string>();   // id -> shape key (no length)
@@ -1097,6 +1178,7 @@ namespace TeklaApp.ViewModels
         private int _quantity;
         private bool _isIncluded = true;
         private bool _isOverlap = false;
+        private bool _isCheckAgain = false;
         private bool _isVHInvalid = false;
 
         // === Original values (from Tekla) ===
@@ -1156,6 +1238,12 @@ namespace TeklaApp.ViewModels
         {
             get => _isOverlap;
             set { _isOverlap = value; Notify(); }
+        }
+
+        public bool IsCheckAgain
+        {
+            get => _isCheckAgain;
+            set { _isCheckAgain = value; Notify(); }
         }
 
         public bool IsVHInvalid

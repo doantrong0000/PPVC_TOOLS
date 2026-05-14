@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,7 +28,14 @@ namespace TeklaApp.Views.Pages
         private void BtnSelectInModel_Click(object sender, RoutedEventArgs e)
         {
             var selectedItems = dgvRebar.SelectedItems.Cast<RSQNGroupItem>().ToList();
-            ViewModel.SelectInModel(selectedItems);
+            if (chkShowSelected.IsChecked == true)
+            {
+                TriggerShowOnlySelectedInTekla();
+            }
+            else
+            {
+                ViewModel.SelectInModel(selectedItems);
+            }
         }
 
         private void BtnChange_Click(object sender, RoutedEventArgs e)
@@ -51,28 +60,19 @@ namespace TeklaApp.Views.Pages
 
         private void ChkShowSelected_Checked(object sender, RoutedEventArgs e)
         {
-            ApplyFilter();
+            // Condition for SELECT button, no immediate action
         }
 
         private void ChkShowSelected_Unchecked(object sender, RoutedEventArgs e)
         {
-            ApplyFilter();
+            // Redraw to show all when unchecking
+            try
+            {
+                Tekla.Structures.Model.Operations.Operation.RunMacro("View_RedrawAll");
+            }
+            catch { }
         }
 
-        private void ApplyFilter()
-        {
-            if (chkShowSelected.IsChecked == true)
-            {
-                TriggerShowOnlySelectedInTekla();
-            }
-            else
-            {
-                // If unchecked, maybe redraw the whole view to show all
-                try {
-                    Tekla.Structures.Model.Operations.Operation.RunMacro("View_RedrawAll");
-                } catch {}
-            }
-        }
 
         private void DgvRebar_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -80,25 +80,49 @@ namespace TeklaApp.Views.Pages
             var selectedItems = dgvRebar.SelectedItems.Cast<RSQNGroupItem>().ToList();
             var seqs = selectedItems.Where(x => x.Seq > 0).Select(x => x.Seq).Distinct().OrderBy(s => s).Select(s => s.ToString());
             txtSelectedInfo.Text = string.Join(" ", seqs);
-
-            // If active, run Tekla ShowOnlySelected so only the newly selected items are shown in the model
-            if (chkShowSelected.IsChecked == true)
-            {
-                TriggerShowOnlySelectedInTekla();
-            }
         }
 
         private void TriggerShowOnlySelectedInTekla()
         {
             if (dgvRebar.SelectedItems == null) return;
+            var allItems = ViewModel.Groups.ToList();
             var selectedItems = dgvRebar.SelectedItems.Cast<RSQNGroupItem>().ToList();
-            ViewModel.SelectInModel(selectedItems);
+            
+            // Identify unselected items to hide
+            var itemsToHide = allItems.Except(selectedItems).ToList();
+            
+            // Select items to hide so the macro can act on them
+            ViewModel.SelectInModel(itemsToHide);
 
             try
             {
-                Tekla.Structures.Model.Operations.Operation.RunMacro("View_ShowOnlySelected");
+                string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
+                string macroDir = GetMacroDirectory();
+
+
+                string templatePath = Path.Combine(appFolder, "Macro", "HideElement.cs");
+                string macroContent = File.ReadAllText(templatePath);
+                string tempMacroName = "Temp_Run_HideElement.cs";
+                string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                File.WriteAllText(tempRunPath, macroContent);
+                Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
             }
             catch { }
+
+            // Restore original selection
+            ViewModel.SelectInModel(selectedItems);
+        }
+        private string GetMacroDirectory()
+        {
+            string macroDir = string.Empty;
+            Tekla.Structures.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroDir);
+            if (string.IsNullOrEmpty(macroDir)) return string.Empty;
+            if (macroDir.Contains(";")) macroDir = macroDir.Split(';')[0];
+
+            string drawingMacroPath = Path.Combine(macroDir, "drawings");
+            if (!Directory.Exists(drawingMacroPath)) Directory.CreateDirectory(drawingMacroPath);
+
+            return drawingMacroPath;
         }
 
         private void DgvRebar_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)

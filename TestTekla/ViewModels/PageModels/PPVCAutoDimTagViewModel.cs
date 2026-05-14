@@ -16,7 +16,7 @@ using TSD = Tekla.Structures.Drawing;
 using TSDUI = Tekla.Structures.Drawing.UI;
 using TSM = Tekla.Structures.Model;
 using TSMO = Tekla.Structures.Model.Operations;
-using TSS = Tekla.Structures;
+using TS = Tekla.Structures;
 
 namespace TeklaApp.ViewModels.PageModels
 {
@@ -318,7 +318,10 @@ namespace TeklaApp.ViewModels.PageModels
 
                                     if (matchName && matchPrefix)
                                     {
+
+
                                         rebarsToDim.Add(rebar);
+
                                     }
                                 }
                             }
@@ -334,7 +337,7 @@ namespace TeklaApp.ViewModels.PageModels
                         string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
                         string macroDir = GetMacroDirectory();
 
-                        System.Threading.Thread.Sleep(2000);
+                        System.Threading.Thread.Sleep(500);
 
                         objectSelector.UnselectAllObjects();
 
@@ -415,7 +418,7 @@ namespace TeklaApp.ViewModels.PageModels
         private string GetMacroDirectory()
         {
             string macroDir = string.Empty;
-            TSS.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroDir);
+            TS.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroDir);
             if (string.IsNullOrEmpty(macroDir)) return string.Empty;
             if (macroDir.Contains(";")) macroDir = macroDir.Split(';')[0];
 

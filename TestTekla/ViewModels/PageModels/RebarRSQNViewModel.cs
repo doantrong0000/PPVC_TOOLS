@@ -94,7 +94,7 @@ namespace TeklaApp.ViewModels
 
                 // Grouping logic (re-implementing Lib.GrouprebarToCompare)
                 var groupedData = GroupRebars(rebars);
-                foreach (var g in groupedData.OrderBy(x => x.Seq))
+                foreach (var g in groupedData.OrderBy(x => x.Seq == 0 ? 0 : 1).ThenBy(x => x.Seq))
                 {
                     Groups.Add(g);
                 }
@@ -122,10 +122,13 @@ namespace TeklaApp.ViewModels
                 string gSize = ""; first.GetReportProperty("SIZE", ref gSize);
                 string gGrade = ""; first.GetReportProperty("GRADE", ref gGrade);
 
+                string rebarPos = ""; 
+                first.GetReportProperty("REBAR_POS", ref rebarPos);
+
                 var item = new RSQNGroupItem
                 {
                     Name = gName,
-                    Mark = first.NumberingSeries?.Prefix ?? "",
+                    Mark = rebarPos,
                     Grade = gGrade,
                     Size = gSize,
                     Identifiers = group.Select(r => r.Identifier).ToList(),
@@ -150,14 +153,24 @@ namespace TeklaApp.ViewModels
                 foreach (var r in group)
                 {
                     int sInt = 0;
-                    if (r.GetUserProperty("REBAR_SEQ_NO", ref sInt)) sequences.Add(sInt);
+                    if (r.GetUserProperty("REBAR_SEQ_NO", ref sInt)) 
+                        sequences.Add(sInt);
                     else
                     {
                         double sDouble = 0;
-                        if (r.GetUserProperty("REBAR_SEQ_NO", ref sDouble)) sequences.Add(sDouble);
+                        if (r.GetUserProperty("REBAR_SEQ_NO", ref sDouble)) 
+                            sequences.Add(sDouble);
+                        else
+                        {
+                            string sStr = "";
+                            if (r.GetUserProperty("REBAR_SEQ_NO", ref sStr) && double.TryParse(sStr, out double sParsed))
+                                sequences.Add(sParsed);
+                        }
                     }
                 }
-                item.ExistingSequences = sequences.Distinct().ToList();
+                
+                // Overlap check: ignore 0 (unassigned)
+                item.ExistingSequences = sequences.Where(s => s > 0).Distinct().ToList();
                 
                 if (item.ExistingSequences.Count == 1)
                 {
@@ -165,8 +178,8 @@ namespace TeklaApp.ViewModels
                 }
                 else if (item.ExistingSequences.Count > 1)
                 {
-                    item.Seq = 0.001; // Marker for overlap as in original code
-                    // Note is assigned when explicitly checking overlap
+                    item.Seq = 0.001; // Marker for overlap
+                    item.Note = "Overlap";
                 }
                 else
                 {
@@ -215,9 +228,9 @@ namespace TeklaApp.ViewModels
             foreach (var g in Groups)
             {
                 var existing = g.ExistingSequences;
-                bool isNull = existing.All(x => x == 0);
+                bool isNull = existing.Count == 0;
 
-                if (existing.Count == 1 && existing[0] == 0)
+                if (isNull)
                 {
                     double next = 1;
                     while (usedSeqs.Contains(next)) next++;
@@ -225,24 +238,18 @@ namespace TeklaApp.ViewModels
                     usedSeqs.Add(next);
                     g.Note = "";
                 }
-                else if (existing.Count > 1 && isNull)
+                else if (existing.Count == 1)
                 {
-                    double next = 1;
-                    while (usedSeqs.Contains(next)) next++;
-                    g.Seq = next;
-                    usedSeqs.Add(next);
+                    g.Seq = existing[0];
                     g.Note = "";
                 }
-                else if (existing.Count > 1 && !isNull)
+                else if (existing.Count > 1)
                 {
                     double min = existing.Min();
-                    while (usedSeqs.Contains(min)) min++;
                     g.Seq = min;
-                    usedSeqs.Add(min);
-                    g.Note = "";
+                    g.Note = "Fixed Overlap";
                 }
             }
-            // CheckForDuplicates();
         }
 
         private void RenumberAllLogic()
@@ -258,13 +265,10 @@ namespace TeklaApp.ViewModels
                 g.Seq = start++;
                 g.Note = "";
             }
-            // CheckForDuplicates();
         }
 
         private void RenumberSelectedLogic()
         {
-            // This requires knowledge of selected items in View. 
-            // In MVVM we usually bind IsSelected property of GroupItem.
             var selected = Groups.Where(g => g.IsSelected).OrderBy(g => Groups.IndexOf(g)).ToList();
             if (selected.Count == 0)
             {
@@ -283,66 +287,94 @@ namespace TeklaApp.ViewModels
                 g.Seq = start++;
                 g.Note = "";
             }
-            // CheckForDuplicates();
         }
 
         public void CheckAgainAndSort()
         {
-            var groupsArr = Groups.ToArray();
-            for (int i = 0; i < groupsArr.Length; i++)
+            int found = 0;
+            var groupsList = Groups.ToList();
+            foreach (var g in groupsList)
             {
-                if (groupsArr[i].Note == "Check again") groupsArr[i].Note = "";
-
-                bool hasDuplicate = false;
-                for (int j = 0; j < groupsArr.Length; j++)
+                g.Note = "";
+                if (g.Seq == 0.001 && g.ExistingSequences.Count > 1)
                 {
-                    if (i == j) continue;
-                    if (groupsArr[i].Seq == groupsArr[j].Seq && groupsArr[i].Seq != 0 && groupsArr[i].Seq != 0.001)
-                    {
-                        hasDuplicate = true;
-                        break;
-                    }
+                    g.Seq = g.ExistingSequences.First(); // Clear overlap state
                 }
-                if (hasDuplicate && string.IsNullOrEmpty(groupsArr[i].Note)) 
-                    groupsArr[i].Note = "Check again";
             }
 
-            // Sort so "Check again" is at the top
-            var sorted = Groups.OrderBy(g => g.Note == "Check again" ? 0 : 1).ThenBy(g => g.Seq).ToList();
+            for (int i = 0; i < groupsList.Count; i++)
+            {
+                bool hasDuplicate = false;
+                for (int j = 0; j < groupsList.Count; j++)
+                {
+                    if (i == j) continue;
+                    // Use small epsilon for double comparison
+                    if (Math.Abs(groupsList[i].Seq - groupsList[j].Seq) < 0.0001 && groupsList[i].Seq > 0.001)
+                    {
+                        if (groupsList[i].Mark != groupsList[j].Mark)
+                        {
+                            hasDuplicate = true;
+                            break;
+                        }
+                    }
+                }
+                if (hasDuplicate)
+                {
+                    groupsList[i].Note = "Check again";
+                    found++;
+                }
+            }
+
+            // Sort so flagged items are at the top
+            var sorted = groupsList.OrderBy(g => g.Note == "Check again" ? 0 : 1)
+                                   .ThenBy(g => g.Note == "Overlap" ? 0 : 1)
+                                   .ThenBy(g => g.Seq).ToList();
+            
             Groups.Clear();
             foreach (var item in sorted) Groups.Add(item);
+            
             UpdateRowColors();
+            StatusMessage = $"Duplicate check finished. Found {found} duplicate sequence(s).";
         }
 
         public void CheckOverlapAndSort()
         {
+            int found = 0;
             foreach (var g in Groups)
             {
-                if (g.Note == "Overlap") g.Note = "";
+                g.Note = ""; // clear other notes
+                // Note: ExistingSequences is populated during GetRebarsFromModel
                 if (g.ExistingSequences.Count > 1)
                 {
                     g.Seq = 0.001;
-                    if (string.IsNullOrEmpty(g.Note)) g.Note = "Overlap";
+                    g.Note = "Overlap";
+                    found++;
                 }
             }
 
-            // Sort so "Overlap" is at the top
-            var sorted = Groups.OrderBy(g => g.Note == "Overlap" ? 0 : 1).ThenBy(g => g.Seq).ToList();
+            // Sort so flagged items are at the top
+            var sorted = Groups.OrderBy(g => g.Note == "Overlap" ? 0 : 1)
+                               .ThenBy(g => g.Note == "Check again" ? 0 : 1)
+                               .ThenBy(g => g.Seq).ToList();
+            
             Groups.Clear();
             foreach (var item in sorted) Groups.Add(item);
+            
             UpdateRowColors();
+            StatusMessage = $"Overlap check finished. Found {found} group(s) with inconsistent sequence numbering.";
         }
 
         private void UpdateRowColors()
         {
             foreach (var g in Groups)
             {
-                if (g.Seq == 0 || g.Seq == 0.001 || g.Note == "Check again" || g.Note == "Overlap")
-                    g.ColorBrush = "#FFCDD2"; // Light red to distinguish from the blue selected color
+                if (g.Seq <= 0.001 || g.Note == "Check again" || g.Note == "Overlap")
+                    g.ColorBrush = "#FFCDD2"; // Light red
                 else
                     g.ColorBrush = "Transparent";
             }
         }
+
 
         public void SelectInModel(List<RSQNGroupItem> selectedItems)
         {
@@ -391,13 +423,36 @@ namespace TeklaApp.ViewModels
 
         public string Name { get; set; }
         public string Mark { get; set; }
-        public double Seq { get => _seq; set { _seq = value; OnPropertyChanged(); } }
+        public double Seq { 
+            get => _seq; 
+            set { 
+                _seq = value; 
+                OnPropertyChanged(); 
+                OnPropertyChanged(nameof(SeqDisplay));
+            } 
+        }
+        public string SeqDisplay {
+            get {
+                if (Note == "Overlap" && ExistingSequences.Count > 1)
+                    return string.Join(", ", ExistingSequences);
+                if (Seq == 0) return "";
+                if (Seq == 0.001) return string.Join(", ", ExistingSequences);
+                return Seq.ToString();
+            }
+        }
         public string Grade { get; set; }
         public string Size { get; set; }
         public int Quantity { get; set; }
         public double Length { get; set; }
         public double Weight { get; set; }
-        public string Note { get => _note; set { _note = value; OnPropertyChanged(); } }
+        public string Note { 
+            get => _note; 
+            set { 
+                _note = value; 
+                OnPropertyChanged(); 
+                OnPropertyChanged(nameof(SeqDisplay));
+            } 
+        }
 
         public List<TS.Identifier> Identifiers { get; set; } = new List<TS.Identifier>();
         public List<Reinforcement> BackingRebars { get; set; } = new List<Reinforcement>();

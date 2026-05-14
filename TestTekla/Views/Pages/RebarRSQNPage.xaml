@@ -105,7 +105,7 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="100"/>
                         <DataGridTextColumn Header="Mark" Binding="{Binding Mark}" Width="80"/>
-                        <DataGridTextColumn Header="RSQN" Binding="{Binding Seq}" Width="60" FontWeight="Bold"/>
+                        <DataGridTextColumn Header="RSQN" Binding="{Binding SeqDisplay}" Width="60" FontWeight="Bold"/>
                         <DataGridTextColumn Header="Grade" Binding="{Binding Grade}" Width="60"/>
                         <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="60"/>
                         <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50"/>
