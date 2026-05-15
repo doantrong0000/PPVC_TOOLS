@@ -19,32 +19,35 @@ namespace PPVCREVIT.Commands.Drawing
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
+            try
+            {
 
-            //// 1. Thu thập tất cả sàn trong file chủ
-            //List<Floor> allFloors = new FilteredElementCollector(doc)
-            //    .OfClass(typeof(Floor))
-            //    .Cast<Floor>()
-            //    .ToList();
 
-            //// 2. Thu thập sàn từ các file Link (nếu có)
-            //// Lưu ý: Chúng ta cần lưu trữ kèm Transform của file link để tính toán tọa độ chính xác
-            //var linkData = new FilteredElementCollector(doc)
-            //    .OfClass(typeof(RevitLinkInstance))
-            //    .Cast<RevitLinkInstance>()
-            //    .Select(li => new { Doc = li.GetLinkDocument(), Transform = li.GetTotalTransform() })
-            //    .Where(l => l.Doc != null)
-            //    .ToList();
+                //// 1. Thu thập tất cả sàn trong file chủ
+                //List<Floor> allFloors = new FilteredElementCollector(doc)
+                //    .OfClass(typeof(Floor))
+                //    .Cast<Floor>()
+                //    .ToList();
 
-            //foreach (var link in linkData)
-            //{
-            //    var linkFloors = new FilteredElementCollector(link.Doc)
-            //        .OfClass(typeof(Floor))
-            //        .Cast<Floor>();
-            //    allFloors.AddRange(linkFloors);
-            //    // Ghi chú: Việc xử lý hình học giữa File Chủ và File Link phức tạp hơn do khác hệ tọa độ
-            //    // Trong phạm vi bài toán này, tôi sẽ tập trung vào việc quét tất cả sàn trong File Chủ trước.
-            //}
+                //// 2. Thu thập sàn từ các file Link (nếu có)
+                //// Lưu ý: Chúng ta cần lưu trữ kèm Transform của file link để tính toán tọa độ chính xác
+                //var linkData = new FilteredElementCollector(doc)
+                //    .OfClass(typeof(RevitLinkInstance))
+                //    .Cast<RevitLinkInstance>()
+                //    .Select(li => new { Doc = li.GetLinkDocument(), Transform = li.GetTotalTransform() })
+                //    .Where(l => l.Doc != null)
+                //    .ToList();
 
+                //foreach (var link in linkData)
+                //{
+                //    var linkFloors = new FilteredElementCollector(link.Doc)
+                //        .OfClass(typeof(Floor))
+                //        .Cast<Floor>();
+                //    allFloors.AddRange(linkFloors);
+                //    // Ghi chú: Việc xử lý hình học giữa File Chủ và File Link phức tạp hơn do khác hệ tọa độ
+                //    // Trong phạm vi bài toán này, tôi sẽ tập trung vào việc quét tất cả sàn trong File Chủ trước.
+                //}
+           
             IList<Reference> selectedRefs = uidoc.Selection.PickObjects(ObjectType.Element, new FloorSelectionFilter(), "Quét chọn các sàn để tạo Step");
             List<Floor> allFloors = selectedRefs
                .Select(r => doc.GetElement(r) as Floor)
@@ -206,6 +209,11 @@ namespace PPVCREVIT.Commands.Drawing
                 TaskDialog.Show("Thành công", $"Đã tạo thành công {countCreated} vị trí giật cấp.");
             else
                 TaskDialog.Show("Thông báo", "Không tìm thấy cặp sàn nào có giật cấp hoặc cạnh chung.");
+            }
+            catch
+            {
+                //
+            }
 
             return Result.Succeeded;
 
