@@ -6,8 +6,8 @@
 		<LaunchRevit>true</LaunchRevit>
 		<IsRepackable>false</IsRepackable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
-		<Configurations>Debug.R25;Debug.R26</Configurations>
-		<Configurations>$(Configurations);Release.R25;Release.R26</Configurations>
+		<Configurations>Debug;Debug.R25;Debug.R26</Configurations>
+		<Configurations>$(Configurations)Release;Release.R25;Release.R26</Configurations>
 	</PropertyGroup>
 
 	<ItemGroup>

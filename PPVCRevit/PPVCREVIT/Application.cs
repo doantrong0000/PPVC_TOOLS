@@ -13,8 +13,6 @@ namespace PPVCREVIT
 
     public class Application : ExternalApplication
     {
-        private static readonly string AssemblyPath = typeof(Application).Assembly.Location;
-
         public override void OnStartup()
         {
             CreateRibbon();

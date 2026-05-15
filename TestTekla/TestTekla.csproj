@@ -17,6 +17,7 @@
 	  <Compile Remove="Macro\ChangeProperty.cs" />
 	  <Compile Remove="Macro\DimForRebar.cs" />
 	  <Compile Remove="Macro\HideElement.cs" />
+	  <Compile Remove="Macro\RedrawView.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -27,6 +28,9 @@
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	  <None Include="Macro\HideElement.cs">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Include="Macro\RedrawView.cs">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>

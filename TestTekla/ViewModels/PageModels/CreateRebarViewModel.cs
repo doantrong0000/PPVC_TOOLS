@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+
 using Tekla.Structures.Geometry3d;
 using Tekla.Structures.Model;
 using Tekla.Structures.Model.Operations;
@@ -35,6 +37,25 @@ namespace TeklaApp.ViewModels.PageModels
         {
             get => _statusMessage;
             set { _statusMessage = value; OnPropertyChanged(); }
+        }
+
+        private bool _isShowOnly = false;
+        public bool IsShowOnly
+        {
+            get => _isShowOnly;
+            set
+            {
+                _isShowOnly = value;
+                OnPropertyChanged();
+                if (!_isShowOnly)
+                {
+                    try
+                    {
+                        Tekla.Structures.Model.Operations.Operation.RunMacro("View_RedrawAll");
+                    }
+                    catch { }
+                }
+            }
         }
 
         public void CloneRebarWithMultiPoints(bool mergeGroups = true)
@@ -83,12 +104,12 @@ namespace TeklaApp.ViewModels.PageModels
                     rg.StartPoint = segStart;
                     rg.EndPoint = segEnd;
 
-                    // --- FIX CHO TEKLA 2020: OFFSET ---
+                    // --- FIX FOR TEKLA 2020: OFFSET ---
                     // Use StartOffset and EndOffset to offset rebar 30mm
                     rg.StartFromPlaneOffset = (i == 0) ? coverValue : 0;
                     rg.EndFromPlaneOffset = (i == segmentCount - 1) ? coverValue : 0;
 
-                    // --- FIX CHO TEKLA 2020: ENUM SPACING ---
+                    // --- FIX FOR TEKLA 2020: ENUM SPACING ---
                     // Append 'S' to EXACT_SPACINGS
                     rg.SpacingType = BaseRebarGroup.RebarGroupSpacingTypeEnum.SPACING_TYPE_TARGET_SPACE;
                     rg.Spacings.Clear();
@@ -184,7 +205,6 @@ namespace TeklaApp.ViewModels.PageModels
                 return;
             }
 
-            // Support multiple SEQs separated by space (e.g. "1 6")
             List<int> targetSeqs = FindSeq.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
                                          .Select(s => int.TryParse(s, out int val) ? val : (int?)null)
                                          .Where(v => v.HasValue)
@@ -193,87 +213,181 @@ namespace TeklaApp.ViewModels.PageModels
 
             if (targetSeqs.Count == 0)
             {
-                StatusMessage = "Invalid SEQ input. Use integers separated by space.";
+                StatusMessage = "Invalid SEQ input.";
                 return;
             }
 
             string targetAsmName = FindAsm?.Trim() ?? "";
-            string seqsDisplay = string.Join(", ", targetSeqs);
-            StatusMessage = string.IsNullOrEmpty(targetAsmName) ? $"Searching for SEQs: {seqsDisplay}..." : $"Searching for SEQs: {seqsDisplay} in Assembly: {targetAsmName}...";
+            ArrayList foundRebars = new ArrayList();
+            ArrayList allRebarsInScope = new ArrayList();
 
             try
             {
-                Model myModel = new Model();
-                ArrayList foundObjects = new ArrayList();
-
-                // 1. Get all reinforcement objects (RebarGroup and SingleRebar separately)
-                ModelObject.ModelObjectEnum[] typesToSearch = { ModelObject.ModelObjectEnum.REBARGROUP, ModelObject.ModelObjectEnum.SINGLEREBAR };
-
-                foreach (var type in typesToSearch)
+                if (!string.IsNullOrEmpty(targetAsmName))
                 {
-                    ModelObjectEnumerator enumerator = myModel.GetModelObjectSelector().GetAllObjectsWithType(type);
-                    while (enumerator.MoveNext())
+                    // Filter by Assembly
+                    ModelObjectEnumerator asmEnum = _model.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.ASSEMBLY);
+                    while (asmEnum.MoveNext())
                     {
-                        if (enumerator.Current is Reinforcement rebar)
+                        var assembly = asmEnum.Current as Tekla.Structures.Model.Assembly;
+                        if (assembly == null) continue;
+
+                        string currentAsmName = assembly.Name;
+                        if (string.IsNullOrEmpty(currentAsmName))
                         {
-                            // Assembly Filter (by Name)
-                            if (!string.IsNullOrEmpty(targetAsmName))
-                            {
-                                string rebarAsmName = "";
-                                rebar.GetReportProperty("ASSEMBLY.NAME", ref rebarAsmName);
-                                if (string.IsNullOrEmpty(rebarAsmName))
-                                {
-                                    rebar.GetReportProperty("CAST_UNIT.NAME", ref rebarAsmName);
-                                }
-                                if (string.IsNullOrEmpty(rebarAsmName))
-                                {
-                                    rebar.GetReportProperty("NAME", ref rebarAsmName);
-                                }
+                            currentAsmName = assembly.AssemblyNumber.Prefix;
+                        }
 
-                                if (rebarAsmName != targetAsmName)
-                                    continue;
+                        if (currentAsmName == targetAsmName)
+                        {
+                            List<Part> allParts = new List<Part>();
+                            if (assembly.GetMainPart() is Part mainPart) allParts.Add(mainPart);
+                            ArrayList secondaryObjects = assembly.GetSecondaries();
+                            foreach (var obj in secondaryObjects)
+                            {
+                                if (obj is Part secPart) allParts.Add(secPart);
                             }
 
-                            // SEQ Check (support multiple)
-                            int valInt = 0;
-                            bool isMatch = false;
-
-                            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt))
+                            foreach (Part part in allParts)
                             {
-                                if (targetSeqs.Contains(valInt)) isMatch = true;
-                            }
-
-                            if (!isMatch)
-                            {
-                                string valStr = "";
-                                if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) && int.TryParse(valStr, out int parsed))
+                                ModelObjectEnumerator rebarEnum = part.GetReinforcements();
+                                while (rebarEnum.MoveNext())
                                 {
-                                    if (targetSeqs.Contains(parsed)) isMatch = true;
+                                    if (rebarEnum.Current is Reinforcement rebar)
+                                    {
+                                        allRebarsInScope.Add(rebar);
+                                        if (CheckRebarSeq(rebar, targetSeqs))
+                                        {
+                                            foundRebars.Add(rebar);
+                                        }
+                                    }
                                 }
                             }
-
-                            if (isMatch)
+                        }
+                    }
+                }
+                else
+                {
+                    // Scan whole Model
+                    ModelObjectEnumerator rebarEnum = _model.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.SINGLEREBAR | ModelObject.ModelObjectEnum.REBARGROUP);
+                    while (rebarEnum.MoveNext())
+                    {
+                        if (rebarEnum.Current is Reinforcement rebar)
+                        {
+                            allRebarsInScope.Add(rebar);
+                            if (CheckRebarSeq(rebar, targetSeqs))
                             {
-                                foundObjects.Add(rebar);
+                                foundRebars.Add(rebar);
                             }
                         }
                     }
                 }
 
-                if (foundObjects.Count > 0)
+                if (IsShowOnly)
                 {
-                    new Tekla.Structures.Model.UI.ModelObjectSelector().Select(foundObjects);
-                    StatusMessage = $"Found and selected {foundObjects.Count} rebar(s) matching SEQs: {seqsDisplay}.";
+                    TriggerShowOnlyFound(foundRebars, allRebarsInScope);
                 }
                 else
                 {
-                    StatusMessage = $"No rebar found matching SEQs: {seqsDisplay}.";
+                    new Tekla.Structures.Model.UI.ModelObjectSelector().Select(foundRebars);
+                }
+
+                if (foundRebars.Count > 0)
+                {
+                    StatusMessage = $"Found {foundRebars.Count} rebar(s).";
+                }
+                else
+                {
+                    StatusMessage = "No rebar found with specified SEQ.";
                 }
             }
             catch (Exception ex)
             {
                 StatusMessage = "Search error: " + ex.Message;
             }
+        }
+
+        private bool CheckRebarSeq(Reinforcement rebar, List<int> targetSeqs)
+        {
+            int valInt = 0;
+            string valStr = "";
+            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt))
+            {
+                return targetSeqs.Contains(valInt);
+            }
+            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) && int.TryParse(valStr, out int parsed))
+            {
+                return targetSeqs.Contains(parsed);
+            }
+            return false;
+        }
+
+        private void TriggerShowOnlyFound(ArrayList foundRebars, ArrayList allRebarsInScope)
+        {
+            string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
+            string macroDir = GetMacroDirectory();
+            if (string.IsNullOrEmpty(macroDir)) return;
+
+            // 1. Redraw all to start clean (optional but recommended)
+            try
+            {
+                string templatePath = Path.Combine(appFolder, "Macro", "RedrawView.cs");
+                if (File.Exists(templatePath))
+                {
+                    string macroContent = File.ReadAllText(templatePath);
+                    string tempMacroName = "Temp_Run_RedrawView.cs";
+                    string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                    File.WriteAllText(tempRunPath, macroContent);
+                    Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+                }
+            }
+            catch { }
+
+            // 2. Identify items to hide
+            ArrayList toHide = new ArrayList();
+            var foundSet = new HashSet<Reinforcement>(foundRebars.Cast<Reinforcement>());
+            foreach (var obj in allRebarsInScope)
+            {
+                if (obj is Reinforcement rebar && !foundSet.Contains(rebar))
+                {
+                    toHide.Add(rebar);
+                }
+            }
+
+            // 3. Select items to hide and run Hide macro
+            if (toHide.Count > 0)
+            {
+                new Tekla.Structures.Model.UI.ModelObjectSelector().Select(toHide);
+                try
+                {
+                    string templatePath = Path.Combine(appFolder, "Macro", "HideElement.cs");
+                    if (File.Exists(templatePath))
+                    {
+                        string macroContent = File.ReadAllText(templatePath);
+                        string tempMacroName = "Temp_Run_HideElement.cs";
+                        string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                        File.WriteAllText(tempRunPath, macroContent);
+                        Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+                    }
+                }
+                catch { }
+            }
+
+            // 4. Restore selection to found items
+            new Tekla.Structures.Model.UI.ModelObjectSelector().Select(foundRebars);
+        }
+
+        private string GetMacroDirectory()
+        {
+            string macroDir = string.Empty;
+            Tekla.Structures.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroDir);
+            if (string.IsNullOrEmpty(macroDir)) return string.Empty;
+            if (macroDir.Contains(";")) macroDir = macroDir.Split(';')[0];
+
+            string drawingMacroPath = Path.Combine(macroDir, "drawings");
+            if (!Directory.Exists(drawingMacroPath)) Directory.CreateDirectory(drawingMacroPath);
+
+            return drawingMacroPath;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

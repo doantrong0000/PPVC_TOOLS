@@ -68,6 +68,13 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
+        private string _statusMessage = "Ready";
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set { _statusMessage = value; OnPropertyChanged(); }
+        }
+
         private Dictionary<string, List<DimMappingRule>> _allProfiles;
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -108,7 +115,7 @@ namespace TeklaApp.ViewModels.PageModels
                 try
                 {
                     string jsonContent = File.ReadAllText(jsonFilePath);
-                    // Parse thủ công bằng Regex để đọc mảng chuỗi JSON mà không lo thiếu thư viện
+                    // Manually parse using Regex to read JSON string array without worrying about missing libraries
                     var matches = System.Text.RegularExpressions.Regex.Matches(jsonContent, "\"([^\"]+)\"");
                     foreach (System.Text.RegularExpressions.Match m in matches)
                     {
@@ -118,7 +125,7 @@ namespace TeklaApp.ViewModels.PageModels
                 catch { }
             }
 
-            // Nếu chưa có file JSON hoặc đọc bị rỗng, tạo mặc định
+            // If JSON file doesn't exist or is empty, create default
             if (AvailableDimProperties.Count == 0)
             {
                 AvailableDimProperties.Add("A1");
@@ -135,7 +142,7 @@ namespace TeklaApp.ViewModels.PageModels
         {
             try
             {
-                // Sinh chuỗi JSON chuẩn
+                // Generate standard JSON string
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.AppendLine("[");
                 for (int i = 0; i < AvailableDimProperties.Count; i++)
@@ -257,14 +264,15 @@ namespace TeklaApp.ViewModels.PageModels
 
         #region Rebar Dimension
 
-        // 1. THÊM TỪ KHÓA 'async' VÀO ĐÂY
+        // 1. ADD 'async' KEYWORD HERE
         /// <summary>
-        /// Tự động tạo Dimension cho tất cả cốt thép trong View đang được chọn
+        /// Automatically create Dimensions for all reinforcements in the selected View
         /// </summary>
         public void AutoDimSelectedView()
         {
             try
             {
+                StatusMessage = "Applying profile...";
                 SaveCurrentProfile(false);
 
                 TSD.DrawingHandler dh = new TSD.DrawingHandler();
@@ -273,7 +281,8 @@ namespace TeklaApp.ViewModels.PageModels
 
                 if (activeDrawing == null)
                 {
-                    MessageBox.Show("Vui lòng mở một bản vẽ (Drawing) trước!");
+                    StatusMessage = "Error: No active drawing.";
+                    MessageBox.Show("Please open a drawing first!");
                     return;
                 }
 
@@ -289,16 +298,21 @@ namespace TeklaApp.ViewModels.PageModels
                     }
                 }
 
-                if (selectedViews.Count == 0) return;
+                if (selectedViews.Count == 0)
+                {
+                    StatusMessage = "Error: No view selected.";
+                    return;
+                }
 
-                // Xử lý LẦN LƯỢT từng cấu hình (dòng) trong bảng
+                // Process each configuration (row) in the table sequentially
                 foreach (var rule in DimMappingRules)
                 {
+                    StatusMessage = $"Processing rule: {rule.RebarName} ({rule.Prefix})...";
                     if (string.IsNullOrEmpty(rule.DimProperty)) continue;
 
                     ArrayList rebarsToDim = new ArrayList();
 
-                    // Quét thép trong các View được chọn
+                    // Scan rebars in the selected Views
                     foreach (TSD.View view in selectedViews)
                     {
                         TSD.DrawingObjectEnumerator viewObjects = view.GetAllObjects();
@@ -328,12 +342,11 @@ namespace TeklaApp.ViewModels.PageModels
                         }
                     }
 
-                    // Chạy Macro chỉ cho nhóm thép khớp với dòng thiết lập này
+                    // Run Macro only for the group of rebars matching this setup line
                     if (rebarsToDim.Count > 0)
                     {
-                        // 1. Highlight đối tượng thép
-
-                        // 2. Lấy đường dẫn file Template
+                        // 1. Highlight rebar objects
+                        // 2. Get Template file path
                         string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
                         string macroDir = GetMacroDirectory();
 
@@ -343,7 +356,7 @@ namespace TeklaApp.ViewModels.PageModels
 
                         string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
                         string macroContent = File.ReadAllText(templatePath);
-                        macroContent = macroContent.Replace("<TEN_THUOC_TINH>", rule.DimProperty);
+                        macroContent = macroContent.Replace("<PROPERTY_NAME>", rule.DimProperty);
                         string tempMacroName = "Temp_Run_AutoDim.cs";
                         string tempRunPath = Path.Combine(macroDir, tempMacroName);
                         File.WriteAllText(tempRunPath, macroContent);
@@ -351,7 +364,7 @@ namespace TeklaApp.ViewModels.PageModels
 
                         if (rebarsToDim.Count == 1)
                         {
-                            // 1. Ép kiểu rõ ràng về TSD.ReinforcementBase thay vì TSD.DrawingObject
+                            // 1. Explicitly cast to TSD.ReinforcementBase instead of TSD.DrawingObject
                             TSD.ReinforcementBase theOnlyRebar = rebarsToDim[0] as TSD.ReinforcementBase;
                             bool foundDummy = false;
 
@@ -362,38 +375,36 @@ namespace TeklaApp.ViewModels.PageModels
                                 {
                                     if (allObjs.Current is TSD.ReinforcementBase dummyRebar)
                                     {
-                                        // 2. Đảm bảo khác ID với thanh thép đang cần Dim
+                                        // 2. Ensure ID is different from the rebar that needs Dim
                                         if (dummyRebar.ModelIdentifier.ID != theOnlyRebar.ModelIdentifier.ID)
                                         {
-                                            // 3. Truy xuất ngược về Model để check số lượng (Quantity)
+                                            // 3. Trace back to Model to check Quantity
                                             TSM.ModelObject dummyModelObj = myModel.SelectModelObject(dummyRebar.ModelIdentifier);
 
                                             if (dummyModelObj is TSM.Reinforcement dummyRebarModel)
                                             {
                                                 int barCount = 0;
-                                                // Lấy số lượng thanh thép thực tế trong mô hình
+                                                // Get actual number of rebars in the model
                                                 dummyRebarModel.GetReportProperty("NUMBER", ref barCount);
 
-                                                // 4. ĐIỀU KIỆN KIÊN QUYẾT: Chỉ lấy thanh có số lượng ĐÚNG BẰNG 1
+                                                // 4. PREREQUISITE: Only take bars with quantity EXACTLY EQUAL to 1
                                                 if (barCount == 1)
                                                 {
-                                                    rebarsToDim.Add(dummyRebar); // Thêm vào để Count = 2
+                                                    rebarsToDim.Add(dummyRebar); // Add to make Count = 2
                                                     foundDummy = true;
-                                                    break; // Đã tìm được 1 thanh thỏa mãn, thoát vòng lặp while
+                                                    break; // Found one matching bar, exit while loop
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                if (foundDummy) break; // Thoát vòng lặp foreach (view)
+                                if (foundDummy) break; // Exit foreach loop (view)
                             }
                         }
 
                         if (rebarsToDim.Count == 1) { continue; }
 
                         objectSelector.SelectObjects(rebarsToDim, false);
-
-
 
                         string templatePath2 = Path.Combine(appFolder, "Macro", "DimForRebar.cs");
                         string macroContent2 = File.ReadAllText(templatePath2);
@@ -404,11 +415,12 @@ namespace TeklaApp.ViewModels.PageModels
 
                     }
                 }
-                MessageBox.Show("Đã hoàn thành tạo Dimension cho các thép đã chọn theo profile '" + SelectedProfile + "'.", "Hoàn thành", MessageBoxButton.OK, MessageBoxImage.Information);
+                StatusMessage = "Completed.";
+                MessageBox.Show("Completed creating Dimensions for selected rebars based on profile '" + SelectedProfile + "'.", "Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                // MessageBox.Show("Lỗi thực thi: " + ex.Message);
+                StatusMessage = "Error: " + ex.Message;
             }
         }
 

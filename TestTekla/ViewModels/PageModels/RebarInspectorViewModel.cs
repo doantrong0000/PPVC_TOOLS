@@ -274,7 +274,7 @@ namespace TeklaApp.ViewModels
                                         if (p.Z > maxZ) maxZ = p.Z;
                                     }
 
-                                    double tol = 150.0; // Dung sai 150mm
+                                    double tol = 150.0; // Tolerance 150mm
                                     if (minX > hostSolid.MaximumPoint.X + tol ||
                                         maxX < hostSolid.MinimumPoint.X - tol ||
                                         minY > hostSolid.MaximumPoint.Y + tol ||

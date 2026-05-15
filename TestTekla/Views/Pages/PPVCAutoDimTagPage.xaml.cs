@@ -47,7 +47,7 @@ namespace TeklaApp.Views.Pages
             }
             else
             {
-                MessageBox.Show("Vui lòng chọn một dòng để xóa!");
+                MessageBox.Show("Please select a row to delete!");
             }
         }
 

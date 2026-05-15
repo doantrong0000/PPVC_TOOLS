@@ -1,4 +1,4 @@
-﻿#pragma warning disable 1633
+#pragma warning disable 1633
 #pragma reference "Tekla.Macros.Akit"
 #pragma reference "Tekla.Macros.Wpf.Runtime"
 #pragma reference "Tekla.Macros.Runtime"
@@ -15,7 +15,7 @@ namespace UserMacros
             Tekla.Macros.Wpf.Runtime.IWpfMacroHost wpf = runtime.Get<Tekla.Macros.Wpf.Runtime.IWpfMacroHost>();
             wpf.InvokeCommand("CommandRepository", "Dimensions.AddRebarDimensionMark");
             wpf.InvokeCommand("CommandRepository", "Dimensions.AddRebarDimensionMark");
-            akit.ValueChange("rebar_dim_dial", "gr_dim_get_menu", "<TEN_THUOC_TINH>");
+            akit.ValueChange("rebar_dim_dial", "gr_dim_get_menu", "<PROPERTY_NAME>");
             akit.PushButton("gr_dim_get", "rebar_dim_dial");
             akit.PushButton("dim_apply", "rebar_dim_dial");
             akit.PushButton("dim_ok", "rebar_dim_dial");

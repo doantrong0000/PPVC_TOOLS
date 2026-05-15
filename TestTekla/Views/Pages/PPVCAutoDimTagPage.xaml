@@ -14,8 +14,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="PPVC Auto Dim Tag" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
@@ -37,15 +37,15 @@
                 <Button Name="btnSaveProfile" Content="Save" Width="80" Height="32" Margin="0,0,10,0" Click="BtnSaveProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
                 <TextBox Name="txtSaveAs" Width="150" Height="32" VerticalContentAlignment="Center" Margin="0,0,10,0" Padding="5,0"/>
                 <Button Name="btnSaveAsProfile" Content="Save As" Width="80" Height="32" Margin="0,0,15,0" Click="BtnSaveAsProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
-                <Button Name="btnAddRow" Content="Thêm dòng" Width="90" Height="32" Margin="0,0,10,0" Click="BtnAddRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
-                <Button Name="btnDeleteRow" Content="Xóa dòng" Width="90" Height="32" Click="BtnDeleteRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+                <Button Name="btnAddRow" Content="Add Row" Width="90" Height="32" Margin="0,0,10,0" Click="BtnAddRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+                <Button Name="btnDeleteRow" Content="Delete Row" Width="90" Height="32" Click="BtnDeleteRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
             </StackPanel>
 
             <DataGrid Name="dgMappingRules" ItemsSource="{Binding DimMappingRules}" AutoGenerateColumns="False" CanUserAddRows="True" Margin="0,0,0,10" Height="150" HeadersVisibility="Column">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Tên thép" Binding="{Binding RebarName}" Width="150"/>
+                    <DataGridTextColumn Header="Rebar Name" Binding="{Binding RebarName}" Width="150"/>
                     <DataGridTextColumn Header="Number (V/H)" Binding="{Binding Prefix}" Width="100"/>
-                    <DataGridComboBoxColumn Header="Kiểu tag gán vô" 
+                    <DataGridComboBoxColumn Header="Tag Type" 
                                             SelectedValueBinding="{Binding DimProperty}" 
                                             ItemsSource="{Binding Source={StaticResource DimPropertiesCollection}}" Width="*"/>
                 </DataGrid.Columns>
@@ -56,5 +56,13 @@
             </StackPanel>
             <TextBlock Text="• Auto Dim View: Select a view first — auto finds all rebars and dimensions them based on the mapping rules above." Foreground="#888" TextWrapping="Wrap"/>
         </StackPanel>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="3" Background="#F8F8F8" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,5" Margin="-20,0,-20,-20">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Status:" Foreground="#999" Margin="0,0,10,0" VerticalAlignment="Center" FontSize="11"/>
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#005A9E" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="11"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

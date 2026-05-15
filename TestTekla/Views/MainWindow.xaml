@@ -22,13 +22,13 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
                             <Grid>
-                                <!-- Thanh nền (Track) -->
+                                <!-- Track Background -->
                                 <Border x:Name="BackgroundBorder"
                                         Background="#DDDDDD"
                                         CornerRadius="12.5">
                                 </Border>
 
-                                <!-- Nút tròn (Thumb) -->
+                                <!-- Thumb Round Button -->
                                 <Border x:Name="Dot"
                                         Width="21" Height="21"
                                         HorizontalAlignment="Left"
@@ -43,10 +43,10 @@
                             </Grid>
 
                             <ControlTemplate.Triggers>
-                                <!-- Trạng thái khi Bật (IsChecked = True) -->
+                                <!-- On State (IsChecked = True) -->
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="BackgroundBorder" Property="Background" Value="#4CD964"/>
-                                    <!-- Màu xanh -->
+                                    <!-- Green color -->
                                     <Trigger.EnterActions>
                                         <BeginStoryboard>
                                             <Storyboard>
@@ -139,7 +139,10 @@
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                                 <TextBox x:Name="txtFindSeq" Text="{Binding FindSeq, UpdateSourceTrigger=PropertyChanged}" Width="160" Height="28" Margin="0,0,5,0" VerticalContentAlignment="Center" TextAlignment="Center" FontWeight="Bold" KeyDown="TxtFindSeq_KeyDown"/>
                                 <Button Name="btnFindRebar" Click="BtnFindRebar_Click" Content="Find" Background="#FFFFFF" Foreground="#282C34" BorderThickness="0" Padding="15,0" FontWeight="Bold" ToolTip="Find and Select rebar in model by SEQ number"/>
+
+
                             </StackPanel>
+                            <CheckBox Name="chkShowOnlyFound" Content="Show only" IsChecked="{Binding IsShowOnly}" VerticalAlignment="Center" Foreground="#CCCCCC" Margin="10,0,0,0" ToolTip="Hide other rebars when finding"/>
                             <TextBlock Name="txtSearchStatus" Text="{Binding StatusMessage}" Margin="0,5,0,0" FontSize="11" FontStyle="Italic" Foreground="#4CD964" TextWrapping="Wrap"/>
                         </StackPanel>
                     </StackPanel>

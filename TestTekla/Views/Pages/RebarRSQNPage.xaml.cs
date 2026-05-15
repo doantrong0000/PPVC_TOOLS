@@ -87,25 +87,31 @@ namespace TeklaApp.Views.Pages
             if (dgvRebar.SelectedItems == null) return;
             var allItems = ViewModel.Groups.ToList();
             var selectedItems = dgvRebar.SelectedItems.Cast<RSQNGroupItem>().ToList();
-            
+
+            string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
+            string macroDir = GetMacroDirectory();
+
+            string templatePath = Path.Combine(appFolder, "Macro", "RedrawView.cs");
+            string macroContent = File.ReadAllText(templatePath);
+            string tempMacroName = "Temp_Run_RedrawView.cs";
+            string tempRunPath = Path.Combine(macroDir, tempMacroName);
+            File.WriteAllText(tempRunPath, macroContent);
+            Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+
             // Identify unselected items to hide
             var itemsToHide = allItems.Except(selectedItems).ToList();
-            
+
             // Select items to hide so the macro can act on them
             ViewModel.SelectInModel(itemsToHide);
 
             try
             {
-                string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
-                string macroDir = GetMacroDirectory();
-
-
-                string templatePath = Path.Combine(appFolder, "Macro", "HideElement.cs");
-                string macroContent = File.ReadAllText(templatePath);
-                string tempMacroName = "Temp_Run_HideElement.cs";
-                string tempRunPath = Path.Combine(macroDir, tempMacroName);
-                File.WriteAllText(tempRunPath, macroContent);
-                Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+                string templatePath2 = Path.Combine(appFolder, "Macro", "HideElement.cs");
+                string macroContent2 = File.ReadAllText(templatePath2);
+                string tempMacroName2 = "Temp_Run_HideElement.cs";
+                string tempRunPath2 = Path.Combine(macroDir, tempMacroName2);
+                File.WriteAllText(tempRunPath2, macroContent2);
+                Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName2);
             }
             catch { }
 
