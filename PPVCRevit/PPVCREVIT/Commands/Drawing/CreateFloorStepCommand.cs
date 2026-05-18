@@ -2,14 +2,19 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
-using NuGet.Packaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static Octokit.Caching.CachedResponse;
 
 namespace PPVCREVIT.Commands.Drawing
 {
+    public class FloorData
+    {
+        public Floor FloorElement { get; set; }
+        public Transform LinkTransform { get; set; }
+        public string SourceName { get; set; }
+    }
+
     [Transaction(TransactionMode.Manual)]
     public class CreateFloorStepCommand : IExternalCommand
     {
@@ -21,232 +26,226 @@ namespace PPVCREVIT.Commands.Drawing
 
             try
             {
-
-
-                //// 1. Thu thập tất cả sàn trong file chủ
-                //List<Floor> allFloors = new FilteredElementCollector(doc)
-                //    .OfClass(typeof(Floor))
-                //    .Cast<Floor>()
-                //    .ToList();
-
-                //// 2. Thu thập sàn từ các file Link (nếu có)
-                //// Lưu ý: Chúng ta cần lưu trữ kèm Transform của file link để tính toán tọa độ chính xác
-                //var linkData = new FilteredElementCollector(doc)
-                //    .OfClass(typeof(RevitLinkInstance))
-                //    .Cast<RevitLinkInstance>()
-                //    .Select(li => new { Doc = li.GetLinkDocument(), Transform = li.GetTotalTransform() })
-                //    .Where(l => l.Doc != null)
-                //    .ToList();
-
-                //foreach (var link in linkData)
-                //{
-                //    var linkFloors = new FilteredElementCollector(link.Doc)
-                //        .OfClass(typeof(Floor))
-                //        .Cast<Floor>();
-                //    allFloors.AddRange(linkFloors);
-                //    // Ghi chú: Việc xử lý hình học giữa File Chủ và File Link phức tạp hơn do khác hệ tọa độ
-                //    // Trong phạm vi bài toán này, tôi sẽ tập trung vào việc quét tất cả sàn trong File Chủ trước.
-                //}
-           
-            IList<Reference> selectedRefs = uidoc.Selection.PickObjects(ObjectType.Element, new FloorSelectionFilter(), "Quét chọn các sàn để tạo Step");
-            List<Floor> allFloors = selectedRefs
-               .Select(r => doc.GetElement(r) as Floor)
-               .Where(f => f != null).ToList();
-
-            if (allFloors.Count < 2)
-            {
-                TaskDialog.Show("Thông báo", "Vui lòng chọn ít nhất 2 sàn cạnh nhau.");
-                return Result.Cancelled;
-            }
-
-            // 2. Lấy sẵn các Type Family để dùng trong vòng lặp (tăng hiệu suất)
-            var stepSymbols = new FilteredElementCollector(doc)
-                .OfClass(typeof(FamilySymbol))
-                .Cast<FamilySymbol>()
-                .Where(x => x.FamilyName.Equals("StepSymbol"))
-                .ToList();
-
-            FamilySymbol symbolRL = stepSymbols.FirstOrDefault(x => x.Name.Equals("RL"));
-            FamilySymbol symbolLR = stepSymbols.FirstOrDefault(x => x.Name.Equals("LR"));
-
-            if (symbolRL == null || symbolLR == null)
-            {
-                TaskDialog.Show("Lỗi", "Không tìm thấy đủ Type 'RL' và 'LR' trong Family 'StepSymbol'.");
-                return Result.Cancelled;
-            }
-
-            int countCreated = 0;
-
-            using (Transaction tx = new Transaction(doc, "Create Floor Steps Batch"))
-            {
-                tx.Start();
-
-                if (!symbolRL.IsActive) symbolRL.Activate();
-                if (!symbolLR.IsActive) symbolLR.Activate();
-
-                // 3. Tách ra các cặp sát nhau bằng vòng lặp lồng
-                for (int i = 0; i < allFloors.Count; i++)
+                // 1. THAY ĐỔI QUAN TRỌNG: Dùng ObjectType.PointOnElement để chọn được cả Host và Link cùng lúc
+                IList<Reference> selectedRefs;
+                try
                 {
-                    for (int j = i + 1; j < allFloors.Count; j++)
+                    selectedRefs = uidoc.Selection.PickObjects(
+                        ObjectType.PointOnElement,
+                        new UniversalFloorSelectionFilter(doc),
+                        "Quét chọn TẤT CẢ các sàn (Cả trong Project và trong Link) để tạo Step"
+                    );
+                }
+                catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+                {
+                    return Result.Cancelled;
+                }
+
+                List<FloorData> allFloorData = new List<FloorData>();
+
+                foreach (Reference r in selectedRefs)
+                {
+                    // Trường hợp 1: Sàn nằm trong file LINK (Kiểm tra qua LinkedElementId)
+                    if (r.LinkedElementId != ElementId.InvalidElementId)
                     {
-                        Floor floor1 = allFloors[i];
-                        Floor floor2 = allFloors[j];
-
-                        // Kiểm tra cao độ
-                        double elev1 = GetFloorTopElevation(floor1);
-                        double elev2 = GetFloorTopElevation(floor2);
-
-                        if (Math.Abs(elev1 - elev2) < 0.001) continue; // Cùng cao độ thì bỏ qua
-
-                        // Tìm cạnh chung
-                        Line sharedEdge = FindSharedEdgeBy2DProjection(floor1, floor2);
-                        if (sharedEdge == null) continue; // Không sát nhau thì bỏ qua
-
-                        // ==========================================
-                        // 4. XỬ LÝ ĐẶT STEP CHO CẶP NÀY
-                        // ==========================================
-                        XYZ p1 = sharedEdge.GetEndPoint(0);
-                        XYZ p2 = sharedEdge.GetEndPoint(1);
-                        XYZ dir = (p2 - p1).Normalize();
-
-                        bool isVerticalTendency = Math.Abs(dir.Y) > Math.Abs(dir.X);
-
-                        if (isVerticalTendency)
+                        RevitLinkInstance linkInst = doc.GetElement(r.ElementId) as RevitLinkInstance;
+                        if (linkInst != null)
                         {
-                            // === XỬ LÝ THEO PHƯƠNG Y ===
-                            // Nếu đang hướng xuống (Y âm) -> Đảo ngược để luôn hướng lên (Y dương)
-                            if (dir.Y > 0.0001)
+                            Document linkDoc = linkInst.GetLinkDocument();
+                            if (linkDoc != null)
                             {
-                                dir = -dir;
-                            }
-                        }
-                        else
-                        {
-                            // === XỬ LÝ THEO PHƯƠNG X ===
-                            // Nếu đang hướng sang trái (X âm) -> Đảo ngược để luôn hướng sang phải (X dương)
-                            if (dir.X < -0.0001)
-                            {
-                                dir = -dir;
-                            }
-                        }
-
-                        XYZ midpoint = sharedEdge.Evaluate(0.5, true);
-
-                        BoundingBoxXYZ bbox1 = floor1.get_BoundingBox(null);
-                        XYZ center1 = (bbox1.Max + bbox1.Min) / 2.0;
-                        XYZ vecTo1 = center1 - midpoint;
-
-                        double crossZ = dir.X * vecTo1.Y - dir.Y * vecTo1.X;
-                        bool isFloor1Left = crossZ > 0;
-                        bool isFloor1Higher = elev1 > elev2;
-
-                        // Chọn Type dựa trên logic RL/LR
-                        FamilySymbol targetSymbol = (isFloor1Left == isFloor1Higher) ? symbolRL : symbolLR;
-
-                        View activeView = uidoc.ActiveView;
-                        double targetZ = Math.Max(elev1, elev2);
-
-                        XYZ placementPoint = new XYZ(midpoint.X, midpoint.Y, targetZ);
-
-                        // =========================================================================
-                        // BỔ SUNG: Dịch chuyển (Snap) điểm đặt về cạnh Top gần nhất của sàn cao hơn
-                        // =========================================================================
-                        Floor higherFloor = isFloor1Higher ? floor1 : floor2;
-                        List<Line> higherTopEdges = GetTopEdges(higherFloor); // Chỉ lấy mặt Top
-
-                        double minDistance = double.MaxValue;
-                        XYZ snappedPoint = placementPoint;
-
-                        foreach (Line edge in higherTopEdges)
-                        {
-                            // Hàm Project tìm điểm chiếu vuông góc từ placementPoint lên cạnh edge
-                            IntersectionResult result = edge.Project(placementPoint);
-                            if (result != null)
-                            {
-                                // Nếu khoảng cách chiếu nhỏ hơn khoảng cách min hiện tại thì cập nhật
-                                if (result.Distance < minDistance)
+                                Floor linkedFloor = linkDoc.GetElement(r.LinkedElementId) as Floor;
+                                if (linkedFloor != null)
                                 {
-                                    minDistance = result.Distance;
-                                    snappedPoint = result.XYZPoint; // Điểm đã nằm chính xác trên cạnh Top
+                                    allFloorData.Add(new FloorData
+                                    {
+                                        FloorElement = linkedFloor,
+                                        LinkTransform = linkInst.GetTotalTransform(),
+                                        SourceName = linkDoc.Title
+                                    });
                                 }
                             }
                         }
-
-                        // Cập nhật placementPoint thành điểm đã bắt dính
-                        // (Chỉ bắt dính nếu khoảng cách lệch không quá lớn, ví dụ giới hạn lệch tối đa 1 meter ~ 3.28 feet, 
-                        // nếu không có thể nó bắt nhầm ranh giới xa tít. Ở đây mình gán thẳng luôn)
-                        placementPoint = snappedPoint;
-
-                        // Đặt Family
-                        FamilyInstance instance = doc.Create.NewFamilyInstance(placementPoint, targetSymbol, activeView);
-
-                        // Xoay Family
-                        double angle = Math.Atan2(dir.Y, dir.X) - Math.PI / 2;
-                        angle = Math.Atan2(dir.Y, dir.X) + Math.PI / 2;
-
-                        if (Math.Abs(angle) > 0.001)
+                    }
+                    // Trường hợp 2: Sàn nằm trực tiếp trong PROJECT chủ
+                    else
+                    {
+                        Floor localFloor = doc.GetElement(r.ElementId) as Floor;
+                        if (localFloor != null)
                         {
-                            Line axis = Line.CreateBound(placementPoint, placementPoint + XYZ.BasisZ);
-                            ElementTransformUtils.RotateElement(doc, instance.Id, axis, angle);
+                            allFloorData.Add(new FloorData
+                            {
+                                FloorElement = localFloor,
+                                LinkTransform = Transform.Identity,
+                                SourceName = "Project_Host_File"
+                            });
                         }
-
-                        // Gán thông số StepHeight
-                        double stepHeightValue = Math.Round(Math.Abs(elev1 - elev2) * 304.8, 1);
-                        Parameter stepHeightParam = instance.LookupParameter("StepHeight");
-                        if (stepHeightParam != null && !stepHeightParam.IsReadOnly)
-                        {
-                            stepHeightParam.Set(stepHeightValue.ToString());
-                        }
-
-                        countCreated++;
                     }
                 }
 
-                tx.Commit();
-            }
+                // Loại bỏ trùng lặp phần tử
+                allFloorData = allFloorData.GroupBy(x => x.FloorElement.UniqueId).Select(g => g.First()).ToList();
 
-            if (countCreated > 0)
-                TaskDialog.Show("Thành công", $"Đã tạo thành công {countCreated} vị trí giật cấp.");
-            else
-                TaskDialog.Show("Thông báo", "Không tìm thấy cặp sàn nào có giật cấp hoặc cạnh chung.");
+                if (allFloorData.Count < 2)
+                {
+                    TaskDialog.Show("Thông báo", "Vui lòng chọn ít nhất 2 sàn cạnh nhau.");
+                    return Result.Cancelled;
+                }
+
+                // 2. Thu thập Family Symbols tại File Chủ
+                var stepSymbols = new FilteredElementCollector(doc)
+                    .OfClass(typeof(FamilySymbol))
+                    .Cast<FamilySymbol>()
+                    .Where(x => x.FamilyName.Equals("StepSymbol"))
+                    .ToList();
+
+                FamilySymbol symbolRL = stepSymbols.FirstOrDefault(x => x.Name.Equals("RL"));
+                FamilySymbol symbolLR = stepSymbols.FirstOrDefault(x => x.Name.Equals("LR"));
+
+                if (symbolRL == null || symbolLR == null)
+                {
+                    TaskDialog.Show("Lỗi", "Không tìm thấy đủ Type 'RL' và 'LR' trong Family 'StepSymbol' tại Project.");
+                    return Result.Cancelled;
+                }
+
+                int countCreated = 0;
+
+                using (Transaction tx = new Transaction(doc, "Create Steps For All Selected Floors"))
+                {
+                    tx.Start();
+
+                    if (!symbolRL.IsActive) symbolRL.Activate();
+                    if (!symbolLR.IsActive) symbolLR.Activate();
+
+                    // 3. Vòng lặp so sánh chéo giữa mọi cặp sàn
+                    for (int i = 0; i < allFloorData.Count; i++)
+                    {
+                        for (int j = i + 1; j < allFloorData.Count; j++)
+                        {
+                            FloorData fData1 = allFloorData[i];
+                            FloorData fData2 = allFloorData[j];
+
+                            double elev1 = GetAbsoluteFloorTopElevation(fData1);
+                            double elev2 = GetAbsoluteFloorTopElevation(fData2);
+
+                            if (Math.Abs(elev1 - elev2) < 0.001) continue;
+
+                            Line sharedEdge = FindSharedEdgeCrossLinks(fData1, fData2);
+                            if (sharedEdge == null) continue;
+
+                            // ==========================================
+                            // 4. TÍNH TOÁN VÀ ĐẶT STEP VÀO PROJECT
+                            // ==========================================
+                            XYZ p1 = sharedEdge.GetEndPoint(0);
+                            XYZ p2 = sharedEdge.GetEndPoint(1);
+                            XYZ dir = (p2 - p1).Normalize();
+
+                            bool isVerticalTendency = Math.Abs(dir.Y) > Math.Abs(dir.X);
+                            if (isVerticalTendency)
+                            {
+                                if (dir.Y > 0.0001) dir = -dir;
+                            }
+                            else
+                            {
+                                if (dir.X < -0.0001) dir = -dir;
+                            }
+
+                            XYZ midpoint = sharedEdge.Evaluate(0.5, true);
+                            XYZ center1 = GetAbsoluteCenterFromEdges(fData1);
+                            XYZ vecTo1 = center1 - midpoint;
+
+                            double crossZ = dir.X * vecTo1.Y - dir.Y * vecTo1.X;
+                            bool isFloor1Left = crossZ > 0;
+                            bool isFloor1Higher = elev1 > elev2;
+
+                            FamilySymbol targetSymbol = (isFloor1Left == isFloor1Higher) ? symbolRL : symbolLR;
+
+                            View activeView = uidoc.ActiveView;
+                            double targetZ = Math.Max(elev1, elev2);
+                            XYZ placementPoint = new XYZ(midpoint.X, midpoint.Y, targetZ);
+
+                            FloorData higherFloorData = isFloor1Higher ? fData1 : fData2;
+                            List<Line> higherTopEdges = GetAbsoluteTopEdges(higherFloorData);
+
+                            double minDistance = double.MaxValue;
+                            XYZ snappedPoint = placementPoint;
+
+                            foreach (Line edge in higherTopEdges)
+                            {
+                                IntersectionResult result = edge.Project(placementPoint);
+                                if (result != null)
+                                {
+                                    if (result.Distance < minDistance)
+                                    {
+                                        minDistance = result.Distance;
+                                        snappedPoint = result.XYZPoint;
+                                    }
+                                }
+                            }
+
+                            placementPoint = snappedPoint;
+
+                            // Đặt cấu kiện Step vào bản vẽ Project hiện tại
+                            FamilyInstance instance = doc.Create.NewFamilyInstance(placementPoint, targetSymbol, activeView);
+
+                            // Xoay cấu kiện
+                            double angle = Math.Atan2(dir.Y, dir.X) + Math.PI / 2;
+                            if (Math.Abs(angle) > 0.001)
+                            {
+                                Line axis = Line.CreateBound(placementPoint, placementPoint + XYZ.BasisZ);
+                                ElementTransformUtils.RotateElement(doc, instance.Id, axis, angle);
+                            }
+
+                            // Gán chiều cao bước giật cấp (mm)
+                            double stepHeightValue = Math.Round(Math.Abs(elev1 - elev2) * 304.8, 1);
+                            Parameter stepHeightParam = instance.LookupParameter("StepHeight");
+                            if (stepHeightParam != null && !stepHeightParam.IsReadOnly)
+                            {
+                                stepHeightParam.Set(stepHeightValue.ToString());
+                            }
+
+                            countCreated++;
+                        }
+                    }
+
+                    tx.Commit();
+                }
+
+                if (countCreated > 0)
+                    TaskDialog.Show("Thành công", $"Đã tạo thành công {countCreated} vị trí giật cấp.");
+                else
+                    TaskDialog.Show("Thông báo", "Không tìm thấy cặp sàn nào giao thoa giật cấp.");
             }
-            catch
+            catch (Exception ex)
             {
-                //
+                TaskDialog.Show("Lỗi Hệ Thống", ex.ToString());
             }
 
             return Result.Succeeded;
-
-
         }
 
-
-        // Các hàm helper giữ nguyên như cũ
-        private double GetFloorTopElevation(Floor floor)
+        private double GetAbsoluteFloorTopElevation(FloorData fData)
         {
+            Floor floor = fData.FloorElement;
             Parameter p = floor.get_Parameter(BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM);
             double offset = p != null ? p.AsDouble() : 0;
+
             Level level = floor.Document.GetElement(floor.LevelId) as Level;
             double levelElev = level != null ? level.Elevation : 0;
-            return levelElev + offset;
+
+            double localZ = levelElev + offset;
+
+            XYZ localPoint = new XYZ(0, 0, localZ);
+            XYZ absolutePoint = fData.LinkTransform.OfPoint(localPoint);
+
+            return absolutePoint.Z;
         }
 
-        private Line FindSharedEdgeBy2DProjection(Floor f1, Floor f2)
+        private Line FindSharedEdgeCrossLinks(FloorData f1, FloorData f2)
         {
-            List<Line> edges1 = [];
-            List<Line> edges2 = [];
-            double elev1 = GetFloorTopElevation(f1);
-            double elev2 = GetFloorTopElevation(f2);
-            if (elev1 < elev2)
-            {
-                edges1 = GetAllEdges(f1);
-                edges2 = GetAllEdges(f2);
-            }
-            else
-            {
-                edges1 = GetAllEdges(f1);
-                edges2 = GetAllEdges(f2);
-            }
+            List<Line> edges1 = GetAbsoluteAllEdges(f1);
+            List<Line> edges2 = GetAbsoluteAllEdges(f2);
+
             List<Line> listLine = new List<Line>();
             foreach (Line l1 in edges1)
             {
@@ -260,10 +259,8 @@ namespace PPVCREVIT.Commands.Drawing
                 }
             }
 
-            if (listLine == null) return null; // Nếu đoạn chung quá ngắn thì bỏ qua
-            if (listLine.Count == 0) return null; // Ngưỡng tối thiểu để coi là sát nhau
-            listLine.OrderByDescending(l => l.Length);
-            return listLine.FirstOrDefault(); // Lấy đoạn chung dài nhất nếu có nhiều đoạn chung (trường hợp sàn có nhiều cạnh sát nhau)
+            if (listLine.Count == 0) return null;
+            return listLine.OrderByDescending(l => l.Length).FirstOrDefault();
         }
 
         private Line GetOverlap2D(Line l1, Line l2)
@@ -277,6 +274,7 @@ namespace PPVCREVIT.Commands.Drawing
             XYZ v2 = (q2 - q1).Normalize();
             if (v1.IsAlmostEqualTo(XYZ.Zero, 0.00001) || v2.IsAlmostEqualTo(XYZ.Zero, 0.00001))
                 return null;
+
             if (!IsParallelWithTolerance(v1, v2, 0.02)) return null;
 
             Line infiniteL1 = Line.CreateUnbound(p1, v1);
@@ -295,14 +293,10 @@ namespace PPVCREVIT.Commands.Drawing
             return null;
         }
 
-        public bool IsParallelWithTolerance(XYZ vector1, XYZ vector2, double tolerance = 0.01)
+        private bool IsParallelWithTolerance(XYZ vector1, XYZ vector2, double tolerance = 0.01)
         {
             XYZ crossProg = vector1.CrossProduct(vector2);
-            double length = crossProg.GetLength(); // hoặc crossProg.Magnitude
-
-            // Nếu độ dài tích có hướng nhỏ hơn sai số cho phép -> Coi như song song
-            if (length > tolerance) return false;
-            return true;
+            return crossProg.GetLength() <= tolerance;
         }
 
         private double GetProjParam(XYZ a, XYZ b, XYZ p)
@@ -312,11 +306,12 @@ namespace PPVCREVIT.Commands.Drawing
             return ap.DotProduct(ab) / ab.DotProduct(ab);
         }
 
-        private List<Line> GetTopEdges(Floor floor)
+        private List<Line> GetAbsoluteTopEdges(FloorData fData)
         {
             List<Line> results = new List<Line>();
             Options opt = new Options { DetailLevel = ViewDetailLevel.Fine };
-            GeometryElement geo = floor.get_Geometry(opt);
+            GeometryElement geo = fData.FloorElement.get_Geometry(opt);
+            Transform tf = fData.LinkTransform;
 
             foreach (GeometryObject obj in geo)
             {
@@ -324,31 +319,31 @@ namespace PPVCREVIT.Commands.Drawing
                 {
                     foreach (Face face in solid.Faces)
                     {
-                        if (face is PlanarFace planarFace && planarFace.FaceNormal.IsAlmostEqualTo(XYZ.BasisZ))
+                        XYZ transformedNormal = tf.OfVector(face.ComputeNormal(UV.Zero)).Normalize();
+
+                        if (transformedNormal.IsAlmostEqualTo(XYZ.BasisZ, 0.01))
                         {
                             foreach (EdgeArray loop in face.EdgeLoops)
                             {
                                 foreach (Edge edge in loop)
                                 {
-                                    if (edge.AsCurve() is Line line) results.Add(line);
+                                    if (edge.AsCurve() is Line line)
+                                        results.Add(line.CreateTransformed(tf) as Line);
                                 }
                             }
                         }
-
                     }
-                }
-                else if (obj is GeometryInstance inst)
-                {
-                    results.AddRange(GetTopEdgesFromInstance(inst));
                 }
             }
             return results;
         }
-        private List<Line> GetAllEdges(Floor floor)
+
+        private List<Line> GetAbsoluteAllEdges(FloorData fData)
         {
             List<Line> results = new List<Line>();
             Options opt = new Options { DetailLevel = ViewDetailLevel.Fine };
-            GeometryElement geo = floor.get_Geometry(opt);
+            GeometryElement geo = fData.FloorElement.get_Geometry(opt);
+            Transform tf = fData.LinkTransform;
 
             foreach (GeometryObject obj in geo)
             {
@@ -360,47 +355,71 @@ namespace PPVCREVIT.Commands.Drawing
                         {
                             foreach (Edge edge in loop)
                             {
-                                if (edge.AsCurve() is Line line) results.Add(line);
+                                if (edge.AsCurve() is Line line)
+                                    results.Add(line.CreateTransformed(tf) as Line);
                             }
                         }
-
                     }
-                }
-                else if (obj is GeometryInstance inst)
-                {
-                    results.AddRange(GetTopEdgesFromInstance(inst));
                 }
             }
             return results;
         }
 
-        private List<Line> GetTopEdgesFromInstance(GeometryInstance inst)
+        private XYZ GetAbsoluteCenterFromEdges(FloorData fData)
         {
-            List<Line> results = new List<Line>();
-            foreach (GeometryObject obj in inst.GetInstanceGeometry())
+            var edges = GetAbsoluteTopEdges(fData);
+            if (edges.Count == 0) return XYZ.Zero;
+            double sumX = 0, sumY = 0, sumZ = 0;
+            int ptCount = 0;
+            foreach (var edge in edges)
             {
-                if (obj is Solid solid)
-                {
-                    foreach (Face face in solid.Faces)
-                    {
-                        foreach (EdgeArray loop in face.EdgeLoops)
-                        {
-                            foreach (Edge edge in loop)
-                            {
-                                if (edge.AsCurve() is Line line) results.Add(line);
-                            }
-                        }
-
-                    }
-                }
+                sumX += edge.GetEndPoint(0).X + edge.GetEndPoint(1).X;
+                sumY += edge.GetEndPoint(0).Y + edge.GetEndPoint(1).Y;
+                sumZ += edge.GetEndPoint(0).Z + edge.GetEndPoint(1).Z;
+                ptCount += 2;
             }
-            return results;
+            return new XYZ(sumX / ptCount, sumY / ptCount, sumZ / ptCount);
         }
     }
 
-    public class FloorSelectionFilter : ISelectionFilter
+    // BỘ LỌC CHỌN SỬA ĐỔI HOÀN CHỈNH CHO CẢ HOST VÀ LINK
+    public class UniversalFloorSelectionFilter : ISelectionFilter
     {
-        public bool AllowElement(Element elem) => elem is Floor;
-        public bool AllowReference(Reference reference, XYZ position) => false;
+        private Document _hostDoc;
+        public UniversalFloorSelectionFilter(Document hostDoc)
+        {
+            _hostDoc = hostDoc;
+        }
+
+        // Cho phép chuột bắt dính vào Sàn (Project) hoặc khối RevitLinkInstance
+        public bool AllowElement(Element elem)
+        {
+            if (elem is Floor) return true;
+            if (elem is RevitLinkInstance) return true;
+            return false;
+        }
+
+        // Kiểm tra chi tiết Reference được quét/click chọn
+        public bool AllowReference(Reference reference, XYZ position)
+        {
+            // TH1: Chuột chỉ vào cấu kiện nằm bên trong file LINK
+            if (reference.LinkedElementId != ElementId.InvalidElementId)
+            {
+                RevitLinkInstance linkInst = _hostDoc.GetElement(reference.ElementId) as RevitLinkInstance;
+                if (linkInst != null)
+                {
+                    Document linkDoc = linkInst.GetLinkDocument();
+                    if (linkDoc != null)
+                    {
+                        Element linkedElem = linkDoc.GetElement(reference.LinkedElementId);
+                        return linkedElem is Floor; // Hợp lệ nếu là sàn Link
+                    }
+                }
+            }
+
+            // TH2: Chuột chỉ trực tiếp vào cấu kiện của PROJECT hiện hành
+            Element localElem = _hostDoc.GetElement(reference.ElementId);
+            return localElem is Floor; // Hợp lệ nếu là sàn Project
+        }
     }
 }
