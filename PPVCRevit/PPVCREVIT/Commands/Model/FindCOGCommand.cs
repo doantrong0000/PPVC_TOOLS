@@ -12,8 +12,6 @@ namespace PPVCREVIT.Commands.Model
 {
     [Transaction(TransactionMode.Manual)]
     public class FindCOGCommand : IExternalCommand
-
-
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -91,6 +89,9 @@ namespace PPVCREVIT.Commands.Model
             catch (OperationCanceledException) { return Result.Cancelled; }
             catch (Exception ex) { message = ex.Message; return Result.Failed; }
         }
+
+
+
         // Giá trị mặc định (fallback) nếu không lấy được từ vật liệu
         private const double DefaultDensitySteel = 7850.0;    // kg/m³
         private const double DefaultDensityConcrete = 2400.0;  // kg/m³
@@ -364,7 +365,14 @@ namespace PPVCREVIT.Commands.Model
             FamilySymbol symbol = doc.GetElement(symbolId) as FamilySymbol;
 
             if (symbol != null && !symbol.IsActive)
-                symbol.Activate();
+            {
+                using (Transaction trans = new Transaction(doc, "Activate"))
+                {
+                    trans.Start();
+                    symbol.Activate();
+                    trans.Commit();
+                }
+            }
 
             return symbol;
         }

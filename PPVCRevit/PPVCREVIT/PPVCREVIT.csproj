@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
-		<DeployAddin>false</DeployAddin>
+		<DeployAddin>true</DeployAddin>
 		<LaunchRevit>true</LaunchRevit>
 		<IsRepackable>false</IsRepackable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
@@ -20,32 +20,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- Model Panel Icons -->
-		<Resource Include="Resources\Icons\CreateModule16.png" />
-		<Resource Include="Resources\Icons\CreateModule32.png" />
-		<Resource Include="Resources\Icons\EditModule16.png" />
-		<Resource Include="Resources\Icons\EditModule32.png" />
-		<Resource Include="Resources\Icons\ModuleManager16.png" />
-		<Resource Include="Resources\Icons\ModuleManager32.png" />
-
-		<!-- Rebar Panel Icons -->
-		<Resource Include="Resources\Icons\PlaceRebar16.png" />
-		<Resource Include="Resources\Icons\PlaceRebar32.png" />
-		<Resource Include="Resources\Icons\RebarSchedule16.png" />
-		<Resource Include="Resources\Icons\RebarSchedule32.png" />
-		<Resource Include="Resources\Icons\RebarSettings16.png" />
-		<Resource Include="Resources\Icons\RebarSettings32.png" />
-
-		<!-- Drawing Panel Icons -->
-		<Resource Include="Resources\Icons\CreateDrawing16.png" />
-		<Resource Include="Resources\Icons\CreateDrawing32.png" />
-		<Resource Include="Resources\Icons\DrawingTemplate16.png" />
-		<Resource Include="Resources\Icons\DrawingTemplate32.png" />
-		<Resource Include="Resources\Icons\ExportDrawing16.png" />
-		<Resource Include="Resources\Icons\ExportDrawing32.png" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<Folder Include="Commands\Rebar\" />
 		<Folder Include="Services\" />
 	</ItemGroup>
@@ -56,6 +30,16 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>Family\%(Filename)%(Extension)</Link>
 		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="Resources\Icons\icons8-room-16.png" />
+		<None Remove="Resources\Icons\icons8-room-32.png" />
+		<None Remove="Resources\Icons\room16.png" />
+		<None Remove="Resources\Icons\room32.png" />
+	</ItemGroup>
+	<ItemGroup>
+		<Resource Include="Resources\Icons\room16.png" />
+		<Resource Include="Resources\Icons\room32.png" />
 	</ItemGroup>
 
 </Project>
