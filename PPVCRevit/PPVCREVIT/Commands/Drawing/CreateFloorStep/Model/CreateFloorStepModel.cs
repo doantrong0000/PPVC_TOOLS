@@ -147,9 +147,7 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
                 tx.Commit();
             }
 
-            if (countCreated > 0)
-                TaskDialog.Show("Thành công", $"Đã tạo thành công {countCreated} vị trí giật cấp.");
-            else
+            if (countCreated < 1)
                 TaskDialog.Show("Thông báo", "Không tìm thấy giao điểm giật cấp nào giữa các sàn đã chọn.");
         }
 
@@ -309,5 +307,123 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
             }
             return new XYZ(sumX / ptCount, sumY / ptCount, sumZ / ptCount);
         }
+
+        public static void CreateInternalStepByOverlappingFaces(Document doc, UIDocument uidoc, FloorData fData)
+        {
+            Floor floor = fData.FloorElement;
+            Options opt = new Options { DetailLevel = ViewDetailLevel.Fine };
+            GeometryElement geo = floor.get_Geometry(opt);
+            Transform tf = fData.LinkTransform;
+
+            // 1. Lấy danh sách Top Faces
+            List<Face> topFaces = new List<Face>();
+            foreach (GeometryObject obj in geo)
+            {
+                if (obj is Solid solid && solid.Volume > 0)
+                {
+                    foreach (Face face in solid.Faces)
+                    {
+                        XYZ normal = tf.OfVector(face.ComputeNormal(UV.Zero));
+                        if (normal.IsAlmostEqualTo(XYZ.BasisZ, 0.1)) topFaces.Add(face);
+                    }
+                }
+            }
+
+            if (topFaces.Count < 2) return;
+
+            // 2. Thu thập Symbols
+            var stepSymbols = new FilteredElementCollector(doc).OfClass(typeof(FamilySymbol))
+                .Cast<FamilySymbol>().Where(x => x.FamilyName.Equals("StepSymbol")).ToList();
+            FamilySymbol symbolRL = stepSymbols.FirstOrDefault(x => x.Name.Equals("RL"));
+            FamilySymbol symbolLR = stepSymbols.FirstOrDefault(x => x.Name.Equals("LR"));
+
+            using (Transaction tx = new Transaction(doc, "Smart Internal Step"))
+            {
+                tx.Start();
+                int count = 0;
+
+                for (int i = 0; i < topFaces.Count; i++)
+                {
+                    for (int j = i + 1; j < topFaces.Count; j++)
+                    {
+                        Face f1 = topFaces[i];
+                        Face f2 = topFaces[j];
+
+                        // Tìm tất cả cạnh chung giữa 2 mặt này
+                        List<Line> sharedEdges = FindSharedEdgesBetweenFaces(f1, f2, tf);
+                        if (sharedEdges.Count == 0) continue;
+
+                        // Lọc lấy CẠNH DÀI NHẤT để tránh đặt vào các đoạn nát
+                        Line bestLine = sharedEdges.OrderByDescending(l => l.Length).First();
+
+
+                        XYZ midpoint = bestLine.Evaluate(0.5, true);
+
+                        // Lấy cao độ thực tế của 2 mặt tại tâm để so sánh
+                        double z1 = tf.OfPoint(f1.Evaluate(UV.Zero)).Z;
+                        double z2 = tf.OfPoint(f2.Evaluate(UV.Zero)).Z;
+
+                        if (Math.Abs(z1 - z2) < 0.001) continue;
+
+                        // Chọn Symbol dựa trên mặt nào cao hơn
+                        FamilySymbol targetSymbol = (z1 > z2) ? symbolRL : symbolLR;
+
+                        // Đặt tại cao độ của mặt cao nhất
+                        XYZ placementPoint = new XYZ(midpoint.X, midpoint.Y, Math.Max(z1, z2));
+                        FamilyInstance instance = doc.Create.NewFamilyInstance(placementPoint, targetSymbol, uidoc.ActiveView);
+
+                        // Xoay theo hướng cạnh
+                        XYZ dir = (bestLine.GetEndPoint(1) - bestLine.GetEndPoint(0)).Normalize();
+                        double angle = Math.Atan2(dir.Y, dir.X) + Math.PI / 2;
+                        Line axis = Line.CreateBound(placementPoint, placementPoint + XYZ.BasisZ);
+                        ElementTransformUtils.RotateElement(doc, instance.Id, axis, angle);
+
+                        double stepHeightValue = Math.Round(Math.Abs(z1 - z2) * 304.8, 1);
+                        Parameter stepHeightParam = instance.LookupParameter("StepHeight");
+                        if (stepHeightParam != null && !stepHeightParam.IsReadOnly)
+                        {
+                            stepHeightParam.Set(stepHeightValue.ToString());
+                        }
+
+                        count++;
+                    }
+                }
+                tx.Commit();
+            }
+        }
+
+        // Hàm phụ để tìm cạnh chung giữa 2 Face
+        private static List<Line> FindSharedEdgesBetweenFaces(Face f1, Face f2, Transform tf)
+        {
+            List<Line> shared = new List<Line>();
+            foreach (EdgeArray loop1 in f1.EdgeLoops)
+            {
+                foreach (Edge e1 in loop1)
+                {
+                    Curve c1 = e1.AsCurve().CreateTransformed(tf);
+                    if (!(c1 is Line l1)) continue;
+
+                    foreach (EdgeArray loop2 in f2.EdgeLoops)
+                    {
+                        foreach (Edge e2 in loop2)
+                        {
+                            Curve c2 = e2.AsCurve().CreateTransformed(tf);
+                            if (!(c2 is Line l2)) continue;
+
+                            // Dùng lại hàm GetOverlap2D đã viết ở các câu trước
+                            // (Lưu ý: Bạn cần đảm bảo hàm GetOverlap2D có sẵn trong class)
+                            Line overlap = GetOverlap2D(l1, l2);
+                            if (overlap != null && overlap.Length > 0.01)
+                            {
+                                shared.Add(overlap);
+                            }
+                        }
+                    }
+                }
+            }
+            return shared;
+        }
     }
+
 }
+

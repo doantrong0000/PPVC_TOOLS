@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -94,78 +94,32 @@ namespace TeklaApp.ViewModels.PageModels
             LoadDimMappingRules();
         }
 
-        private string GetJsonFilePath()
-        {
-            string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            string folderPath = Path.Combine(appData, "TeklaTools", "Json");
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
-            return Path.Combine(folderPath, "DimProperties.json");
-        }
-
         private void LoadDimProperties()
         {
-            string jsonFilePath = GetJsonFilePath();
             AvailableDimProperties = new ObservableCollection<string>();
-
-            if (File.Exists(jsonFilePath))
-            {
-                try
-                {
-                    string jsonContent = File.ReadAllText(jsonFilePath);
-                    // Manually parse using Regex to read JSON string array without worrying about missing libraries
-                    var matches = System.Text.RegularExpressions.Regex.Matches(jsonContent, "\"([^\"]+)\"");
-                    foreach (System.Text.RegularExpressions.Match m in matches)
-                    {
-                        AvailableDimProperties.Add(m.Groups[1].Value);
-                    }
-                }
-                catch { }
-            }
-
-            // If JSON file doesn't exist or is empty, create default
-            if (AvailableDimProperties.Count == 0)
-            {
-                AvailableDimProperties.Add("A1");
-                AvailableDimProperties.Add("A2");
-                AvailableDimProperties.Add("A3");
-                AvailableDimProperties.Add("WH_ArialNarr_2mm_Trans_Links Dim_no pic_Bar Middle Group_LINKS TEXT");
-
-                string jsonFilePathCreate = GetJsonFilePath();
-                SaveDimProperties(jsonFilePathCreate);
-            }
-        }
-
-        private void SaveDimProperties(string jsonFilePath)
-        {
             try
             {
-                // Generate standard JSON string
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                sb.AppendLine("[");
-                for (int i = 0; i < AvailableDimProperties.Count; i++)
+                TSM.Model myModel = new TSM.Model();
+                if (myModel.GetConnectionStatus())
                 {
-                    sb.Append("  \"");
-                    sb.Append(AvailableDimProperties[i]);
-                    sb.Append("\"");
-                    if (i < AvailableDimProperties.Count - 1) sb.AppendLine(",");
-                    else sb.AppendLine();
+                    string modelPath = myModel.GetInfo().ModelPath;
+                    string attributesPath = Path.Combine(modelPath, "attributes");
+
+                    if (Directory.Exists(attributesPath))
+                    {
+                        string[] files = Directory.GetFiles(attributesPath, "*.rdim");
+                        foreach (string file in files)
+                        {
+                            AvailableDimProperties.Add(Path.GetFileNameWithoutExtension(file));
+                        }
+                    }
                 }
-                sb.AppendLine("]");
-                File.WriteAllText(jsonFilePath, sb.ToString());
             }
             catch { }
-        }
 
-        public void AddNewProperty(string newProperty)
-        {
-            if (!AvailableDimProperties.Contains(newProperty))
+            if (AvailableDimProperties.Count == 0)
             {
-                AvailableDimProperties.Add(newProperty);
-                string jsonFilePath = GetJsonFilePath();
-                SaveDimProperties(jsonFilePath);
+                AvailableDimProperties.Add("standard");
             }
         }
 
@@ -198,10 +152,10 @@ namespace TeklaApp.ViewModels.PageModels
             {
                 _allProfiles = new Dictionary<string, List<DimMappingRule>>();
                 _allProfiles["standard"] = new List<DimMappingRule>
-                {
-                    new DimMappingRule { RebarName = "STIRRUP", Prefix = "V", DimProperty = "A1" },
-                    new DimMappingRule { RebarName = "MAIN BAR", Prefix = "V", DimProperty = "A2" }
-                };
+                                                                            {
+                                                                            new DimMappingRule { RebarName = "STIRRUP", Prefix = "V", DimProperty = "A1" },
+                                                                            new DimMappingRule { RebarName = "MAIN BAR", Prefix = "V", DimProperty = "A2" }
+                                                                            };
                 SaveAllProfiles();
             }
 
@@ -262,6 +216,25 @@ namespace TeklaApp.ViewModels.PageModels
             MessageBox.Show($"Profile saved as '{newProfileName}'.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        public void DeleteCurrentProfile()
+        {
+            if (string.IsNullOrEmpty(SelectedProfile)) return;
+            if (SelectedProfile.Equals("standard", StringComparison.OrdinalIgnoreCase)) return;
+
+            string profileToDelete = SelectedProfile;
+            _allProfiles.Remove(profileToDelete);
+
+            SaveAllProfiles();
+
+            AvailableProfiles.Clear();
+            DimMappingRules.Clear();
+            SelectedProfile = null;
+
+            LoadDimMappingRules();
+
+            MessageBox.Show($"Profile '{profileToDelete}' has been deleted.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
         #region Rebar Dimension
 
         // 1. ADD 'async' KEYWORD HERE
@@ -310,17 +283,43 @@ namespace TeklaApp.ViewModels.PageModels
                     StatusMessage = $"Processing rule: {rule.RebarName} ({rule.Prefix})...";
                     if (string.IsNullOrEmpty(rule.DimProperty)) continue;
 
-                    ArrayList rebarsToDim = new ArrayList();
 
                     // Scan rebars in the selected Views
                     foreach (TSD.View view in selectedViews)
                     {
+                        ArrayList rebarsToDim = new ArrayList();
                         TSD.DrawingObjectEnumerator viewObjects = view.GetAllObjects();
                         while (viewObjects.MoveNext())
                         {
                             if (viewObjects.Current is TSD.ReinforcementGroup rebar)
                             {
+                                // 1. Kiểm tra xem Rebar này đã được gán Mark trong bản vẽ chưa
+                                bool hasMark = false;
+                                var associatedObjects = rebar.GetRelatedObjects();
+
+                                while (associatedObjects.MoveNext())
+                                {
+                                    // Kiểm tra cả Mark thông thường và RebarMark chuyên dụng của cốt thép
+                                    if (associatedObjects.Current is TSD.DimensionBase mark)
+                                    {
+
+                                        hasMark = true;
+                                        break; // Đã tìm thấy thì thoát vòng lặp nhỏ này ngay
+
+
+
+                                    }
+                                }
+
+                                // Nếu ĐÃ CÓ MARK: Cảnh báo người dùng và BỎ QUA không cho vào danh sách đi Dim
+                                if (hasMark)
+                                {
+                                    continue; // Nhảy ngay sang thanh rebar tiếp theo trong view, không chạy code phía dưới nữa
+                                }
+
+                                // 2. Nếu CHƯA CÓ MARK: Tiến hành kết nối xuống mô hình để lọc theo Rule
                                 TSM.ModelObject modelObj = myModel.SelectModelObject(rebar.ModelIdentifier);
+
                                 if (modelObj is TSM.Reinforcement modelRebar)
                                 {
                                     string rName = modelRebar.Name ?? "";
@@ -332,88 +331,86 @@ namespace TeklaApp.ViewModels.PageModels
 
                                     if (matchName && matchPrefix)
                                     {
-
-
-                                        rebarsToDim.Add(rebar);
-
+                                        rebarsToDim.Add(rebar); // Thêm đối tượng bản vẽ hợp lệ vào danh sách chờ Dim
                                     }
                                 }
                             }
                         }
-                    }
-
-                    // Run Macro only for the group of rebars matching this setup line
-                    if (rebarsToDim.Count > 0)
-                    {
-                        // 1. Highlight rebar objects
-                        // 2. Get Template file path
-                        string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
-                        string macroDir = GetMacroDirectory();
-
-                        System.Threading.Thread.Sleep(500);
-
-                        objectSelector.UnselectAllObjects();
-
-                        string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
-                        string macroContent = File.ReadAllText(templatePath);
-                        macroContent = macroContent.Replace("<PROPERTY_NAME>", rule.DimProperty);
-                        string tempMacroName = "Temp_Run_AutoDim.cs";
-                        string tempRunPath = Path.Combine(macroDir, tempMacroName);
-                        File.WriteAllText(tempRunPath, macroContent);
-                        TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName);
-
-                        if (rebarsToDim.Count == 1)
+                        if (rebarsToDim.Count > 0)
                         {
-                            // 1. Explicitly cast to TSD.ReinforcementBase instead of TSD.DrawingObject
-                            TSD.ReinforcementBase theOnlyRebar = rebarsToDim[0] as TSD.ReinforcementBase;
-                            bool foundDummy = false;
+                            // 1. Highlight rebar objects
+                            // 2. Get Template file path
+                            string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
+                            string macroDir = GetMacroDirectory();
 
-                            foreach (TSD.View v in selectedViews)
+                            System.Threading.Thread.Sleep(500);
+
+                            objectSelector.UnselectAllObjects();
+
+                            string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
+                            string macroContent = File.ReadAllText(templatePath);
+                            macroContent = macroContent.Replace("<PROPERTY_NAME>", rule.DimProperty);
+                            string tempMacroName = "Temp_Run_AutoDim.cs";
+                            string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                            File.WriteAllText(tempRunPath, macroContent);
+                            TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+
+                            if (rebarsToDim.Count == 1)
                             {
-                                TSD.DrawingObjectEnumerator allObjs = v.GetAllObjects();
-                                while (allObjs.MoveNext())
+                                // 1. Explicitly cast to TSD.ReinforcementBase instead of TSD.DrawingObject
+                                TSD.ReinforcementBase theOnlyRebar = rebarsToDim[0] as TSD.ReinforcementBase;
+                                bool foundDummy = false;
+
+                                foreach (TSD.View v in selectedViews)
                                 {
-                                    if (allObjs.Current is TSD.ReinforcementBase dummyRebar)
+                                    TSD.DrawingObjectEnumerator allObjs = v.GetAllObjects();
+                                    while (allObjs.MoveNext())
                                     {
-                                        // 2. Ensure ID is different from the rebar that needs Dim
-                                        if (dummyRebar.ModelIdentifier.ID != theOnlyRebar.ModelIdentifier.ID)
+                                        if (allObjs.Current is TSD.ReinforcementBase dummyRebar)
                                         {
-                                            // 3. Trace back to Model to check Quantity
-                                            TSM.ModelObject dummyModelObj = myModel.SelectModelObject(dummyRebar.ModelIdentifier);
-
-                                            if (dummyModelObj is TSM.Reinforcement dummyRebarModel)
+                                            // 2. Ensure ID is different from the rebar that needs Dim
+                                            if (dummyRebar.ModelIdentifier.ID != theOnlyRebar.ModelIdentifier.ID)
                                             {
-                                                int barCount = 0;
-                                                // Get actual number of rebars in the model
-                                                dummyRebarModel.GetReportProperty("NUMBER", ref barCount);
+                                                // 3. Trace back to Model to check Quantity
+                                                TSM.ModelObject dummyModelObj = myModel.SelectModelObject(dummyRebar.ModelIdentifier);
 
-                                                // 4. PREREQUISITE: Only take bars with quantity EXACTLY EQUAL to 1
-                                                if (barCount == 1)
+                                                if (dummyModelObj is TSM.Reinforcement dummyRebarModel)
                                                 {
-                                                    rebarsToDim.Add(dummyRebar); // Add to make Count = 2
-                                                    foundDummy = true;
-                                                    break; // Found one matching bar, exit while loop
+                                                    int barCount = 0;
+                                                    // Get actual number of rebars in the model
+                                                    dummyRebarModel.GetReportProperty("NUMBER", ref barCount);
+
+                                                    // 4. PREREQUISITE: Only take bars with quantity EXACTLY EQUAL to 1
+                                                    if (barCount == 1)
+                                                    {
+                                                        rebarsToDim.Add(dummyRebar); // Add to make Count = 2
+                                                        foundDummy = true;
+                                                        break; // Found one matching bar, exit while loop
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                    if (foundDummy) break; // Exit foreach loop (view)
                                 }
-                                if (foundDummy) break; // Exit foreach loop (view)
                             }
+
+                            if (rebarsToDim.Count == 1) { continue; }
+
+                            objectSelector.SelectObjects(rebarsToDim, false);
+
+                            string templatePath2 = Path.Combine(appFolder, "Macro", "DimForRebar.cs");
+                            string macroContent2 = File.ReadAllText(templatePath2);
+                            string tempMacroName2 = "Temp_AutoDim.cs";
+                            string tempRunPath2 = Path.Combine(macroDir, tempMacroName2);
+                            File.WriteAllText(tempRunPath2, macroContent2);
+                            TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName2);
+
                         }
-
-                        if (rebarsToDim.Count == 1) { continue; }
-
-                        objectSelector.SelectObjects(rebarsToDim, false);
-
-                        string templatePath2 = Path.Combine(appFolder, "Macro", "DimForRebar.cs");
-                        string macroContent2 = File.ReadAllText(templatePath2);
-                        string tempMacroName2 = "Temp_AutoDim.cs";
-                        string tempRunPath2 = Path.Combine(macroDir, tempMacroName2);
-                        File.WriteAllText(tempRunPath2, macroContent2);
-                        TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName2);
-
                     }
+
+                    // Run Macro only for the group of rebars matching this setup line
+
                 }
                 StatusMessage = "Completed.";
                 MessageBox.Show("Completed creating Dimensions for selected rebars based on profile '" + SelectedProfile + "'.", "Completed", MessageBoxButton.OK, MessageBoxImage.Information);

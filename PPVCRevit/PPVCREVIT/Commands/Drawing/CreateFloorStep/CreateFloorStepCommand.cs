@@ -48,14 +48,16 @@ namespace PPVCREVIT.Commands.Drawing
                 // Loại bỏ trùng lặp nếu người dùng quét trúng 1 cấu kiện nhiều lần
                 allFloorData = allFloorData.GroupBy(x => x.FloorElement.UniqueId).Select(g => g.First()).ToList();
 
-                if (allFloorData.Count < 2)
+                if (allFloorData.Count >= 2)
                 {
-                    TaskDialog.Show("Thông báo", "Vui lòng chọn ít nhất 2 sàn để tạo giật cấp.");
-                    return Result.Cancelled;
+                    CreateFloorStepModel.CreateStepBetweenFloors(doc, uidoc, allFloorData);
                 }
 
-                // Sử dụng chung logic tạo ở Model
-                CreateFloorStepModel.CreateStepBetweenFloors(doc, uidoc, allFloorData);
+
+                foreach (var floorData in allFloorData)
+                {
+                    CreateFloorStepModel.CreateInternalStepByOverlappingFaces(doc, uidoc, floorData);
+                }
             }
             catch (Exception ex)
             {

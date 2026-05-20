@@ -34,6 +34,23 @@ namespace TeklaApp.Views.Pages
             }
         }
 
+        private void BtnDeleteProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (_viewModel.SelectedProfile == null) return;
+            
+            if (_viewModel.SelectedProfile.Equals("standard", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Cannot delete the 'standard' profile.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show($"Are you sure you want to delete the profile '{_viewModel.SelectedProfile}'?", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                _viewModel.DeleteCurrentProfile();
+            }
+        }
+
         private void BtnAddRow_Click(object sender, RoutedEventArgs e)
         {
             _viewModel.DimMappingRules.Add(new ViewModels.PageModels.DimMappingRule());
@@ -51,14 +68,7 @@ namespace TeklaApp.Views.Pages
             }
         }
 
-        private void BtnAddProperty_Click(object sender, RoutedEventArgs e)
-        {
-            if (!string.IsNullOrWhiteSpace(txtNewProperty.Text))
-            {
-                _viewModel.AddNewProperty(txtNewProperty.Text.Trim());
-                txtNewProperty.Clear();
-            }
-        }
+
 
         private void BtnAutoDimView_Click(object sender, RoutedEventArgs e)
         {

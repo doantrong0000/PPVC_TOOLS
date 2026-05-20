@@ -13,22 +13,14 @@
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" Text="PPVC Auto Dim Tag" FontSize="20" FontWeight="Bold" Margin="0,0,0,20"/>
 
-        <!-- Add Property Section -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
-            <TextBlock Text="Add Property Name:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="SemiBold"/>
-            <TextBox Name="txtNewProperty" Width="250" Height="32" VerticalContentAlignment="Center" Margin="0,0,15,0" Padding="5,0"/>
-            <Button Name="btnAddProperty" Content="Add to List" Width="120" Height="32" Click="BtnAddProperty_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
-        </StackPanel>
-
         <!-- Rebar Dimension Mapping -->
-        <StackPanel Grid.Row="2" Margin="0,0,0,10">
+        <StackPanel Grid.Row="1" Margin="0,0,0,10">
             <TextBlock Text="Rebar Dimension Mapping" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
             
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
@@ -37,6 +29,7 @@
                 <Button Name="btnSaveProfile" Content="Save" Width="80" Height="32" Margin="0,0,10,0" Click="BtnSaveProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
                 <TextBox Name="txtSaveAs" Width="150" Height="32" VerticalContentAlignment="Center" Margin="0,0,10,0" Padding="5,0"/>
                 <Button Name="btnSaveAsProfile" Content="Save As" Width="80" Height="32" Margin="0,0,15,0" Click="BtnSaveAsProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
+                <Button Name="btnDeleteProfile" Content="Delete Profile" Width="100" Height="32" Margin="0,0,15,0" Click="BtnDeleteProfile_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
                 <Button Name="btnAddRow" Content="Add Row" Width="90" Height="32" Margin="0,0,10,0" Click="BtnAddRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
                 <Button Name="btnDeleteRow" Content="Delete Row" Width="90" Height="32" Click="BtnDeleteRow_Click" Style="{StaticResource PrimaryButtonStyle}" Padding="0"/>
             </StackPanel>
@@ -58,7 +51,7 @@
         </StackPanel>
 
         <!-- Status Bar -->
-        <Border Grid.Row="3" Background="#F8F8F8" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,5" Margin="-20,0,-20,-20">
+        <Border Grid.Row="2" Background="#F8F8F8" BorderBrush="#DDDDDD" BorderThickness="0,1,0,0" Padding="10,5" Margin="-20,0,-20,-20">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Status:" Foreground="#999" Margin="0,0,10,0" VerticalAlignment="Center" FontSize="11"/>
                 <TextBlock Text="{Binding StatusMessage}" Foreground="#005A9E" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="11"/>
