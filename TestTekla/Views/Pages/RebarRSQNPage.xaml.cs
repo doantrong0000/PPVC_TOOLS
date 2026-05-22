@@ -78,7 +78,12 @@ namespace TeklaApp.Views.Pages
         {
             if (dgvRebar.SelectedItems == null) return;
             var selectedItems = dgvRebar.SelectedItems.Cast<RSQNGroupItem>().ToList();
-            var seqs = selectedItems.Where(x => x.Seq > 0).Select(x => x.Seq).Distinct().OrderBy(s => s).Select(s => s.ToString());
+            var seqs = selectedItems
+                .SelectMany(x => (x.Seq == 0.001 || x.Note == "Overlap") ? x.ExistingSequences : new List<double> { x.Seq })
+                .Where(s => s > 0 && s != 0.001)
+                .Distinct()
+                .OrderBy(s => s)
+                .Select(s => s.ToString());
             txtSelectedInfo.Text = string.Join(" ", seqs);
         }
 

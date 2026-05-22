@@ -105,10 +105,11 @@
                     </DataGrid.RowStyle>
 
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Mark" Binding="{Binding Mark}" Width="80"/>
+                        <DataGridTextColumn Header="Mark" Binding="{Binding Mark}" Width="60"/>
                         <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="140"/>
                         <DataGridTextColumn Header="RSQN" Binding="{Binding SeqDisplay}" Width="Auto" MinWidth="100" MaxWidth="300" FontWeight="Bold" Foreground="Red"/>
                         <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="60"/>
+                        <DataGridTextColumn Header="Shape" Binding="{Binding Shape}" Width="80"/>
                         <DataGridTextColumn Header="Length" Binding="{Binding Length, StringFormat={}{0:F0}}" Width="80"/>
                         <DataGridTextColumn Header="Weight" Binding="{Binding Weight, StringFormat={}{0:F2}}" Width="80"/>
                         <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50"/>
@@ -171,17 +172,6 @@
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Height="50"/>
                     </StackPanel>
-                </Border>
-
-                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0" Padding="15" Background="#FFF8E1" BorderBrush="#FFE082">
-                    <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#856404">
-                        <Bold>Instructions:</Bold><LineBreak/>
-                        1. Select a part or rebars in Tekla.<LineBreak/>
-                        2. Click 'GET REBAR' to load data.<LineBreak/>
-                        3. Choose a numbering option and click 'CHANGE'.<LineBreak/>
-                        4. Check 'Note' and 'Color' columns.<LineBreak/>
-                        5. Click 'UPDATE IN MODEL' to save.
-                    </TextBlock>
                 </Border>
 
                 <TextBlock Text="Developed by Digital team - WH Viet Nam"

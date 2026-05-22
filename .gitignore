@@ -69,3 +69,4 @@ PPVCRevit/build/.editorconfig
 *.wixobj
 *.slnx
 *.yml
+*.user

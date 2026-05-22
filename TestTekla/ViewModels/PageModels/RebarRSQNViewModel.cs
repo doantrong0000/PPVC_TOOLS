@@ -121,8 +121,9 @@ namespace TeklaApp.ViewModels
                 string gName = first.Name;
                 string gSize = ""; first.GetReportProperty("SIZE", ref gSize);
                 string gGrade = ""; first.GetReportProperty("GRADE", ref gGrade);
+                string gShape = ""; first.GetReportProperty("SHAPE", ref gShape);
 
-                string rebarPos = ""; 
+                string rebarPos = "";
                 first.GetReportProperty("REBAR_POS", ref rebarPos);
 
                 var item = new RSQNGroupItem
@@ -131,6 +132,7 @@ namespace TeklaApp.ViewModels
                     Mark = rebarPos,
                     Grade = gGrade,
                     Size = gSize,
+                    Shape = gShape,
                     Identifiers = group.Select(r => r.Identifier).ToList(),
                     BackingRebars = group.ToList()
                 };
@@ -153,12 +155,12 @@ namespace TeklaApp.ViewModels
                 foreach (var r in group)
                 {
                     int sInt = 0;
-                    if (r.GetUserProperty("REBAR_SEQ_NO", ref sInt)) 
+                    if (r.GetUserProperty("REBAR_SEQ_NO", ref sInt))
                         sequences.Add(sInt);
                     else
                     {
                         double sDouble = 0;
-                        if (r.GetUserProperty("REBAR_SEQ_NO", ref sDouble)) 
+                        if (r.GetUserProperty("REBAR_SEQ_NO", ref sDouble))
                             sequences.Add(sDouble);
                         else
                         {
@@ -168,17 +170,16 @@ namespace TeklaApp.ViewModels
                         }
                     }
                 }
-                
+
                 // Overlap check: ignore 0 (unassigned)
                 item.ExistingSequences = sequences.Where(s => s > 0).Distinct().ToList();
-                
+
                 if (item.ExistingSequences.Count == 1)
                 {
                     item.Seq = item.ExistingSequences[0];
                 }
                 else if (item.ExistingSequences.Count > 1)
                 {
-                    item.Seq = 0.001; // Marker for overlap
                     item.Note = "Overlap";
                 }
                 else
@@ -196,18 +197,17 @@ namespace TeklaApp.ViewModels
         {
             string size = ""; rebar.GetReportProperty("SIZE", ref size);
             string grade = ""; rebar.GetReportProperty("GRADE", ref grade);
-            string name = rebar.Name;
-            string prefix = rebar.NumberingSeries?.Prefix ?? "";
-            
+            string rebarPos = ""; rebar.GetReportProperty("REBAR_POS", ref rebarPos);
+
             // Simplified geometry signature for porting
             string shapeKey = "";
             rebar.GetReportProperty("SHAPE", ref shapeKey);
-            
+
             double length = 0;
             rebar.GetReportProperty("LENGTH", ref length);
             double roundedLength = Math.Round(length / 5.0) * 5.0;
 
-            return $"{name}|{prefix}|{grade}|{size}|{shapeKey}|{roundedLength}";
+            return $"{rebarPos}|{grade}|{size}|{shapeKey}|{roundedLength}";
         }
 
         public void ExecuteChange()
@@ -224,7 +224,7 @@ namespace TeklaApp.ViewModels
         private void CompareToOldLogic()
         {
             var usedSeqs = Groups.Where(g => g.Seq > 0 && g.Seq != 0.001).Select(g => g.Seq).ToList();
-            
+
             foreach (var g in Groups)
             {
                 var existing = g.ExistingSequences;
@@ -324,15 +324,16 @@ namespace TeklaApp.ViewModels
                     found++;
                 }
             }
+            Groups.Clear();
 
             // Sort so flagged items are at the top
             var sorted = groupsList.OrderBy(g => g.Note == "Check again" ? 0 : 1)
                                    .ThenBy(g => g.Note == "Overlap" ? 0 : 1)
                                    .ThenBy(g => g.Seq).ToList();
-            
-            Groups.Clear();
+
+
             foreach (var item in sorted) Groups.Add(item);
-            
+
             UpdateRowColors();
             StatusMessage = $"Duplicate check finished. Found {found} duplicate sequence(s).";
         }
@@ -346,7 +347,6 @@ namespace TeklaApp.ViewModels
                 // Note: ExistingSequences is populated during GetRebarsFromModel
                 if (g.ExistingSequences.Count > 1)
                 {
-                    g.Seq = 0.001;
                     g.Note = "Overlap";
                     found++;
                 }
@@ -356,10 +356,10 @@ namespace TeklaApp.ViewModels
             var sorted = Groups.OrderBy(g => g.Note == "Overlap" ? 0 : 1)
                                .ThenBy(g => g.Note == "Check again" ? 0 : 1)
                                .ThenBy(g => g.Seq).ToList();
-            
+
             Groups.Clear();
             foreach (var item in sorted) Groups.Add(item);
-            
+
             UpdateRowColors();
             StatusMessage = $"Overlap check finished. Found {found} group(s) with inconsistent sequence numbering.";
         }
@@ -368,7 +368,9 @@ namespace TeklaApp.ViewModels
         {
             foreach (var g in Groups)
             {
-                if (g.Seq <= 0.001 || g.Note == "Check again" || g.Note == "Overlap")
+                if (g.Note == "Check again")
+                    g.ColorBrush = "#FFF2CC"; // Light yellow
+                else if (g.Seq <= 0.001 || g.Note == "Overlap")
                     g.ColorBrush = "#FFCDD2"; // Light red
                 else
                     g.ColorBrush = "Transparent";
@@ -408,7 +410,7 @@ namespace TeklaApp.ViewModels
             }
             _model.CommitChanges();
             MessageBox.Show($"Updated {count} rebars in Tekla model.");
-            
+
             // Refresh
             GetRebarsFromModel();
         }
@@ -423,16 +425,20 @@ namespace TeklaApp.ViewModels
 
         public string Name { get; set; }
         public string Mark { get; set; }
-        public double Seq { 
-            get => _seq; 
-            set { 
-                _seq = value; 
-                OnPropertyChanged(); 
+        public double Seq
+        {
+            get => _seq;
+            set
+            {
+                _seq = value;
+                OnPropertyChanged();
                 OnPropertyChanged(nameof(SeqDisplay));
-            } 
+            }
         }
-        public string SeqDisplay {
-            get {
+        public string SeqDisplay
+        {
+            get
+            {
                 if (Note == "Overlap" && ExistingSequences.Count > 1)
                     return string.Join(", ", ExistingSequences);
                 if (Seq == 0) return "";
@@ -442,16 +448,19 @@ namespace TeklaApp.ViewModels
         }
         public string Grade { get; set; }
         public string Size { get; set; }
+        public string Shape { get; set; }
         public int Quantity { get; set; }
         public double Length { get; set; }
         public double Weight { get; set; }
-        public string Note { 
-            get => _note; 
-            set { 
-                _note = value; 
-                OnPropertyChanged(); 
+        public string Note
+        {
+            get => _note;
+            set
+            {
+                _note = value;
+                OnPropertyChanged();
                 OnPropertyChanged(nameof(SeqDisplay));
-            } 
+            }
         }
 
         public List<TS.Identifier> Identifiers { get; set; } = new List<TS.Identifier>();

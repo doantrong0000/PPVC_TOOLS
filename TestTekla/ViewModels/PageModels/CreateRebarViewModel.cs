@@ -268,8 +268,14 @@ namespace TeklaApp.ViewModels.PageModels
                 }
                 else
                 {
+                    Type[] rebarTypes = new Type[]
+    {
+        typeof(Tekla.Structures.Model.SingleRebar),
+        typeof(Tekla.Structures.Model.RebarGroup) 
+        // Bạn có thể thêm typeof(RebarMesh), typeof(RebarStrand) vào đây nếu dự án có dùng
+    };
                     // Scan whole Model
-                    ModelObjectEnumerator rebarEnum = _model.GetModelObjectSelector().GetAllObjectsWithType(ModelObject.ModelObjectEnum.SINGLEREBAR | ModelObject.ModelObjectEnum.REBARGROUP);
+                    ModelObjectEnumerator rebarEnum = _model.GetModelObjectSelector().GetAllObjectsWithType(rebarTypes);
                     while (rebarEnum.MoveNext())
                     {
                         if (rebarEnum.Current is Reinforcement rebar)
