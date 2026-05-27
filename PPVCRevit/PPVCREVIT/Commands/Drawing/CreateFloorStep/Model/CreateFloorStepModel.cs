@@ -17,7 +17,7 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
     {
         public static void CreateStepBetweenFloors(Document doc, UIDocument uidoc, List<FloorData> allFloorData)
         {
-            if (allFloorData.Count < 2)
+            if (allFloorData.Count < 1)
             {
                 TaskDialog.Show("Thông báo", "Vui lòng chọn ít nhất 2 sàn cạnh nhau.");
                 return;

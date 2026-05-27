@@ -45,6 +45,12 @@ namespace PPVCREVIT.Commands.Drawing
                     return Result.Cancelled;
                 }
 
+                if (allFloorData.Count < 1)
+
+                {
+                    return Result.Cancelled;
+                }
+
                 // Loại bỏ trùng lặp nếu người dùng quét trúng 1 cấu kiện nhiều lần
                 allFloorData = allFloorData.GroupBy(x => x.FloorElement.UniqueId).Select(g => g.First()).ToList();
 

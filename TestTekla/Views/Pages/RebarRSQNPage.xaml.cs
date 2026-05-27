@@ -38,15 +38,6 @@ namespace TeklaApp.Views.Pages
             }
         }
 
-        private void BtnChange_Click(object sender, RoutedEventArgs e)
-        {
-            ViewModel.ExecuteChange();
-        }
-
-        private void BtnUpdate_Click(object sender, RoutedEventArgs e)
-        {
-            ViewModel.UpdateInModel();
-        }
 
         private void BtnFindCheckAgain_Click(object sender, RoutedEventArgs e)
         {
@@ -140,12 +131,6 @@ namespace TeklaApp.Views.Pages
         {
             var selectedItems = dgvRebar.SelectedItems.Cast<RSQNGroupItem>().ToList();
             ViewModel.SelectInModel(selectedItems);
-        }
-
-        private void NumberValidationTextBox(object sender, System.Windows.Input.TextCompositionEventArgs e)
-        {
-            System.Text.RegularExpressions.Regex regex = new System.Text.RegularExpressions.Regex("[^0-9.]+");
-            e.Handled = regex.IsMatch(e.Text);
         }
     }
 }
