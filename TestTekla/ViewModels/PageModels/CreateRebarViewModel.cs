@@ -58,7 +58,7 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
-        public void CloneRebarWithMultiPoints(bool mergeGroups = true)
+        public void CloneRebarWithMultiPoints(double coverValue, double spacingTarget, bool mergeGroups = true)
         {
             Model _model = new Model();
             if (!_model.GetConnectionStatus()) return;
@@ -89,8 +89,7 @@ namespace TeklaApp.ViewModels.PageModels
 
                 List<RebarGroup> createdGroups = new List<RebarGroup>();
                 int segmentCount = distPoints.Count / 2;
-                double fixedSpacing = 400.0; // Target spacing
-                double coverValue = 30.0;    // End cover offset
+
 
                 for (int i = 0; i < segmentCount; i++)
                 {
@@ -113,7 +112,7 @@ namespace TeklaApp.ViewModels.PageModels
                     // Append 'S' to EXACT_SPACINGS
                     rg.SpacingType = BaseRebarGroup.RebarGroupSpacingTypeEnum.SPACING_TYPE_TARGET_SPACE;
                     rg.Spacings.Clear();
-                    rg.Spacings.Add(fixedSpacing);
+                    rg.Spacings.Add(spacingTarget);
 
                     // Copy other properties from source
                     rg.Name = sourceRebar.Name;
@@ -144,7 +143,7 @@ namespace TeklaApp.ViewModels.PageModels
 
                     // Set spacing value to UDA for drawing display (avoid rounding from Tekla recalculation)
                     // You can change USER_FIELD_2 to any UDA used in your Mark
-                    combinedGroup.SetUserProperty("USER_FIELD_2", fixedSpacing.ToString());
+                    combinedGroup.SetUserProperty("USER_FIELD_2", spacingTarget.ToString());
 
                     combinedGroup.Modify();
                     _model.CommitChanges();

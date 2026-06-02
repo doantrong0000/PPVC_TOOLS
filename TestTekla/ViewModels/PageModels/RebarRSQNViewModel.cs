@@ -1,8 +1,10 @@
 ﻿using Fusion;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
@@ -93,7 +95,6 @@ namespace TeklaApp.ViewModels
                 }
 
                 // CheckForDuplicates(); // Removed as per request to separate into buttons
-                UpdateRowColors();
                 StatusMessage = $"Loaded {rebars.Count} rebars into {Groups.Count} groups.";
             }
             catch (Exception ex)
@@ -165,77 +166,20 @@ namespace TeklaApp.ViewModels
             return $"{seq}|{rebarPos}|{grade}|{size}|{shapeKey}|{roundedLength}";
         }
 
-        public void CheckAgainAndSort()
+        public void CheckRebar()
         {
-            GetRebarsFromModel();
-
-            var groupsList = Groups.ToList();
-            foreach (var g in groupsList)
-            {
-                if (g.Note == "Check again") continue; // Skip already flagged items
-                var list = new List<RSQNGroupItem>();
-                foreach (var otherRebar in Groups)
-                {
-
-                    if (g == otherRebar) continue;
-                    if (otherRebar.Seq == g.Seq) list.Add(otherRebar);
-                }
-                bool check = false;
-                foreach (var item in list)
-                {
-                    if (item.Shape != g.Shape)
-                    {
-                        item.Note = "Check again";
-                        check = true;
-                        continue;
-                    }
-                    if (item.Length != g.Length)
-                    {
-                        item.Note = "Check again";
-                        check = true;
-                        continue;
-                    }
-                    if (item.Grade != g.Grade)
-                    {
-                        item.Note = "Check again";
-                        check = true;
-                        continue;
-                    }
-                    if (Math.Round(item.Weight, 3) != Math.Round(g.Weight, 3))
-                    {
-                        item.Note = "Check again";
-                        check = true;
-                        continue;
-                    }
-                }
-                if (check)
-                {
-                    g.Note = "Check again";
-                }
-
-
-            }
-
-            Groups.Clear();
-
-            // Sort so flagged items are at the top
-            var sorted = groupsList.OrderBy(g => g.Note == "Check again" ? 0 : 1)
-                                   .ThenBy(g => g.Seq).ToList();
-
-
-            foreach (var item in sorted) Groups.Add(item);
-
-            UpdateRowColors("CheckAgain");
-        }
-
-        public void CheckOverlapAndSort()
-        {
-            GetRebarsFromModel();
-
             int found = 0;
             foreach (var rebar in Groups)
             {
-                if (rebar.Note == "Overlap") continue; // Skip already flagged items
+                if (rebar.Seq == 0)
+                {
+                    rebar.Overlap = "Unassigned";
+                    rebar.Checkagain = "Unassigned";
+                }
+            }
+            foreach (var rebar in Groups)
+            {
+                if (rebar.Overlap.Contains("Overlap") || rebar.Checkagain.Contains("Unassigned")) continue; // Skip already flagged items
                 var list = new List<RSQNGroupItem>();
                 foreach (var otherRebar in Groups)
                 {
@@ -247,58 +191,247 @@ namespace TeklaApp.ViewModels
                 foreach (var item in list)
                 {
                     if (item.Seq != rebar.Seq &&
-                        item.Shape == rebar.Shape &&
-                        item.Length == rebar.Length &&
-                        item.Grade == rebar.Grade &&
-                        Math.Round(item.Weight, 3) == Math.Round(rebar.Weight, 3))
+                    item.Shape == rebar.Shape &&
+                    item.Length == rebar.Length &&
+                    item.Grade == rebar.Grade &&
+                    Math.Round(item.Weight, 3) == Math.Round(rebar.Weight, 3))
                     {
-                        item.Note = "Overlap";
+                        item.Overlap = "Overlap";
                         banThemCoBiOverlapKhong = true; // Đánh dấu là đã phát hiện lỗi
                     }
                 }
                 if (banThemCoBiOverlapKhong)
                 {
-                    rebar.Note = "Overlap";
+                    rebar.Overlap = "Overlap";
+                }
+            }
+            foreach (var g in Groups)
+            {
+                if (g.Checkagain.Contains("Check Again") || g.Checkagain.Contains("Unassigned")) continue; // Skip already flagged items
+                var list = new List<RSQNGroupItem>();
+                foreach (var otherRebar in Groups)
+                {
+
+                    if (g == otherRebar) continue;
+                    if (otherRebar.Seq == g.Seq) list.Add(otherRebar);
+                }
+                bool check = false;
+                foreach (var item in list)
+                {
+                    if (item.Mark != g.Mark)
+                    {
+                        item.Checkagain = "Check again";
+                        check = true;
+                        continue;
+                    }
+                    if (item.Shape != g.Shape)
+                    {
+                        item.Checkagain = "Check again";
+                        check = true;
+                        continue;
+                    }
+                    if (item.Length != g.Length)
+                    {
+                        item.Checkagain = "Check again";
+                        check = true;
+                        continue;
+                    }
+                    if (item.Grade != g.Grade)
+                    {
+                        item.Checkagain = "Check again";
+                        check = true;
+                        continue;
+                    }
+                    if (Math.Round(item.Weight, 3) != Math.Round(g.Weight, 3))
+                    {
+                        item.Checkagain = "Check again";
+                        check = true;
+                        continue;
+                    }
+                }
+                if (check)
+                {
+                    g.Checkagain = "Check again";
                 }
             }
 
-            // Sort so flagged items are at the top
-            var sorted = Groups.OrderBy(g => g.Note == "Overlap" ? 0 : 1)
-                .ThenBy(g => g.Length).ThenBy(g => g.Shape)
-                               .ThenBy(g => g.Seq).ToList();
+            var checkAgainItems = Groups.Where(g => g.Overlap == "Overlap")
+            .OrderBy(g => g.Length);
+            var normalItems = Groups.Where(g => g.Overlap != "Overlap")
+            .OrderBy(g => g.Seq);
+            var sorted = checkAgainItems.Concat(normalItems).ToList();
 
             Groups.Clear();
             foreach (var item in sorted) Groups.Add(item);
 
-            UpdateRowColors("Overlap");
+            UpdateRowColors();
         }
 
-        private void UpdateRowColors(string mode = "All")
+        public void RunFindRebar(string FindSeq)
         {
-            foreach (var g in Groups)
+            if (!_model.GetConnectionStatus())
             {
-                if (mode == "CheckAgain")
+                StatusMessage = "Error: Tekla not connected.";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(FindSeq))
+            {
+                StatusMessage = "Please enter SEQ number(s).";
+                return;
+            }
+
+            List<int> targetSeqs = FindSeq.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                                         .Select(s => int.TryParse(s, out int val) ? val : (int?)null)
+                                         .Where(v => v.HasValue)
+                                         .Select(v => v.Value)
+                                         .ToList();
+
+            if (targetSeqs.Count == 0)
+            {
+                StatusMessage = "Invalid SEQ input.";
+                return;
+            }
+
+            ArrayList foundRebars = new ArrayList();
+            ArrayList allRebarsInScope = new ArrayList();
+
+            try
+            {
+
+                Type[] rebarTypes = new Type[]
+{
+        typeof(Tekla.Structures.Model.SingleRebar),
+        typeof(Tekla.Structures.Model.RebarGroup)
+    // Bạn có thể thêm typeof(RebarMesh), typeof(RebarStrand) vào đây nếu dự án có dùng
+};
+                // Scan whole Model
+                ModelObjectEnumerator rebarEnum = _model.GetModelObjectSelector().GetAllObjectsWithType(rebarTypes);
+                while (rebarEnum.MoveNext())
                 {
-                    if (g.Note == "Check again") g.ColorBrush = "#FFF2CC"; // Light yellow
-                    else g.ColorBrush = "Transparent";
+                    if (rebarEnum.Current is Reinforcement rebar)
+                    {
+                        allRebarsInScope.Add(rebar);
+                        if (CheckRebarSeq(rebar, targetSeqs))
+                        {
+                            foundRebars.Add(rebar);
+                        }
+                    }
                 }
-                else if (mode == "Overlap")
+
+
+                TriggerShowOnlyFound(foundRebars, allRebarsInScope);
+
+
+                if (foundRebars.Count > 0)
                 {
-                    if (g.Note == "Overlap") g.ColorBrush = "#FFCDD2"; // Light red
-                    else g.ColorBrush = "Transparent";
+                    StatusMessage = $"Found {foundRebars.Count} rebar(s).";
                 }
                 else
                 {
-                    if (g.Note == "Check again")
-                        g.ColorBrush = "#FFF2CC"; // Light yellow
-                    else if (g.Seq <= 0.001 || g.Note == "Overlap")
-                        g.ColorBrush = "#FFCDD2"; // Light red
-                    else
-                        g.ColorBrush = "Transparent";
+                    StatusMessage = "No rebar found with specified SEQ.";
                 }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = "Search error: " + ex.Message;
+            }
+        }
+        private void TriggerShowOnlyFound(ArrayList foundRebars, ArrayList allRebarsInScope)
+        {
+            string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
+            string macroDir = GetMacroDirectory();
+            if (string.IsNullOrEmpty(macroDir)) return;
+
+            // 1. Redraw all to start clean (optional but recommended)
+            try
+            {
+                string templatePath = Path.Combine(appFolder, "Macro", "RedrawView.cs");
+                if (File.Exists(templatePath))
+                {
+                    string macroContent = File.ReadAllText(templatePath);
+                    string tempMacroName = "Temp_Run_RedrawView.cs";
+                    string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                    File.WriteAllText(tempRunPath, macroContent);
+                    Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+                }
+            }
+            catch { }
+
+            // 2. Identify items to hide
+            ArrayList toHide = new ArrayList();
+            var foundSet = new HashSet<Reinforcement>(foundRebars.Cast<Reinforcement>());
+            foreach (var obj in allRebarsInScope)
+            {
+                if (obj is Reinforcement rebar && !foundSet.Contains(rebar))
+                {
+                    toHide.Add(rebar);
+                }
+            }
+
+            // 3. Select items to hide and run Hide macro
+            if (toHide.Count > 0)
+            {
+                new Tekla.Structures.Model.UI.ModelObjectSelector().Select(toHide);
+                try
+                {
+                    string templatePath = Path.Combine(appFolder, "Macro", "HideElement.cs");
+                    if (File.Exists(templatePath))
+                    {
+                        string macroContent = File.ReadAllText(templatePath);
+                        string tempMacroName = "Temp_Run_HideElement.cs";
+                        string tempRunPath = Path.Combine(macroDir, tempMacroName);
+                        File.WriteAllText(tempRunPath, macroContent);
+                        Tekla.Structures.Model.Operations.Operation.RunMacro(@"..\drawings\" + tempMacroName);
+                    }
+                }
+                catch { }
+            }
+
+            // 4. Restore selection to found items
+            new Tekla.Structures.Model.UI.ModelObjectSelector().Select(foundRebars);
+        }
+        private string GetMacroDirectory()
+        {
+            string macroDir = string.Empty;
+            Tekla.Structures.TeklaStructuresSettings.GetAdvancedOption("XS_MACRO_DIRECTORY", ref macroDir);
+            if (string.IsNullOrEmpty(macroDir)) return string.Empty;
+            if (macroDir.Contains(";")) macroDir = macroDir.Split(';')[0];
+
+            string drawingMacroPath = Path.Combine(macroDir, "drawings");
+            if (!Directory.Exists(drawingMacroPath)) Directory.CreateDirectory(drawingMacroPath);
+
+            return drawingMacroPath;
+        }
+
+        private void UpdateRowColors()
+        {
+            foreach (var g in Groups)
+            {
+                if (g.Checkagain == "Check again") g.ColorBrush = "#FFF2CC"; // Light yellow
+
+                if (g.Overlap == "Overlap") g.ColorBrush = "#FFF3E0";
+
+                if (g.Checkagain == "Check again" && g.Overlap == "Overlap") g.ColorBrush = "#F4B183"; // Orange
+
+                if (g.Checkagain == "Unassigned" || g.Overlap == "Unassigned") g.ColorBrush = "#D9D9D9"; // Gray
             }
         }
 
+        private bool CheckRebarSeq(Reinforcement rebar, List<int> targetSeqs)
+        {
+            int valInt = 0;
+            string valStr = "";
+            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valInt))
+            {
+                return targetSeqs.Contains(valInt);
+            }
+            if (rebar.GetUserProperty("REBAR_SEQ_NO", ref valStr) && int.TryParse(valStr, out int parsed))
+            {
+                return targetSeqs.Contains(parsed);
+            }
+            return false;
+        }
 
         public void SelectInModel(List<RSQNGroupItem> selectedItems)
         {
@@ -318,13 +451,32 @@ namespace TeklaApp.ViewModels
 
     public class RSQNGroupItem : INotifyPropertyChanged
     {
+        private string _name;
+        private string _mark;
+        private string _grade;
+        private string _size;
+        private string _shape;
+        private int _quantity;
+        private double _length;
+        private double _weight;
+
         private double _seq;
-        private string _note;
+        private string _checkagain = "";
+        private string _overlap = "";
         private bool _isSelected;
         private string _colorBrush = "Transparent";
 
-        public string Name { get; set; }
-        public string Mark { get; set; }
+        // Cập nhật lại các thuộc tính Full Property có OnPropertyChanged()
+        public string Name { get => _name; set { _name = value; OnPropertyChanged(); } }
+        public string Mark { get => _mark; set { _mark = value; OnPropertyChanged(); } }
+        public string Grade { get => _grade; set { _grade = value; OnPropertyChanged(); } }
+        public string Size { get => _size; set { _size = value; OnPropertyChanged(); } }
+        public string Shape { get => _shape; set { _shape = value; OnPropertyChanged(); } }
+
+        public int Quantity { get => _quantity; set { _quantity = value; OnPropertyChanged(); } }
+        public double Length { get => _length; set { _length = value; OnPropertyChanged(); } }
+        public double Weight { get => _weight; set { _weight = value; OnPropertyChanged(); } }
+
         public double Seq
         {
             get => _seq;
@@ -332,37 +484,27 @@ namespace TeklaApp.ViewModels
             {
                 _seq = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(SeqDisplay));
             }
         }
-        public string SeqDisplay
+        public string Checkagain
         {
-            get
-            {
-                if (Note == "Overlap" && ExistingSequences.Count > 1)
-                    return string.Join(", ", ExistingSequences);
-                if (Seq == 0) return "";
-                if (Seq == 0.001) return string.Join(", ", ExistingSequences);
-                return Seq.ToString();
-            }
-        }
-        public string Grade { get; set; }
-        public string Size { get; set; }
-        public string Shape { get; set; }
-        public int Quantity { get; set; }
-        public double Length { get; set; }
-        public double Weight { get; set; }
-        public string Note
-        {
-            get => _note;
+            get => _checkagain;
             set
             {
-                _note = value;
+                _checkagain = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(SeqDisplay));
             }
         }
 
+        public string Overlap
+        {
+            get => _overlap;
+            set
+            {
+                _overlap = value;
+                OnPropertyChanged();
+            }
+        }
         public List<TS.Identifier> Identifiers { get; set; } = new List<TS.Identifier>();
         public List<Reinforcement> BackingRebars { get; set; } = new List<Reinforcement>();
         public List<double> ExistingSequences { get; set; } = new List<double>();

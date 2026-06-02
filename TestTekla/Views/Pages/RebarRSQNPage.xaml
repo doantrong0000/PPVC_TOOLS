@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
-             d:DesignHeight="700" d:DesignWidth="1000">
+             d:DesignHeight="700" d:DesignWidth="920">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -28,10 +28,9 @@
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <CheckBox x:Name="chkShowSelected" Content="SHOW ONLY"
                                   VerticalAlignment="Center" Margin="0,0,15,0"
-                                  Checked="ChkShowSelected_Checked" Unchecked="ChkShowSelected_Unchecked"
                                   ToolTip="Filter grid to show only selected rows"/>
                         <Button Content="SELECT"
-                                Click="BtnSelectInModel_Click"
+                                Click="BtnSelectInModel_Click" Focusable="False"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Width="100" Height="40"
                                 Margin="0,0,8,0"/>
@@ -55,7 +54,7 @@
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="5"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -88,6 +87,22 @@
                             <Setter Property="BorderThickness" Value="0,0,0,1"/>
                             <Setter Property="BorderBrush" Value="#E5E5E5"/>
                             <Setter Property="FontSize" Value="11"/>
+                            <Setter Property="ContentTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                            <ToggleButton x:Name="btnFilter" Grid.Column="1" Margin="5,0,0,0" Width="16" Height="16" Click="BtnFilter_Click" Background="Transparent" BorderThickness="0" Focusable="False">
+                                                <TextBlock Text="▼" FontSize="8" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#666666"/>
+                                            </ToggleButton>
+                                        </Grid>
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
                         </Style>
                     </DataGrid.Resources>
 
@@ -105,16 +120,17 @@
                     </DataGrid.RowStyle>
 
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="Mark" Binding="{Binding Mark}" Width="60"/>
-                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="140"/>
-                        <DataGridTextColumn Header="RSQN" Binding="{Binding SeqDisplay}" SortMemberPath="Seq" Width="Auto" MinWidth="100" MaxWidth="300" FontWeight="Bold" Foreground="Red"/>
-                        <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="60" FontWeight="Bold" />
-                        <DataGridTextColumn Header="Length" Binding="{Binding Length, StringFormat={}{0:F0}}" Width="80" FontWeight="Bold" />
-                        <DataGridTextColumn Header="Shape" Binding="{Binding Shape}" Width="80"/>
-                        <DataGridTextColumn Header="Weight" Binding="{Binding Weight, StringFormat={}{0:F2}}" Width="80"/>
-                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50"/>
-                        <DataGridTextColumn Header="Grade" Binding="{Binding Grade}" Width="60"/>
-                        <DataGridTextColumn Header="Note" Binding="{Binding Note}" Width="*"/>
+                        <DataGridTextColumn Header="Mark" Binding="{Binding Mark}" Width="60" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="140" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="RSQN" Binding="{Binding Seq}" SortMemberPath="Seq" IsReadOnly="True" Width="Auto" MinWidth="100" MaxWidth="300" FontWeight="Bold" Foreground="Red"/>
+                        <DataGridTextColumn Header="Size" Binding="{Binding Size}" Width="60" FontWeight="Bold" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Length" Binding="{Binding Length, StringFormat={}{0:F0}}" Width="80" FontWeight="Bold" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Shape" Binding="{Binding Shape}" Width="80" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Weight" Binding="{Binding Weight, StringFormat={}{0:F2}}" Width="80" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Grade" Binding="{Binding Grade}" Width="60" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Check Agian" Binding="{Binding Checkagain}" Width="100" Foreground="Red" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Overlap" Binding="{Binding Overlap}" Width="100" Foreground="Red" IsReadOnly="True"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
@@ -122,37 +138,51 @@
             <!-- Selected Text Area -->
             <Border Grid.Column="0" Grid.Row="1" Margin="10,0,5,5" Style="{StaticResource CardStyle}" Background="Transparent" Padding="5" BorderThickness="0">
                 <DockPanel>
-                    <TextBlock Text="Selected Seqs:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="0,0,10,0" Foreground="{StaticResource PrimaryDarkBrush}"/>
-                    <TextBox x:Name="txtSelectedInfo" Height="30" TextWrapping="NoWrap" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                    <Button Content="SELECT ALL"
+         Click="BtnSelectAll_Click" Focusable="False"
+         Style="{StaticResource PrimaryButtonStyle}"
+         Width="100" Height="40"
+         Margin="0,0,8,0"/>
+                    <TextBox x:Name="txtSelectedInfo" Height="40" TextWrapping="NoWrap" IsReadOnly="True" VerticalContentAlignment="Center"/>
                 </DockPanel>
             </Border>
 
-            <!-- Control Panel Sidebar -->
-            <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Margin="5,5,10,5">
-                <Border Style="{StaticResource CardStyle}" Padding="15">
-                    <StackPanel>
-
-                        <Button Content="FIND CHECK AGAIN"
-                                Click="BtnFindCheckAgain_Click"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Height="50" Margin="0,10,0,10" ToolTip="Run Check Again logic and sort to top"/>
-
-                        <Button Content="FIND OVERLAP"
-                                Click="BtnFindOverlap_Click"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Height="50" Margin="0,10,0,10" ToolTip="Run Overlap logic and sort to top"/>
-
-                    </StackPanel>
-                </Border>
-
-                <TextBlock Text="Developed by Digital team - WH Viet Nam"
-                           FontSize="10" Foreground="#AAA"
-                           Margin="0,20,0,0" HorizontalAlignment="Center"/>
-                <TextBlock Text="Update by Trong"
-                           FontSize="10" Foreground="#AAA"
-                           Margin="0,20,0,0" HorizontalAlignment="Center"/>
-            </StackPanel>
         </Grid>
 
+        <!-- Filter Popup -->
+        <Popup x:Name="filterPopup" StaysOpen="False" Placement="Bottom" AllowsTransparency="True">
+            <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="3" Padding="5" MinWidth="150" MaxHeight="300">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.2" BlurRadius="5" ShadowDepth="2"/>
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBox x:Name="txtFilterSearch" Grid.Row="0" Margin="2" Padding="2" TextChanged="TxtFilterSearch_TextChanged" />
+
+                    <CheckBox x:Name="chkSelectAllFilter" Grid.Row="1" Margin="4,2" Content="(Select All)" IsChecked="True" Click="ChkSelectAllFilter_Click"/>
+
+                    <ScrollViewer Grid.Row="2" Margin="0,5" VerticalScrollBarVisibility="Auto">
+                        <ListBox x:Name="lstFilterItems" BorderThickness="0" ItemsSource="{Binding FilterItems}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <CheckBox Content="{Binding DisplayValue}" IsChecked="{Binding IsSelected}" Margin="2" Click="FilterItemCheckBox_Click"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </ScrollViewer>
+
+                    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,5,0,0">
+                        <Button Content="OK" Click="BtnApplyFilter_Click" Width="60" Margin="0,0,5,0" Padding="2"/>
+                        <Button Content="Cancel" Click="BtnCancelFilter_Click" Width="60" Padding="2"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Popup>
     </Grid>
 </UserControl>

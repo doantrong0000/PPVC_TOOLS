@@ -353,13 +353,13 @@ namespace TeklaApp.ViewModels
 
                     // Draw diagonal 1
                     var line1 = new Tekla.Structures.Drawing.Line(view, corner1, corner2);
-                    line1.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SlashedLine;
+                    line1.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.DottedLine;
                     line1.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Black;
                     line1.Insert();
 
                     // Draw diagonal 2
                     var line2 = new Tekla.Structures.Drawing.Line(view, corner3, corner4);
-                    line2.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SlashedLine;
+                    line2.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.DottedLine;
                     line2.Attributes.Line.Color = Tekla.Structures.Drawing.DrawingColors.Black;
                     line2.Insert();
 

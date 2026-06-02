@@ -49,7 +49,7 @@ namespace TeklaApp.Views.Pages
         {
             _viewModel.SelectRebarsOfPart();
         }
-        
+
         private void BtnSplitRebar_Click(object sender, RoutedEventArgs e)
         {
             _viewModel.SplitRebarDistribution();
@@ -65,7 +65,7 @@ namespace TeklaApp.Views.Pages
             SavePersistentSettings();
             _createVm.StatusMessage = "Creating rebars (cloning from source)...";
             bool merge = chkMergeGroups.IsChecked == true;
-            _createVm.CloneRebarWithMultiPoints(merge);
+            _createVm.CloneRebarWithMultiPoints(double.Parse(txtCover.Text), double.Parse(txtSpacingTarget.Text), merge);
         }
 
 

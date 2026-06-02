@@ -1,14 +1,14 @@
 <RevitAddIns>
-    <AddIn Type="Application">
-        <Name>PPVCREVIT</Name>
-        <Assembly>PPVCREVIT\PPVCREVIT.dll</Assembly>
-        <AddInId>25E8815D-1BC6-4C9E-A51C-F61DCBFCE499</AddInId>
-        <FullClassName>PPVCREVIT.Application</FullClassName>
-        <VendorId>Development</VendorId>
-        <VendorDescription></VendorDescription>
-    </AddIn>
-    <ManifestSettings>
-        <UseRevitContext>False</UseRevitContext>
-        <ContextName>PPVCREVIT</ContextName>
-    </ManifestSettings>
+	<AddIn Type="Application">
+		<Name>PPVCREVIT</Name>
+		<Assembly>Z:\05 Prefab\00 REVIT tools\Addin\Revit2026\PPVCREVIT.dll</Assembly>
+		<AddInId>25E8815D-1BC6-4C9E-A51C-F61DCBFCE499</AddInId>
+		<FullClassName>PPVCREVIT.Application</FullClassName>
+		<VendorId>Development</VendorId>
+		<VendorDescription></VendorDescription>
+	</AddIn>
+	<ManifestSettings>
+		<UseRevitContext>False</UseRevitContext>
+		<ContextName>PPVCREVIT</ContextName>
+	</ManifestSettings>
 </RevitAddIns>

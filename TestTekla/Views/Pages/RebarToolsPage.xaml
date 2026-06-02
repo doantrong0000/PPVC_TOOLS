@@ -41,6 +41,8 @@
                                     <TextBlock Text="CLONE &amp; DISTRIBUTE" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </Button>
                                 <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
+                                <TextBox x:Name="txtCover" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="25"/>
+                                <TextBox x:Name="txtSpacingTarget" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="200"/>
                             </StackPanel>
                         </WrapPanel>
                     </Border>
