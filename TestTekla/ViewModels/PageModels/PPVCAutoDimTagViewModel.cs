@@ -152,10 +152,10 @@ namespace TeklaApp.ViewModels.PageModels
             {
                 _allProfiles = new Dictionary<string, List<DimMappingRule>>();
                 _allProfiles["standard"] = new List<DimMappingRule>
-                                                                            {
-                                                                            new DimMappingRule { RebarName = "STIRRUP", Prefix = "V", DimProperty = "A1" },
-                                                                            new DimMappingRule { RebarName = "MAIN BAR", Prefix = "V", DimProperty = "A2" }
-                                                                            };
+                {
+                new DimMappingRule { RebarName = "STIRRUP", Prefix = "V", DimProperty = "A1" },
+                new DimMappingRule { RebarName = "MAIN BAR", Prefix = "V", DimProperty = "A2" }
+                };
                 SaveAllProfiles();
             }
 
@@ -305,9 +305,6 @@ namespace TeklaApp.ViewModels.PageModels
 
                                         hasMark = true;
                                         break; // Đã tìm thấy thì thoát vòng lặp nhỏ này ngay
-
-
-
                                     }
                                 }
 

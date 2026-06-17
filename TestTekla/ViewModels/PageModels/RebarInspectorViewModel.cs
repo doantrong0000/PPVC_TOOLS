@@ -356,15 +356,6 @@ namespace TeklaApp.ViewModels
 
                     bool needsModify = false;
 
-                    if (item.Name != item.OriginalName)
-                    {
-                        rebar.Name = item.Name;
-                        needsModify = true;
-                    }
-                    // Size and Grade are report properties, set via class if possible
-                    //if (item.Grade != item.OriginalGrade) rebar.Grade = item.Grade;
-
-                    // Apply Seq number
                     if (item.Seq != item.OriginalSeq)
                     {
                         if (int.TryParse(item.Seq, out int seqNum))
@@ -381,25 +372,6 @@ namespace TeklaApp.ViewModels
                         }
                     }
 
-                    // Apply Position (NumberingSeries Prefix)
-                    if (item.Position != item.OriginalPosition)
-                    {
-                        if (rebar.NumberingSeries != null)
-                        {
-                            rebar.NumberingSeries.Prefix = item.Position;
-                            needsModify = true;
-                        }
-                    }
-
-                    // Apply Radius
-                    if (item.RadiusStr != item.OriginalRadiusStr)
-                    {
-                        if (double.TryParse(item.RadiusStr, out double radNum))
-                        {
-                            rebar.RadiusValues = new System.Collections.ArrayList { radNum };
-                            needsModify = true;
-                        }
-                    }
 
                     if (needsModify)
                     {
@@ -915,7 +887,7 @@ namespace TeklaApp.ViewModels
                             // If SEQ is the same, verify Shape, Length, Mark
                             string keyA = rebarShapeKeys.ContainsKey(a.Id) ? rebarShapeKeys[a.Id] : a.Id;
                             string keyB = rebarShapeKeys.ContainsKey(b.Id) ? rebarShapeKeys[b.Id] : b.Id;
-                            
+
                             // GetOverlapShapeKey includes shape, mark, length, so if keys differ, there's a conflict
                             if (keyA != keyB)
                             {

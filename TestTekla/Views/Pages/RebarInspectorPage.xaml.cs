@@ -17,14 +17,6 @@ namespace TeklaApp.Views.Pages
             dgRebars.ItemsSource = _viewModel.Rebars;
         }
 
-        private async System.Threading.Tasks.Task ShowLoadingAsync(string message)
-        {
-            this.IsEnabled = false;
-            LoadingOverlay.Visibility = Visibility.Visible;
-            if (txtLoadingText != null) txtLoadingText.Text = message;
-            await System.Threading.Tasks.Task.Delay(50); // Allow UI update
-        }
-
         private void HideLoading()
         {
             LoadingOverlay.Visibility = Visibility.Collapsed;
@@ -37,8 +29,6 @@ namespace TeklaApp.Views.Pages
             {
                 var btn = sender as Button;
                 if (btn != null) btn.IsEnabled = false;
-
-                await ShowLoadingAsync("Please select an object in the model (Press Esc or Middle Mouse to finish)...");
 
                 this.txtStatus.Text = "ACTIVE: Check Tekla selection...";
                 _viewModel.Rebars.Clear();
@@ -121,7 +111,6 @@ namespace TeklaApp.Views.Pages
 
             try
             {
-                await ShowLoadingAsync("Reloading data from Tekla...");
                 txtStatus.Text = "ACTIVE: Refreshing data from Tekla...";
                 string refreshResult = _viewModel.RefreshFromTekla();
                 txtStatus.Text = refreshResult;
@@ -204,7 +193,6 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Checking V/H prefixes...");
             try
             {
                 txtStatus.Text = "Checking V/H prefixes...";
@@ -220,7 +208,6 @@ namespace TeklaApp.Views.Pages
 
         private async void BtnAutoColor_Click(object sender, RoutedEventArgs e)
         {
-            await ShowLoadingAsync("Running Auto Color by Size...");
             try
             {
                 txtStatus.Text = "Preview: Assigning Class by Size...";
@@ -236,7 +223,6 @@ namespace TeklaApp.Views.Pages
 
         private async void BtnAutoRadius_Click(object sender, RoutedEventArgs e)
         {
-            await ShowLoadingAsync("Running Auto Radius by Size...");
             try
             {
                 txtStatus.Text = "Preview: Assigning Bending Radius by Size...";
@@ -259,8 +245,6 @@ namespace TeklaApp.Views.Pages
         private async void BtnRunNumbering_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
-
-            await ShowLoadingAsync("Running Numbering sequence...");
             try
             {
                 txtStatus.Text = "Preview: Numbering (skip existing)...";
@@ -278,7 +262,6 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Reassigning all Numbering sequence...");
             try
             {
                 txtStatus.Text = "Preview: Reassigning all numbers...";
@@ -296,7 +279,6 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Scanning for overlapping rebars...");
             try
             {
                 txtStatus.Text = "Scanning for overlapping rebars...";
@@ -314,7 +296,6 @@ namespace TeklaApp.Views.Pages
         {
             if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
 
-            await ShowLoadingAsync("Scanning for duplicate SEQ (Check again)...");
             try
             {
                 txtStatus.Text = "Scanning for SEQ conflicts...";
@@ -393,7 +374,6 @@ namespace TeklaApp.Views.Pages
 
             if (confirm == MessageBoxResult.Yes)
             {
-                await ShowLoadingAsync("Applying changes to Tekla...");
                 try
                 {
                     txtStatus.Text = "APPLYING changes to Tekla...";

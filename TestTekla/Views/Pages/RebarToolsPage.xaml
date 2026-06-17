@@ -29,6 +29,7 @@
                         <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSelectRebarsOfPart_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnAlignToPlane" Content="Align Rebar to Plane" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAlignToPlane_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnSplitRebar" Content="Split Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSplitRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnAutoAlignPoints" Content="Auto Align Points" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAutoAlignPoints_Click" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Auto-detect plane from rebar points and snap outliers back"/>
                     </StackPanel>
 
                     <!-- Compact Single-Line Toolbar for Rebar Creation -->

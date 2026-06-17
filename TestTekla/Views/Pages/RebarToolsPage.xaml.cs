@@ -60,6 +60,11 @@ namespace TeklaApp.Views.Pages
             _viewModel.AlignSelectedRebarsToPlane();
         }
 
+        private void BtnAutoAlignPoints_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.AutoAlignRebarPoints();
+        }
+
         private void BtnQuickRebarMulti_Click(object sender, RoutedEventArgs e)
         {
             SavePersistentSettings();

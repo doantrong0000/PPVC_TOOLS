@@ -818,5 +818,236 @@ namespace TeklaApp.ViewModels
             public Point Centroid() => new Point(ViewVertices.Average(p => p.X), ViewVertices.Average(p => p.Y), 0);
         }
 
+
+        // ════════════════════════════════════════════════════
+        // AUTO ALIGN REBAR POINTS TO PLANE
+        // ════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Automatically detects the dominant plane of each selected rebar's polygon points,
+        /// identifies outlier points that deviate from that plane, and snaps them back.
+        /// Uses variance analysis to determine the normal axis and median for the reference value.
+        /// </summary>
+        public void AutoAlignRebarPoints()
+        {
+            if (!_teklaModel.IsConnected()) return;
+
+            const double tolerance = 1.0; // mm — minimum deviation to consider as outlier
+
+            Model model = _teklaModel.GetModel();
+            Picker picker = new Picker();
+
+            try
+            {
+                // 1. Collect target rebars from selection or picker
+                List<Reinforcement> targets = new List<Reinforcement>();
+                ModelObjectSelector selector = new ModelObjectSelector();
+                var selected = selector.GetSelectedObjects();
+                while (selected.MoveNext())
+                {
+                    if (selected.Current is Reinforcement r) targets.Add(r);
+                }
+
+                if (targets.Count == 0)
+                {
+                    var picked = picker.PickObjects(Picker.PickObjectsEnum.PICK_N_REINFORCEMENTS,
+                        "Select rebar groups to auto-align points (Esc to finish)");
+                    while (picked.MoveNext())
+                    {
+                        if (picked.Current is Reinforcement r) targets.Add(r);
+                    }
+                }
+
+                if (targets.Count == 0) return;
+
+                int alignedRebarCount = 0;
+                int alignedPointCount = 0;
+
+                // 2. Process each rebar independently
+                foreach (var rebar in targets)
+                {
+                    if (rebar is SingleRebar sr)
+                    {
+                        var points = sr.Polygon.Points;
+                        int fixedCount = AlignPointsToDetectedPlane(points, tolerance);
+                        if (fixedCount > 0)
+                        {
+                            sr.Polygon.Points = points;
+                            if (sr.Modify())
+                            {
+                                alignedRebarCount++;
+                                alignedPointCount += fixedCount;
+                            }
+                        }
+                    }
+                    else if (rebar is RebarGroup rg)
+                    {
+                        var polygons = rg.Polygons;
+                        if (polygons != null)
+                        {
+                            // Collect ALL points from all polygons to determine the plane
+                            List<Point> allPoints = new List<Point>();
+                            foreach (var polyObj in polygons)
+                            {
+                                if (polyObj is Tekla.Structures.Model.Polygon poly)
+                                {
+                                    foreach (Point pt in poly.Points) allPoints.Add(pt);
+                                }
+                            }
+
+                            if (allPoints.Count < 3) continue;
+
+                            // Determine the dominant normal axis and reference value from ALL points
+                            int normalAxis = DetectNormalAxis(allPoints);
+                            if (normalAxis < 0) continue;
+
+                            double refValue = GetMedian(allPoints.Select(p => GetComponent(p, normalAxis)).ToList());
+
+                            // Apply alignment to each polygon
+                            int totalFixed = 0;
+                            for (int i = 0; i < polygons.Count; i++)
+                            {
+                                if (polygons[i] is Tekla.Structures.Model.Polygon poly)
+                                {
+                                    for (int j = 0; j < poly.Points.Count; j++)
+                                    {
+                                        Point pt = poly.Points[j] as Point;
+                                        if (pt == null) continue;
+
+                                        double deviation = Math.Abs(GetComponent(pt, normalAxis) - refValue);
+                                        if (deviation > tolerance)
+                                        {
+                                            SetComponent(pt, normalAxis, refValue);
+                                            totalFixed++;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (totalFixed > 0)
+                            {
+                                rg.Polygons = polygons;
+                                if (rg.Modify())
+                                {
+                                    alignedRebarCount++;
+                                    alignedPointCount += totalFixed;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                model.CommitChanges();
+
+                if (alignedRebarCount > 0)
+                    Tekla.Structures.Model.Operations.Operation.DisplayPrompt(
+                        $"Auto Align: Fixed {alignedPointCount} points in {alignedRebarCount} rebars.");
+                else
+                    Tekla.Structures.Model.Operations.Operation.DisplayPrompt(
+                        "Auto Align: All points are already aligned (no outliers found).");
+            }
+            catch (Exception ex)
+            {
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Auto Align Error: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Aligns outlier points in an ArrayList directly (for SingleRebar).
+        /// Returns the number of points fixed.
+        /// </summary>
+        private int AlignPointsToDetectedPlane(System.Collections.ArrayList points, double tolerance)
+        {
+            if (points.Count < 3) return 0;
+
+            List<Point> ptList = new List<Point>();
+            foreach (Point p in points) ptList.Add(p);
+
+            int normalAxis = DetectNormalAxis(ptList);
+            if (normalAxis < 0) return 0;
+
+            double refValue = GetMedian(ptList.Select(p => GetComponent(p, normalAxis)).ToList());
+
+            int fixedCount = 0;
+            for (int i = 0; i < points.Count; i++)
+            {
+                Point pt = points[i] as Point;
+                if (pt == null) continue;
+
+                double deviation = Math.Abs(GetComponent(pt, normalAxis) - refValue);
+                if (deviation > tolerance)
+                {
+                    SetComponent(pt, normalAxis, refValue);
+                    fixedCount++;
+                }
+            }
+
+            return fixedCount;
+        }
+
+        /// <summary>
+        /// Detects which axis (0=X, 1=Y, 2=Z) is the normal of the dominant plane
+        /// by finding the axis with the smallest variance.
+        /// Returns -1 if the plane cannot be determined.
+        /// </summary>
+        private int DetectNormalAxis(List<Point> points)
+        {
+            if (points.Count < 3) return -1;
+
+            double meanX = points.Average(p => p.X);
+            double meanY = points.Average(p => p.Y);
+            double meanZ = points.Average(p => p.Z);
+
+            double varX = points.Sum(p => (p.X - meanX) * (p.X - meanX));
+            double varY = points.Sum(p => (p.Y - meanY) * (p.Y - meanY));
+            double varZ = points.Sum(p => (p.Z - meanZ) * (p.Z - meanZ));
+
+            // The axis with the smallest variance is the normal axis
+            // (all points have nearly the same value on this axis)
+            if (varX <= varY && varX <= varZ) return 0; // X
+            if (varY <= varX && varY <= varZ) return 1; // Y
+            return 2; // Z
+        }
+
+        /// <summary>
+        /// Gets X (0), Y (1), or Z (2) component from a Point.
+        /// </summary>
+        private double GetComponent(Point p, int axis)
+        {
+            switch (axis)
+            {
+                case 0: return p.X;
+                case 1: return p.Y;
+                case 2: return p.Z;
+                default: return 0;
+            }
+        }
+
+        /// <summary>
+        /// Sets X (0), Y (1), or Z (2) component of a Point.
+        /// </summary>
+        private void SetComponent(Point p, int axis, double value)
+        {
+            switch (axis)
+            {
+                case 0: p.X = value; break;
+                case 1: p.Y = value; break;
+                case 2: p.Z = value; break;
+            }
+        }
+
+        /// <summary>
+        /// Computes the median of a list of doubles.
+        /// Median is preferred over mean because it is robust against outliers.
+        /// </summary>
+        private double GetMedian(List<double> values)
+        {
+            var sorted = values.OrderBy(v => v).ToList();
+            int n = sorted.Count;
+            if (n == 0) return 0;
+            if (n % 2 == 1) return sorted[n / 2];
+            return (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0;
+        }
+
     }
 }
