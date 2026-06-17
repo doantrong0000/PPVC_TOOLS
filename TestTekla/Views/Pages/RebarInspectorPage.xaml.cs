@@ -188,24 +188,6 @@ namespace TeklaApp.Views.Pages
 
 
 
-
-        private async void BtnCheckVH_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel.Rebars.Count == 0) { txtStatus.Text = "No rebars loaded. Pick part first."; return; }
-
-            try
-            {
-                txtStatus.Text = "Checking V/H prefixes...";
-                string result = _viewModel.CheckVH();
-                txtStatus.Text = result;
-                dgRebars.Items.Refresh();
-            }
-            finally
-            {
-                HideLoading();
-            }
-        }
-
         private async void BtnAutoColor_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -236,11 +218,6 @@ namespace TeklaApp.Views.Pages
             }
         }
 
-        private void BtnSettings_Click(object sender, RoutedEventArgs e)
-        {
-            var window = new RebarSettingsWindow(_viewModel);
-            window.ShowDialog();
-        }
 
         private async void BtnRunNumbering_Click(object sender, RoutedEventArgs e)
         {

@@ -24,9 +24,7 @@ namespace TeklaApp.ViewModels
         private TeklaModelMng _teklaModel = new TeklaModelMng();
 
         private int _startingNumber = 1;
-        private string _slabKeywords = "SLAB,FLOOR";
-        private string _beamKeywords = "TB,BEAM";
-        private string _wallKeywords = "TW,SW,WALL";
+
 
         public int StartingNumber
         {
@@ -42,26 +40,10 @@ namespace TeklaApp.ViewModels
 
         public RebarInspectorViewModel()
         {
-            LoadPersistentSettings();
+
         }
 
-        private void LoadPersistentSettings()
-        {
-            try
-            {
-                var settings = SettingsService.LoadSettings();
-                _startingNumber = int.TryParse(settings.StartingNumber, out int n) ? n : 1;
-                _slabKeywords = settings.SlabKeywords;
-                _beamKeywords = settings.BeamKeywords;
-                _wallKeywords = settings.WallKeywords;
-
-                LoadSizeColorMapping(settings);
-
-                OnPropertyChanged(nameof(StartingNumber));
-                OnPropertyChanged(nameof(SizeColorTable));
-            }
-            catch { }
-        }
+   
 
         private void SavePersistentSettings()
         {
@@ -96,7 +78,7 @@ namespace TeklaApp.ViewModels
 
             try
             {
-                LoadPersistentSettings();
+
 
                 // Build Reinforcement objects from loaded IDs
                 var rebarMap = new Dictionary<string, Reinforcement>();
@@ -123,11 +105,7 @@ namespace TeklaApp.ViewModels
                     if (parent is Part p) { hostName = p.Name ?? ""; hostId = p.Identifier.ID; }
                     else { firstRebar.GetReportProperty("MAIN_PART.NAME", ref hostName); }
                     hostName = hostName.ToUpper();
-
-                    int typePriority = 4;
-                    if (MatchesKeywords(hostName, _beamKeywords)) typePriority = 1;
-                    else if (MatchesKeywords(hostName, _slabKeywords)) typePriority = 2;
-                    else if (MatchesKeywords(hostName, _wallKeywords)) typePriority = 3;
+ 
 
                     double length = 0;
                     firstRebar.GetReportProperty("LENGTH", ref length);
@@ -143,7 +121,6 @@ namespace TeklaApp.ViewModels
                         Key = group.Key,
                         Rebars = group.Select(kv => kv.Value).ToList(),
                         RebarIds = group.Select(kv => kv.Key).ToList(),
-                        PartTypePriority = typePriority,
                         HostId = hostId,
                         HostName = hostName,
                         Length = length,
@@ -154,7 +131,6 @@ namespace TeklaApp.ViewModels
                 // BENDING groups are sorted to the end so they receive the highest SEQ numbers
                 var sortedGroups = groupSortData
                     .OrderBy(g => g.IsBending ? 1 : 0)
-                    .ThenBy(g => g.PartTypePriority)
                     .ThenBy(g => g.HostName)
                     .ThenBy(g => g.HostId)
                     .ThenByDescending(g => g.Length)
@@ -228,110 +204,7 @@ namespace TeklaApp.ViewModels
         }
 
         /// <summary>Check V/H for rebars in walls/columns/slabs and detect rebars outside host</summary>
-        public string CheckVH()
-        {
-            if (Rebars.Count == 0) return "No rebars loaded.";
-            if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
-
-            int invalidCount = 0;
-            foreach (var item in Rebars)
-            {
-                item.IsVHInvalid = false; // Reset
-
-                bool isOutsideHost = false;
-                string correctPrefix = "";
-
-                try
-                {
-                    if (int.TryParse(item.Id, out int objId))
-                    {
-                        var obj = _model.SelectModelObject(new Tekla.Structures.Identifier(objId));
-                        if (obj is Reinforcement rebar)
-                        {
-                            ModelObject father = rebar.GetFatherComponent();
-                            Part hostPart = father as Part;
-
-                            if (hostPart != null)
-                            {
-                                correctPrefix = GetAutoPrefix(rebar, hostPart, _slabKeywords, _beamKeywords, _wallKeywords);
-
-                                Solid hostSolid = hostPart.GetSolid();
-                                Polygon rebarPoly = GetFirstPolygon(rebar);
-
-                                if (hostSolid != null && rebarPoly != null && rebarPoly.Points.Count > 0)
-                                {
-                                    double minX = double.MaxValue, maxX = double.MinValue;
-                                    double minY = double.MaxValue, maxY = double.MinValue;
-                                    double minZ = double.MaxValue, maxZ = double.MinValue;
-
-                                    foreach (Tekla.Structures.Geometry3d.Point p in rebarPoly.Points)
-                                    {
-                                        if (p.X < minX) minX = p.X;
-                                        if (p.X > maxX) maxX = p.X;
-                                        if (p.Y < minY) minY = p.Y;
-                                        if (p.Y > maxY) maxY = p.Y;
-                                        if (p.Z < minZ) minZ = p.Z;
-                                        if (p.Z > maxZ) maxZ = p.Z;
-                                    }
-
-                                    double tol = 150.0; // Tolerance 150mm
-                                    if (minX > hostSolid.MaximumPoint.X + tol ||
-                                        maxX < hostSolid.MinimumPoint.X - tol ||
-                                        minY > hostSolid.MaximumPoint.Y + tol ||
-                                        maxY < hostSolid.MinimumPoint.Y - tol ||
-                                        minZ > hostSolid.MaximumPoint.Z + tol ||
-                                        maxZ < hostSolid.MinimumPoint.Z - tol)
-                                    {
-                                        isOutsideHost = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                catch { }
-
-                bool isInvalid = false;
-
-                // If rebar is outside host -> mark as error (red)
-                if (isOutsideHost)
-                {
-                    isInvalid = true;
-                }
-                else
-                {
-                    string hostName = (item.HostName ?? "").ToUpper();
-                    bool isWallColSlab = MatchesKeywords(hostName, _wallKeywords) ||
-                                         MatchesKeywords(hostName, _slabKeywords) ||
-                                         hostName.Contains("COLUMN") ||
-                                         hostName.Contains("COL");
-
-                    if (isWallColSlab)
-                    {
-                        string pos = (item.Position ?? "").Trim().ToUpper();
-
-                        // If prefix is X or unknown character (not V, H)
-                        if (pos != "V" && pos != "H")
-                        {
-                            isInvalid = true;
-                        }
-                        // Or if V/H is assigned but doesn't match actual geometric direction
-                        else if (!string.IsNullOrEmpty(correctPrefix) && correctPrefix != "X" && pos != correctPrefix)
-                        {
-                            isInvalid = true;
-                        }
-                    }
-                }
-
-                if (isInvalid)
-                {
-                    item.IsVHInvalid = true;
-                    invalidCount++;
-                }
-            }
-
-            return $"Check complete: {invalidCount} rebars with wrong V/H or outside host.";
-        }
+    
 
         /// <summary>Commit all changed + included items to Tekla model</summary>
         public string CommitChangesToTekla()
@@ -707,7 +580,6 @@ namespace TeklaApp.ViewModels
         public void UpdateSettings(AppSettings settings)
         {
             SettingsService.SaveSettings(settings);
-            LoadPersistentSettings(); // Reload keywords
             LoadSizeColorMapping(settings);
             OnPropertyChanged(nameof(SizeColorTable));
         }
@@ -1262,7 +1134,6 @@ namespace TeklaApp.ViewModels
         public string Key { get; set; }
         public List<Reinforcement> Rebars { get; set; }
         public List<string> RebarIds { get; set; } = new List<string>();
-        public int PartTypePriority { get; set; }
         public string HostName { get; set; }
         public int HostId { get; set; }
         public double Length { get; set; }

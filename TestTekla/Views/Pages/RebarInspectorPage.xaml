@@ -65,20 +65,9 @@
                                 Width="105" Height="36" Margin="0,0,4,4"
                                 ToolTip="Auto-assign Bending Radius from Tekla Catalog"/>
 
-                        <Button Content="SETTINGS"
-                                Click="BtnSettings_Click"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Width="105" Height="36" Margin="0,0,8,4"
-                                ToolTip="Configure Exclusions, Auto V/H Keywords, and Auto Color mappings"/>
-
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 
-                        <!-- Check V/H -->
-                        <Button Content="CHECK V/H"
-                                Click="BtnCheckVH_Click"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Width="105" Height="36" Margin="0,0,8,4"
-                                ToolTip="Check V/H prefix for rebars in walls/columns/slabs"/>
+
 
                         <!-- Numbering -->
                         <TextBlock Text="Start:" FontSize="10" VerticalAlignment="Center" Margin="0,0,3,4" Foreground="#555" FontWeight="SemiBold"/>
@@ -122,6 +111,7 @@
                                 Click="BtnExportJson_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Width="105" Height="36" Margin="0,0,0,4"/>
+
                     </WrapPanel>
                 </Border>
             </StackPanel>
