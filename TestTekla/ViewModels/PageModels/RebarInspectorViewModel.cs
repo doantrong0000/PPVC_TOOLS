@@ -43,8 +43,6 @@ namespace TeklaApp.ViewModels
 
         }
 
-   
-
         private void SavePersistentSettings()
         {
             try
@@ -54,17 +52,6 @@ namespace TeklaApp.ViewModels
                 SettingsService.SaveSettings(settings);
             }
             catch { }
-        }
-
-        private bool MatchesKeywords(string name, string keywords)
-        {
-            if (string.IsNullOrWhiteSpace(keywords)) return false;
-            var keys = keywords.Split(',').Select(k => k.Trim().ToUpper()).Where(k => !string.IsNullOrEmpty(k));
-            foreach (var key in keys)
-            {
-                if (name.Contains(key)) return true;
-            }
-            return false;
         }
 
         /// <summary>Preview numbering: calculates SEQ numbers and updates the grid only (no Tekla write)</summary>
@@ -78,8 +65,6 @@ namespace TeklaApp.ViewModels
 
             try
             {
-
-
                 // Build Reinforcement objects from loaded IDs
                 var rebarMap = new Dictionary<string, Reinforcement>();
                 foreach (var item in Rebars)
@@ -202,11 +187,6 @@ namespace TeklaApp.ViewModels
             }
             catch (Exception ex) { return "Error: " + ex.Message; }
         }
-
-        /// <summary>Check V/H for rebars in walls/columns/slabs and detect rebars outside host</summary>
-    
-
-        /// <summary>Commit all changed + included items to Tekla model</summary>
         public string CommitChangesToTekla()
         {
             if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
@@ -577,13 +557,6 @@ namespace TeklaApp.ViewModels
         // ==============================================================================
         public ObservableCollection<SizeColorItem> SizeColorTable { get; set; }
 
-        public void UpdateSettings(AppSettings settings)
-        {
-            SettingsService.SaveSettings(settings);
-            LoadSizeColorMapping(settings);
-            OnPropertyChanged(nameof(SizeColorTable));
-        }
-
         private void LoadSizeColorMapping(AppSettings settings)
         {
             SizeColorTable = new ObservableCollection<SizeColorItem>();
@@ -681,14 +654,7 @@ namespace TeklaApp.ViewModels
             return $"Preview: {count} rebars assigned manual bending radius. Click APPLY to commit.";
         }
 
-        // ==============================================================================
-        // OVERLAP DETECTION
-        // ==============================================================================
-
-        /// <summary>
-        /// Returns a shape-only key (SIZE + SHAPE + HOOK), WITHOUT length,
-        /// used for fuzzy overlap grouping.
-        /// </summary>
+  
         private string GetOverlapShapeKey(Reinforcement rebar)
         {
             string size = ""; rebar.GetReportProperty("SIZE", ref size);
@@ -897,32 +863,6 @@ namespace TeklaApp.ViewModels
             catch (Exception ex) { return "Error: " + ex.Message; }
         }
 
-        // ==============================================================================
-        // REBAR AUTO V/H DIRECTION LOGIC (Merged from RebarNumberingModel)
-        // ==============================================================================
-        public string GetAutoPrefix(Reinforcement rebar, Part hostPart, string slabKeys = "SLAB,FLOOR", string beamKeys = "TB,BEAM", string wallKeys = "TW,SW,WALL")
-        {
-            string prefix = "";
-            if (hostPart != null)
-            {
-                string hostName = (hostPart.Name ?? "").ToUpper();
-                bool isWall = MatchesKeywords(hostName, wallKeys);
-                bool isBeam = MatchesKeywords(hostName, beamKeys);
-                bool isSlab = MatchesKeywords(hostName, slabKeys);
-
-                if (!isWall && !isBeam && !isSlab)
-                    if (hostPart is ContourPlate) isSlab = true;
-
-                if (isSlab) prefix = GetRebarDirectionPrefix(rebar, false);
-                else prefix = GetPartDirectionPrefix(hostPart);
-            }
-            else
-            {
-                prefix = GetRebarDirectionPrefix(rebar, false);
-            }
-            return prefix;
-        }
-
         private string GetDirectionFromVector(Vector vec, bool isWall = false)
         {
             vec.Normalize();
@@ -940,61 +880,6 @@ namespace TeklaApp.ViewModels
                 if (absY > 0.98) return "V";
             }
             return "X";
-        }
-
-        private string GetRebarDirectionPrefix(Reinforcement rebar, bool isWall)
-        {
-            Polygon poly = GetFirstPolygon(rebar);
-            if (poly == null || poly.Points.Count < 2) return "";
-            double maxLength = -1;
-            Vector bestVec = null;
-            for (int i = 0; i < poly.Points.Count - 1; i++)
-            {
-                if (poly.Points[i] is Point pA && poly.Points[i + 1] is Point pB)
-                {
-                    Vector currentVec = new Vector(pB.X - pA.X, pB.Y - pA.Y, pB.Z - pA.Z);
-                    double len = currentVec.GetLength();
-                    if (len > maxLength) { maxLength = len; bestVec = currentVec; }
-                }
-            }
-            if (bestVec == null || maxLength < 0.1) return "";
-            return GetDirectionFromVector(bestVec, isWall);
-        }
-
-        private string GetPartDirectionPrefix(Part part)
-        {
-            Vector vec = null;
-            if (part is Beam beam)
-            {
-                vec = new Vector(beam.EndPoint.X - beam.StartPoint.X, beam.EndPoint.Y - beam.StartPoint.Y, 0);
-            }
-            else if (part is ContourPlate cp)
-            {
-                double maxLen = -1;
-                Vector bestVec = null;
-                var points = cp.Contour.ContourPoints;
-                if (points != null && points.Count > 1)
-                {
-                    for (int i = 0; i < points.Count; i++)
-                    {
-                        var p1 = points[i] as ContourPoint;
-                        var p2 = points[(i + 1) % points.Count] as ContourPoint;
-                        if (p1 != null && p2 != null)
-                        {
-                            Vector v = new Vector(p2.X - p1.X, p2.Y - p1.Y, 0);
-                            double len = v.GetLength();
-                            if (len > maxLen) { maxLen = len; bestVec = v; }
-                        }
-                    }
-                }
-                vec = bestVec ?? part.GetCoordinateSystem().AxisX;
-            }
-            else
-            {
-                vec = part.GetCoordinateSystem().AxisX;
-            }
-            if (vec == null || vec.GetLength() < 0.1) return "";
-            return GetDirectionFromVector(vec);
         }
 
         public string GetRebarSignature(Reinforcement rebar)
