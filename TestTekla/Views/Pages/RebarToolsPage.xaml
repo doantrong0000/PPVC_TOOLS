@@ -25,23 +25,19 @@
                     <!-- Action Buttons -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,5,8">
                         <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnReverseRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
-                        <Button Name="btnRepickRebarRange" Content="Repick Rebar Range" Margin="0,0,5,0" Width="150" Height="40" Click="BtnRepickRebarRange_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSelectRebarsOfPart_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnAlignToPlane" Content="Align Rebar to Plane" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAlignToPlane_Click" Style="{StaticResource PrimaryButtonStyle}"/>
-                        <Button Name="btnSplitRebar" Content="Split Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSplitRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
-                        <Button Name="btnAutoAlignPoints" Content="Auto Align Points" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAutoAlignPoints_Click" Style="{StaticResource PrimaryButtonStyle}" ToolTip="Auto-detect plane from rebar points and snap outliers back"/>
                     </StackPanel>
 
                     <!-- Compact Single-Line Toolbar for Rebar Creation -->
                     <Border Background="#FDFDFD" BorderBrush="#E0E0E0" BorderThickness="1" Padding="4" Margin="0,0,0,8" CornerRadius="4">
                         <WrapPanel Orientation="Horizontal">
-                            <TextBlock Text="CREATE REBAR (CLONE FROM SOURCE):" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                            <TextBlock Text="CREATE REBAR AVOID SHEARKEY:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
 
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="36" Padding="12,0,12,0" Style="{StaticResource PrimaryButtonStyle}">
-                                    <TextBlock Text="CLONE &amp; DISTRIBUTE" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="36" Width="100" Padding="12,0,12,0" Style="{StaticResource PrimaryButtonStyle}">
+                                    <TextBlock Text="Pick" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
                                 </Button>
-                                <CheckBox x:Name="chkMergeGroups" Content="Combine" Margin="10,0,0,0" IsChecked="True" FontSize="10" VerticalAlignment="Center" ToolTip="Merge all segments into a single rebar group"/>
                                 <TextBox x:Name="txtCover" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="25"/>
                                 <TextBox x:Name="txtSpacingTarget" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="200"/>
                             </StackPanel>

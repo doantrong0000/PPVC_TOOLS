@@ -80,16 +80,6 @@
                                 Click="BtnReassignAll_Click"
                                 Style="{StaticResource PrimaryButtonStyle}"
                                 Width="105" Height="36" Margin="0,0,4,4"/>
-                        <Button Content="OVERLAP"
-                                Click="BtnFindOverlaps_Click"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Width="105" Height="36" Margin="0,0,4,4"
-                                ToolTip="Find rebar pairs with same geometry but different SEQ (Overlap). Sorted to top."/>
-                        <Button Content="CHECK AGAIN"
-                                Click="BtnFindDuplicates_Click"
-                                Style="{StaticResource PrimaryButtonStyle}"
-                                Width="105" Height="36" Margin="0,0,8,4"
-                                ToolTip="Find rebar pairs with same SEQ but different geometry or mark. Sorted to top."/>
 
                         <Rectangle Width="1" Fill="#DDDDDD" Margin="4,2,8,6"/>
 

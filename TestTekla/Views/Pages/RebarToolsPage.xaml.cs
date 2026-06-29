@@ -25,13 +25,11 @@ namespace TeklaApp.Views.Pages
         private void LoadPersistentSettings()
         {
             var settings = SettingsService.LoadSettings();
-            chkMergeGroups.IsChecked = settings.MergeGroups;
         }
 
         private void SavePersistentSettings()
         {
             var settings = SettingsService.LoadSettings();
-            settings.MergeGroups = chkMergeGroups.IsChecked ?? true;
             SettingsService.SaveSettings(settings);
         }
 
@@ -40,19 +38,11 @@ namespace TeklaApp.Views.Pages
             _viewModel.ReverseRebarDistribution();
         }
 
-        private void BtnRepickRebarRange_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel.RepickRebarRange();
-        }
+   
 
         private void BtnSelectRebarsOfPart_Click(object sender, RoutedEventArgs e)
         {
             _viewModel.SelectRebarsOfPart();
-        }
-
-        private void BtnSplitRebar_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel.SplitRebarDistribution();
         }
 
         private void BtnAlignToPlane_Click(object sender, RoutedEventArgs e)
@@ -60,19 +50,12 @@ namespace TeklaApp.Views.Pages
             _viewModel.AlignSelectedRebarsToPlane();
         }
 
-        private void BtnAutoAlignPoints_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel.AutoAlignRebarPoints();
-        }
-
         private void BtnQuickRebarMulti_Click(object sender, RoutedEventArgs e)
         {
             SavePersistentSettings();
             _createVm.StatusMessage = "Creating rebars (cloning from source)...";
-            bool merge = chkMergeGroups.IsChecked == true;
-            _createVm.CloneRebarWithMultiPoints(double.Parse(txtCover.Text), double.Parse(txtSpacingTarget.Text), merge);
+            _createVm.CloneRebarWithMultiPoints(double.Parse(txtCover.Text), double.Parse(txtSpacingTarget.Text));
         }
-
 
 
         private void BtnShowRebarInspector_Click(object sender, RoutedEventArgs e)
@@ -81,7 +64,6 @@ namespace TeklaApp.Views.Pages
             txtEmptyState.Visibility = Visibility.Collapsed;
             btnCloseSubView.Visibility = Visibility.Visible;
         }
-
 
 
         private void BtnCloseSubView_Click(object sender, RoutedEventArgs e)

@@ -48,7 +48,6 @@ namespace TeklaApp.ViewModels
             try
             {
                 var settings = SettingsService.LoadSettings();
-                settings.StartingNumber = StartingNumber.ToString();
                 SettingsService.SaveSettings(settings);
             }
             catch { }
@@ -65,7 +64,7 @@ namespace TeklaApp.ViewModels
 
             try
             {
-                // Build Reinforcement objects from loaded IDs
+                // 1. Build Reinforcement objects from loaded IDs
                 var rebarMap = new Dictionary<string, Reinforcement>();
                 foreach (var item in Rebars)
                 {
@@ -76,8 +75,17 @@ namespace TeklaApp.ViewModels
 
                 if (rebarMap.Count == 0) return "No valid rebar objects found.";
 
-                // Group by signature (Geometry-only grouping, ignoring Prefix/Position)
-                var groupSets = rebarMap.GroupBy(kv => GetRebarSignature(kv.Value)).ToList();
+                // CHỈNH SỬA 1: Gộp nhóm theo cả Hình học (Signature) VÀ giá trị USER_FIELD_4 
+                var groupSets = rebarMap.GroupBy(kv =>
+                {
+                    string signature = GetRebarSignature(kv.Value);
+                    string uf4 = "";
+                    kv.Value.GetUserProperty("USER_FIELD_4", ref uf4);
+                    uf4 = string.IsNullOrWhiteSpace(uf4) ? "" : uf4.Trim().ToUpper();
+
+                    // Khóa gộp nhóm mới kết hợp giữa hình học và nhãn phân loại thuộc tính bổ sung
+                    return $"{signature}_{uf4}";
+                }).ToList();
 
                 // Build sorting data
                 var groupSortData = new List<RebarNumberingGroupInfo>();
@@ -90,16 +98,31 @@ namespace TeklaApp.ViewModels
                     if (parent is Part p) { hostName = p.Name ?? ""; hostId = p.Identifier.ID; }
                     else { firstRebar.GetReportProperty("MAIN_PART.NAME", ref hostName); }
                     hostName = hostName.ToUpper();
- 
 
                     double length = 0;
                     firstRebar.GetReportProperty("LENGTH", ref length);
 
-                    // Check USER_FIELD_4 for "BENDING" flag
+                    // CHỈNH SỬA 2: Đọc dữ liệu USER_FIELD_4 và phân loại chuẩn xác cấu trúc rẽ nhánh 4 cấp độ
                     string userField4 = "";
                     firstRebar.GetUserProperty("USER_FIELD_4", ref userField4);
-                    bool isBending = !string.IsNullOrWhiteSpace(userField4) &&
-                                     userField4.Trim().Equals("BENDING", StringComparison.OrdinalIgnoreCase);
+                    userField4 = string.IsNullOrWhiteSpace(userField4) ? "" : userField4.Trim().ToUpper();
+
+                    int sortPriority = 0; // Thường (Null hoặc Trống) -> Đứng đầu (0)
+                    bool isBending = false;
+
+                    if (userField4 == "550MPA")
+                    {
+                        sortPriority = 1; // Nhóm 550MPa -> Số 1
+                    }
+                    else if (userField4 == "OTHER")
+                    {
+                        sortPriority = 2; // Nhóm Other -> Số 2
+                    }
+                    else if (userField4 == "BENDING")
+                    {
+                        sortPriority = 3; // Nhóm BENDING -> Số 3 (Đứng cuối cùng)
+                        isBending = true;
+                    }
 
                     groupSortData.Add(new RebarNumberingGroupInfo
                     {
@@ -109,13 +132,14 @@ namespace TeklaApp.ViewModels
                         HostId = hostId,
                         HostName = hostName,
                         Length = length,
-                        IsBending = isBending
+                        IsBending = isBending,
+                        SortPriority = sortPriority
                     });
                 }
 
-                // BENDING groups are sorted to the end so they receive the highest SEQ numbers
+                // CHỈNH SỬA 3: Sắp xếp theo thứ tự ưu tiên tăng dần: Thường (0) -> 550MPa (1) -> Other (2) -> Bending (3)
                 var sortedGroups = groupSortData
-                    .OrderBy(g => g.IsBending ? 1 : 0)
+                    .OrderBy(g => g.SortPriority)
                     .ThenBy(g => g.HostName)
                     .ThenBy(g => g.HostId)
                     .ThenByDescending(g => g.Length)
@@ -148,18 +172,39 @@ namespace TeklaApp.ViewModels
                     foreach (var gInfo in sortedGroups) groupToNumberMap[gInfo.Key] = 0;
                 }
 
-                // Assign numbers: non-BENDING unassigned groups first, then BENDING unassigned groups
-                // This ensures BENDING groups always receive the highest SEQ numbers
+                // CHỈNH SỬA 4: Phân tách đầy đủ 4 danh sách Unassigned dựa trên SortPriority để cấp số liên tục
                 int nextNum = StartingNumber;
-                var unassignedNormal = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && !g.IsBending).ToList();
-                var unassignedBending = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && g.IsBending).ToList();
 
+                var unassignedNormal = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && g.SortPriority == 0).ToList();
+                var unassigned550MPa = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && g.SortPriority == 1).ToList();
+                var unassignedOther = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && g.SortPriority == 2).ToList();
+                var unassignedBending = sortedGroups.Where(g => groupToNumberMap[g.Key] == 0 && g.SortPriority == 3).ToList();
+
+                // Cấp số nhóm 1: Thường (Null/Empty)
                 foreach (var gInfo in unassignedNormal)
                 {
                     while (usedNumbers.Contains(nextNum)) nextNum++;
                     groupToNumberMap[gInfo.Key] = nextNum;
                     usedNumbers.Add(nextNum);
                 }
+
+                // Cấp số nhóm 2: "550MPa"
+                foreach (var gInfo in unassigned550MPa)
+                {
+                    while (usedNumbers.Contains(nextNum)) nextNum++;
+                    groupToNumberMap[gInfo.Key] = nextNum;
+                    usedNumbers.Add(nextNum);
+                }
+
+                // Cấp số nhóm 3: "Other"
+                foreach (var gInfo in unassignedOther)
+                {
+                    while (usedNumbers.Contains(nextNum)) nextNum++;
+                    groupToNumberMap[gInfo.Key] = nextNum;
+                    usedNumbers.Add(nextNum);
+                }
+
+                // Cấp số nhóm 4: "BENDING" (Luôn giữ số cao nhất hệ thống)
                 foreach (var gInfo in unassignedBending)
                 {
                     while (usedNumbers.Contains(nextNum)) nextNum++;
@@ -187,6 +232,7 @@ namespace TeklaApp.ViewModels
             }
             catch (Exception ex) { return "Error: " + ex.Message; }
         }
+
         public string CommitChangesToTekla()
         {
             if (!_model.GetConnectionStatus()) return "Error: Tekla not connected.";
@@ -654,7 +700,7 @@ namespace TeklaApp.ViewModels
             return $"Preview: {count} rebars assigned manual bending radius. Click APPLY to commit.";
         }
 
-  
+
         private string GetOverlapShapeKey(Reinforcement rebar)
         {
             string size = ""; rebar.GetReportProperty("SIZE", ref size);
@@ -1024,6 +1070,7 @@ namespace TeklaApp.ViewModels
         public double Length { get; set; }
         /// <summary>True if USER_FIELD_4 == "BENDING" — these groups are numbered last (highest SEQ)</summary>
         public bool IsBending { get; set; }
+        public int SortPriority { get; set; }
     }
 
     public class SizeColorItem

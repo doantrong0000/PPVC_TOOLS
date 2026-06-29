@@ -58,7 +58,7 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
-        public void CloneRebarWithMultiPoints(double coverValue, double spacingTarget, bool mergeGroups = true)
+        public void CloneRebarWithMultiPoints(double coverValue, double spacingTarget)
         {
             Model _model = new Model();
             if (!_model.GetConnectionStatus()) return;
@@ -103,11 +103,6 @@ namespace TeklaApp.ViewModels.PageModels
                     rg.StartPoint = segStart;
                     rg.EndPoint = segEnd;
 
-                    // --- FIX FOR TEKLA 2020: OFFSET ---
-                    // Use StartOffset and EndOffset to offset rebar 30mm
-                    rg.StartFromPlaneOffset = (i == 0) ? coverValue : 0;
-                    rg.EndFromPlaneOffset = (i == segmentCount - 1) ? coverValue : 0;
-
                     // --- FIX FOR TEKLA 2020: ENUM SPACING ---
                     // Append 'S' to EXACT_SPACINGS
                     rg.SpacingType = BaseRebarGroup.RebarGroupSpacingTypeEnum.SPACING_TYPE_TARGET_SPACE;
@@ -126,36 +121,30 @@ namespace TeklaApp.ViewModels.PageModels
                     rg.Grade = rGrade;
                     rg.RadiusValues = sourceRebar.RadiusValues;
 
+                    rg.StartPointOffsetType = sourceRebar.StartPointOffsetType;
+                    rg.StartPointOffsetValue = sourceRebar.StartPointOffsetValue;
+
+                    rg.EndPointOffsetType = sourceRebar.EndPointOffsetType;
+                    rg.EndPointOffsetValue = sourceRebar.EndPointOffsetValue;
+
+                    rg.StartFromPlaneOffset = (i == 0) ? coverValue : 0;
+                    rg.EndFromPlaneOffset = (i == segmentCount - 1) ? coverValue : 0;
+
+                    rg.OnPlaneOffsets = sourceRebar.OnPlaneOffsets;
+
+                    rg.SetUserProperty("USER_FIELD_2", spacingTarget.ToString());
+
                     if (rg.Insert()) createdGroups.Add(rg);
                 }
 
                 _model.CommitChanges();
 
-                // 3. Merge groups and handle UDA
-                if (mergeGroups && createdGroups.Count > 1)
+                var objs = new System.Collections.ArrayList();
+                foreach (var group in createdGroups)
                 {
-                    RebarGroup combinedGroup = createdGroups[0];
-                    for (int j = 1; j < createdGroups.Count; j++)
-                    {
-                        var result = Operation.Combine(combinedGroup, createdGroups[j]);
-                        if (result != null) combinedGroup = result;
-                    }
-
-                    // Set spacing value to UDA for drawing display (avoid rounding from Tekla recalculation)
-                    // You can change USER_FIELD_2 to any UDA used in your Mark
-                    combinedGroup.SetUserProperty("USER_FIELD_2", spacingTarget.ToString());
-
-                    combinedGroup.Modify();
-                    _model.CommitChanges();
-
-                    // Select the final merged object
-                    ArrayList selectList = new ArrayList { combinedGroup };
-                    new Tekla.Structures.Model.UI.ModelObjectSelector().Select(selectList);
+                    objs.Add(group);
                 }
-                else if (createdGroups.Count > 0)
-                {
-                    new Tekla.Structures.Model.UI.ModelObjectSelector().Select(new ArrayList(createdGroups));
-                }
+                new Tekla.Structures.Model.UI.ModelObjectSelector().Select(objs);
             }
             catch (Exception ex)
             {
