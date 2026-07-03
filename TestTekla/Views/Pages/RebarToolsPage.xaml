@@ -27,6 +27,7 @@
                         <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnReverseRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSelectRebarsOfPart_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnAlignToPlane" Content="Align Rebar to Plane" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAlignToPlane_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnSplitRebar" Content="Split Rebar" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSplitRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                     </StackPanel>
 
                     <!-- Compact Single-Line Toolbar for Rebar Creation -->

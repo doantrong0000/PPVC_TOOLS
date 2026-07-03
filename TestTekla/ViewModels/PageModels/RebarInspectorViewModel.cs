@@ -1,22 +1,23 @@
+using Microsoft.Win32;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.ComponentModel;
 using System.IO;
-using Microsoft.Win32;
-using Newtonsoft.Json;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using Tekla.Structures.Geometry3d;
 using Tekla.Structures.Model;
 using Tekla.Structures.Model.UI;
-using Tekla.Structures.Geometry3d;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using TeklaApp.Helpers;
 using TeklaApp.Models;
+using TestTekla.ViewModels;
 
 namespace TeklaApp.ViewModels
 {
-    public class RebarInspectorViewModel : INotifyPropertyChanged
+    public class RebarInspectorViewModel : BaseViewModel
     {
         public ObservableCollection<RebarInfoItem> Rebars { get; set; } = new ObservableCollection<RebarInfoItem>();
         public string SelectedObjectName { get; set; } = "";
@@ -30,12 +31,6 @@ namespace TeklaApp.ViewModels
         {
             get => _startingNumber;
             set { _startingNumber = value; OnPropertyChanged(); SavePersistentSettings(); }
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         public RebarInspectorViewModel()

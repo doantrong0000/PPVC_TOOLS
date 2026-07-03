@@ -62,11 +62,6 @@ namespace TeklaApp.Views
             }
         }
 
-        private void BtnRebarTagScanner_Click(object sender, RoutedEventArgs e)
-        {
-            MainContentControl.Content = new DrawingRebarTagScannerPage();
-        }
-
         private void BtnRebarTools_Click(object sender, RoutedEventArgs e)
         {
             MainContentControl.Content = new RebarToolsPage();

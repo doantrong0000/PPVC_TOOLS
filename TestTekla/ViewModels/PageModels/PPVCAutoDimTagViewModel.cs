@@ -10,17 +10,18 @@ using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Windows;
 using Tekla.Structures.Drawing;
+using TestTekla.ViewModels;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using TS = Tekla.Structures;
 // Alias cho Tekla Drawing API
 using TSD = Tekla.Structures.Drawing;
 using TSDUI = Tekla.Structures.Drawing.UI;
 using TSM = Tekla.Structures.Model;
 using TSMO = Tekla.Structures.Model.Operations;
-using TS = Tekla.Structures;
 
 namespace TeklaApp.ViewModels.PageModels
 {
-    public class DimMappingRule : INotifyPropertyChanged
+    public class DimMappingRule : BaseViewModel
     {
         private string _rebarName;
         public string RebarName
@@ -43,11 +44,6 @@ namespace TeklaApp.ViewModels.PageModels
             set { _dimProperty = value; OnPropertyChanged(); }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 
     public class TagMappingRule : INotifyPropertyChanged

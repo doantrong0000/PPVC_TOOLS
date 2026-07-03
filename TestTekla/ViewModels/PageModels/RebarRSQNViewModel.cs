@@ -13,22 +13,20 @@ using Tekla.Structures.Model;
 using Tekla.Structures.Model.UI;
 using TeklaApp.Helpers;
 using TeklaApp.Models;
+using TestTekla.ViewModels;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using TS = Tekla.Structures;
 using TSM = Tekla.Structures.Model;
 
 namespace TeklaApp.ViewModels
 {
-    public class RebarRSQNViewModel : INotifyPropertyChanged
+    public class RebarRSQNViewModel : BaseViewModel
     {
         private readonly Model _model = new Model();
         public ObservableCollection<RSQNGroupItem> Groups { get; set; } = new ObservableCollection<RSQNGroupItem>();
-        private bool _renumberSelected;
         private string _statusMessage = "Ready";
         public string StatusMessage { get => _statusMessage; set { _statusMessage = value; OnPropertyChanged(); } }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
         public RebarRSQNViewModel()
         {

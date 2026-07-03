@@ -50,6 +50,11 @@ namespace TeklaApp.Views.Pages
             _viewModel.AlignSelectedRebarsToPlane();
         }
 
+        private void BtnSplitRebar_Click(object sender, RoutedEventArgs e)
+        {
+            _createVm.SplitRebar();
+        }
+
         private void BtnQuickRebarMulti_Click(object sender, RoutedEventArgs e)
         {
             SavePersistentSettings();

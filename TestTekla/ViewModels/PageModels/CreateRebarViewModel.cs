@@ -11,10 +11,11 @@ using Tekla.Structures.Model.UI;
 
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using TestTekla.ViewModels;
 
 namespace TeklaApp.ViewModels.PageModels
 {
-    public class CreateRebarViewModel : INotifyPropertyChanged
+    public class CreateRebarViewModel : BaseViewModel
     {
         private Model _model = new Model();
         private string _findSeq = "";
@@ -153,6 +154,10 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
+        public void SplitRebar()
+        {
+        }
+
         public void PickAssembly()
         {
             if (!_model.GetConnectionStatus()) return;
@@ -257,11 +262,11 @@ namespace TeklaApp.ViewModels.PageModels
                 else
                 {
                     Type[] rebarTypes = new Type[]
-    {
-        typeof(Tekla.Structures.Model.SingleRebar),
-        typeof(Tekla.Structures.Model.RebarGroup) 
-        // Bạn có thể thêm typeof(RebarMesh), typeof(RebarStrand) vào đây nếu dự án có dùng
-    };
+                    {
+                        typeof(Tekla.Structures.Model.SingleRebar),
+                        typeof(Tekla.Structures.Model.RebarGroup) 
+                        // Bạn có thể thêm typeof(RebarMesh), typeof(RebarStrand) vào đây nếu dự án có dùng
+                    };
                     // Scan whole Model
                     ModelObjectEnumerator rebarEnum = _model.GetModelObjectSelector().GetAllObjectsWithType(rebarTypes);
                     while (rebarEnum.MoveNext())
@@ -382,12 +387,6 @@ namespace TeklaApp.ViewModels.PageModels
             if (!Directory.Exists(drawingMacroPath)) Directory.CreateDirectory(drawingMacroPath);
 
             return drawingMacroPath;
-        }
-
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }
