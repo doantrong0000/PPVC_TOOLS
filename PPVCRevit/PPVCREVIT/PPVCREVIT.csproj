@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
-		<DeployAddin>true</DeployAddin>
+		<DeployAddin>false</DeployAddin>
 		<LaunchRevit>true</LaunchRevit>
 		<IsRepackable>false</IsRepackable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>

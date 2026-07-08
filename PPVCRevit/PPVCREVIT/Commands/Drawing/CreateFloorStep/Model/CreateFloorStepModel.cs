@@ -11,6 +11,11 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
         public Floor FloorElement { get; set; }
         public Transform LinkTransform { get; set; } // Transform của file link chứa sàn này
         public string SourceName { get; set; }        // Tên file nguồn (dùng để debug nếu cần)
+
+        public void cal()
+        {
+            // Placeholder for any calculations or methods related to FloorData
+        }
     }
 
     public class CreateFloorStepModel
@@ -22,6 +27,7 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
                 TaskDialog.Show("Thông báo", "Vui lòng chọn ít nhất 2 sàn cạnh nhau.");
                 return;
             }
+
 
             // Thu thập Family Symbols tại File Chủ
             var stepSymbols = new FilteredElementCollector(doc)
