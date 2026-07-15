@@ -1,17 +1,21 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using System.ComponentModel;
 using System.IO;
-
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Windows;
 using Tekla.Structures.Geometry3d;
 using Tekla.Structures.Model;
 using Tekla.Structures.Model.Operations;
 using Tekla.Structures.Model.UI;
-
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using TestTekla.Models;
 using TestTekla.ViewModels;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using static Tekla.Structures.ModelInternal.PickerInternal;
+using ModelObjectSelector = Tekla.Structures.Model.UI.ModelObjectSelector;
+using Point = Tekla.Structures.Geometry3d.Point;
 
 namespace TeklaApp.ViewModels.PageModels
 {
@@ -156,7 +160,360 @@ namespace TeklaApp.ViewModels.PageModels
 
         public void SplitRebar()
         {
+            Model _model = new Model();
+
+            // Check model connection
+            if (!_model.GetConnectionStatus())
+            {
+                MessageBox.Show("Cannot connect to Tekla Structures model.", "Error");
+                return;
+            }
+
+
+            // --- USE PRE-SELECTED OBJECT ---
+            ModelObjectSelector selector = new ModelObjectSelector();
+            ModelObjectEnumerator selectedObjects = selector.GetSelectedObjects();
+
+            if (selectedObjects.GetSize() == 0)
+            {
+                MessageBox.Show("Please select a rebar in the model before running the command.", "Notification");
+                return;
+            }
+
+            selectedObjects.MoveNext();
+            ModelObject pickedObject = selectedObjects.Current;
+
+            if (pickedObject is RebarGroup rebar)
+            {
+                // 2. Get current points of the rebar
+                ArrayList list = rebar.Polygons;
+                if (list.Count == 0) return;
+
+                Polygon polygon = (Polygon)list[0];
+                List<Point> pointList = polygon.Points.Cast<Point>().ToList();
+
+                // 3. Choose split point (still need Picker for the user to click and choose position)
+                Picker picker = new Picker();
+                Point SplitPoint = picker.PickPoint("Select a point to split the rebar");
+
+                // --- 4. FIND THE PROJECTION ON THE NEAREST LINE SEGMENT ---
+                Point bestProjPoint = null;
+                double minDistance = double.MaxValue;
+                int insertIndex = -1;
+
+                for (int i = 0; i < pointList.Count - 1; i++)
+                {
+                    Point A = pointList[i];
+                    Point B = pointList[i + 1];
+
+                    double abX = B.X - A.X;
+                    double abY = B.Y - A.Y;
+                    double abZ = B.Z - A.Z;
+
+                    double apX = SplitPoint.X - A.X;
+                    double apY = SplitPoint.Y - A.Y;
+                    double apZ = SplitPoint.Z - A.Z;
+
+                    double lengthAB_sq = (abX * abX) + (abY * abY) + (abZ * abZ);
+                    if (lengthAB_sq == 0) continue;
+
+                    double t = ((apX * abX) + (apY * abY) + (apZ * abZ)) / lengthAB_sq;
+                    t = Math.Max(0, Math.Min(1, t)); // Limit t to the segment [0, 1]
+
+                    Point projPoint = new Point(
+                    A.X + t * abX,
+                    A.Y + t * abY,
+                    A.Z + t * abZ
+                    );
+
+                    double dist = Distance.PointToPoint(SplitPoint, projPoint);
+
+                    if (dist < minDistance)
+                    {
+                        minDistance = dist;
+                        bestProjPoint = projPoint;
+                        insertIndex = i;
+                    }
+                }
+
+                // --- 5. PERFORM SPLIT AND UPDATE MODEL ---
+                if (bestProjPoint != null && insertIndex != -1)
+                {
+                    // Split points into 2 parts
+                    List<Point> pointsPart1 = pointList.GetRange(0, insertIndex + 1);
+                    pointsPart1.Add(bestProjPoint);
+
+                    List<Point> pointsPart2 = new List<Point> { bestProjPoint };
+                    pointsPart2.AddRange(pointList.GetRange(insertIndex + 1, pointList.Count - (insertIndex + 1)));
+
+                    // Update original rebar (Part 1)
+                    ArrayList arrayList1 = new ArrayList();
+                    foreach (Point pt in pointsPart1) arrayList1.Add(pt);
+
+                    Polygon newPolygon1 = new Polygon { Points = arrayList1 };
+                    rebar.Polygons.Clear();
+                    rebar.Polygons.Add(newPolygon1);
+                    rebar.Modify();
+
+                    // Create new rebar (Part 2)
+                    RebarGroup rebar2 = RebarMethol.CopyRebar(rebar);
+
+                    ArrayList arrayList2 = new ArrayList();
+                    foreach (Point pt in pointsPart2) arrayList2.Add(pt);
+
+                    Polygon newPolygon2 = new Polygon { Points = arrayList2 };
+                    rebar2.Polygons.Clear();
+                    rebar2.Polygons.Add(newPolygon2);
+
+                    if (rebar2.Insert())
+                    {
+                        _model.CommitChanges();
+                    }
+                }
+            }
+
         }
+
+        public void AddPointInRebar()
+        {
+            Model _model = new Model();
+
+            // Check model connection
+            if (!_model.GetConnectionStatus())
+            {
+                MessageBox.Show("Cannot connect to Tekla Structures model.", "Error");
+                return;
+            }
+
+            // --- USE PRE-SELECTED OBJECT ---
+            ModelObjectSelector selector = new ModelObjectSelector();
+            ModelObjectEnumerator selectedObjects = selector.GetSelectedObjects();
+
+            if (selectedObjects.GetSize() == 0)
+            {
+                MessageBox.Show("Please select a rebar in the model before running the command.", "Notification");
+                return;
+            }
+
+            selectedObjects.MoveNext();
+            ModelObject pickedObject = selectedObjects.Current;
+
+            if (pickedObject is RebarGroup rebar)
+            {
+                // 2. Get current points of the rebar
+                ArrayList list = rebar.Polygons;
+                if (list.Count == 0) return;
+
+                Polygon polygon = (Polygon)list[0];
+                List<Point> pointList = polygon.Points.Cast<Point>().ToList();
+
+                // 3. Choose point to add (still need Picker for the user to click and choose position)
+                Picker picker = new Picker();
+                Point AddPoint = picker.PickPoint("Select a position to add a point to the rebar");
+
+                // --- 4. FIND THE PROJECTION ON THE NEAREST LINE SEGMENT ---
+                Point bestProjPoint = null;
+                double minDistance = double.MaxValue;
+                int insertIndex = -1;
+
+                for (int i = 0; i < pointList.Count - 1; i++)
+                {
+                    Point A = pointList[i];
+                    Point B = pointList[i + 1];
+
+                    double abX = B.X - A.X;
+                    double abY = B.Y - A.Y;
+                    double abZ = B.Z - A.Z;
+
+                    double apX = AddPoint.X - A.X;
+                    double apY = AddPoint.Y - A.Y;
+                    double apZ = AddPoint.Z - A.Z;
+
+                    double lengthAB_sq = (abX * abX) + (abY * abY) + (abZ * abZ);
+                    if (lengthAB_sq == 0) continue;
+
+                    double t = ((apX * abX) + (apY * abY) + (apZ * abZ)) / lengthAB_sq;
+                    t = Math.Max(0, Math.Min(1, t)); // Limit t to the segment [0, 1]
+
+                    Point projPoint = new Point(
+                    A.X + t * abX,
+                    A.Y + t * abY,
+                    A.Z + t * abZ
+                    );
+
+                    double dist = Distance.PointToPoint(AddPoint, projPoint);
+
+                    if (dist < minDistance)
+                    {
+                        minDistance = dist;
+                        bestProjPoint = projPoint;
+                        insertIndex = i; // Save index of point A in segment AB
+                    }
+                }
+
+                // --- 5. PERFORM ADD POINT AND UPDATE MODEL ---
+                if (bestProjPoint != null && insertIndex != -1)
+                {
+                    // Insert new projected point between point A (insertIndex) and point B (insertIndex + 1)
+                    pointList.Insert(insertIndex + 1, bestProjPoint);
+
+                    // Update point array for original rebar
+                    ArrayList newArrayList = new ArrayList();
+                    foreach (Point pt in pointList)
+                    {
+                        newArrayList.Add(pt);
+                    }
+
+                    Polygon updatedPolygon = new Polygon { Points = newArrayList };
+                    rebar.Polygons.Clear();
+                    rebar.Polygons.Add(updatedPolygon);
+
+                    // Modify to apply changes to the rebar
+                    if (rebar.Modify())
+                    {
+                        _model.CommitChanges();
+                    }
+                }
+            }
+
+        }
+
+        public void ReversePointRebar()
+        {
+            Model _model = new Model();
+
+            // Check model connection
+            if (!_model.GetConnectionStatus())
+            {
+                MessageBox.Show("Cannot connect to Tekla Structures model.", "Error");
+                return;
+            }
+
+
+            // --- USE PRE-SELECTED OBJECT ---
+            ModelObjectSelector selector = new ModelObjectSelector();
+            ModelObjectEnumerator selectedObjects = selector.GetSelectedObjects();
+
+            if (selectedObjects.GetSize() == 0)
+            {
+                MessageBox.Show("Please select a rebar in the model before running the command.", "Notification");
+                return;
+            }
+
+            selectedObjects.MoveNext();
+            ModelObject pickedObject = selectedObjects.Current;
+
+            if (pickedObject is RebarGroup rebar)
+            {
+                // 2. Get current points of the rebar
+                ArrayList list = rebar.Polygons;
+                if (list.Count == 0) return;
+
+                Polygon polygon = (Polygon)list[0];
+                List<Point> pointList = polygon.Points.Cast<Point>().ToList();
+                pointList.Reverse();
+
+                ArrayList newArrayList = new ArrayList();
+                foreach (Point pt in pointList)
+                {
+                    newArrayList.Add(pt);
+                }
+
+                Polygon updatedPolygon = new Polygon { Points = newArrayList };
+                rebar.Polygons.Clear();
+                rebar.Polygons.Add(updatedPolygon);
+                rebar.Modify();
+
+            }
+            _model.CommitChanges();
+
+        }
+
+
+        public void DeletePointRebar()
+        {
+            Model _model = new Model();
+
+            // Check model connection
+            if (!_model.GetConnectionStatus())
+            {
+                MessageBox.Show("Cannot connect to Tekla Structures model.", "Error");
+                return;
+            }
+
+            try
+            {
+                // --- USE PRE-SELECTED OBJECT ---
+                ModelObjectSelector selector = new ModelObjectSelector();
+                ModelObjectEnumerator selectedObjects = selector.GetSelectedObjects();
+
+                if (selectedObjects.GetSize() == 0)
+                {
+                    MessageBox.Show("Please select a rebar in the model before running the command.", "Notification");
+                    return;
+                }
+
+                selectedObjects.MoveNext();
+                ModelObject pickedObject = selectedObjects.Current;
+
+                if (pickedObject is RebarGroup rebar)
+                {
+                    // 1. Get current list of points of the rebar
+                    ArrayList list = rebar.Polygons;
+                    if (list.Count == 0) return;
+
+                    Polygon polygon = (Polygon)list[0];
+                    List<Point> pointList = polygon.Points.Cast<Point>().ToList();
+
+                    // SAFETY CHECK: Do not allow deletion if the rebar has only 2 points
+                    if (pointList.Count <= 2)
+                    {
+                        MessageBox.Show("The rebar has only 2 points. Cannot delete more points to maintain its basic shape.", "Notification");
+                        return;
+                    }
+
+                    // 2. Ask the user to select a point near the position to delete
+                    Picker picker = new Picker();
+                    Point pickedPoint = picker.PickPoint("Click near the node you want to delete on the rebar");
+
+                    // 3. FIND NEAREST POINT TO DELETE
+                    // Sort points by distance from clicked point and take the first one (closest)
+                    Point closestPoint = pointList.OrderBy(pt => Distance.PointToPoint(pt, pickedPoint)).FirstOrDefault();
+
+                    if (closestPoint != null)
+                    {
+                        // Remove point from list
+                        pointList.Remove(closestPoint);
+
+                        // 4. Recreate Polygon structure and update rebar
+                        ArrayList newArrayList = new ArrayList();
+                        foreach (Point pt in pointList)
+                        {
+                            newArrayList.Add(pt);
+                        }
+
+                        Polygon updatedPolygon = new Polygon { Points = newArrayList };
+                        rebar.Polygons.Clear();
+                        rebar.Polygons.Add(updatedPolygon);
+
+                        // 5. Update model
+                        if (rebar.Modify())
+                        {
+                            _model.CommitChanges();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Cannot update rebar after deleting the point.", "Error");
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // Catch error when user presses ESC to cancel PickPoint command
+            }
+        }
+
 
         public void PickAssembly()
         {
@@ -199,10 +556,10 @@ namespace TeklaApp.ViewModels.PageModels
             }
 
             List<int> targetSeqs = FindSeq.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                                         .Select(s => int.TryParse(s, out int val) ? val : (int?)null)
-                                         .Where(v => v.HasValue)
-                                         .Select(v => v.Value)
-                                         .ToList();
+           .Select(s => int.TryParse(s, out int val) ? val : (int?)null)
+           .Where(v => v.HasValue)
+           .Select(v => v.Value)
+                            .ToList();
 
             if (targetSeqs.Count == 0)
             {
@@ -263,8 +620,8 @@ namespace TeklaApp.ViewModels.PageModels
                 {
                     Type[] rebarTypes = new Type[]
                     {
-                        typeof(Tekla.Structures.Model.SingleRebar),
-                        typeof(Tekla.Structures.Model.RebarGroup) 
+                                                                                                            typeof(Tekla.Structures.Model.SingleRebar),
+                                                                                                            typeof(Tekla.Structures.Model.RebarGroup)
                         // Bạn có thể thêm typeof(RebarMesh), typeof(RebarStrand) vào đây nếu dự án có dùng
                     };
                     // Scan whole Model

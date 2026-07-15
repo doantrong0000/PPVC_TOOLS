@@ -14,50 +14,44 @@
         </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
-        <!-- DockPanel: top section is fixed, bottom fills remaining space -->
         <DockPanel LastChildFill="True" Margin="10">
-
-
-
-            <!-- ===== COLLAPSIBLE: Quick Rebar Tools ===== -->
-            <Expander DockPanel.Dock="Top" Header="Quick Rebar Tools" IsExpanded="False" Margin="0,0,0,5" Background="#F4F8FA" BorderBrush="#C4D7E2">
-                <StackPanel Margin="10,5,10,10">
-                    <!-- Action Buttons -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,5,8">
+            <StackPanel Margin="10,5,10,10" DockPanel.Dock="Top">
+                <StackPanel Orientation="Vertical" Margin="0,5,5,8">
+                    <StackPanel Orientation="Horizontal" Margin="0,5,5,8">
                         <Button Name="btnReverseRebar" Content="Reverse Rebar Group" Margin="0,0,5,0" Width="150" Height="40" Click="BtnReverseRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
+                        <Button Name="btnReversePointRebar" Content="Reverse Point Rebar" Margin="0,0,5,0" Width="150" Height="40" Click="BtnReversePointRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnSelectRebarsOfPart" Content="Select Part's Rebars" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSelectRebarsOfPart_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnAlignToPlane" Content="Align Rebar to Plane" Margin="0,0,5,0" Width="150" Height="40" Click="BtnAlignToPlane_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                         <Button Name="btnSplitRebar" Content="Split Rebar" Margin="0,0,5,0" Width="150" Height="40" Click="BtnSplitRebar_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                     </StackPanel>
-
-                    <!-- Compact Single-Line Toolbar for Rebar Creation -->
-                    <Border Background="#FDFDFD" BorderBrush="#E0E0E0" BorderThickness="1" Padding="4" Margin="0,0,0,8" CornerRadius="4">
-                        <WrapPanel Orientation="Horizontal">
-                            <TextBlock Text="CREATE REBAR AVOID SHEARKEY:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
-
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="36" Width="100" Padding="12,0,12,0" Style="{StaticResource PrimaryButtonStyle}">
-                                    <TextBlock Text="Pick" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                </Button>
-                                <TextBox x:Name="txtCover" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="25"/>
-                                <TextBox x:Name="txtSpacingTarget" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="200"/>
-                            </StackPanel>
-                        </WrapPanel>
-                    </Border>
-
+                    <StackPanel Orientation="Horizontal" Margin="0,5,5,8">
+                        <Button Name="btnAddPoint" Content="Add Point" Margin="0,0,5,0" Width="150" Height="40"  Style="{StaticResource PrimaryButtonStyle}" Click="btnAddPoint_Click"/>
+                        <Button Name="btnDeletePoint" Content="Delete Point" Margin="0,0,5,0" Width="150" Height="40"  Style="{StaticResource PrimaryButtonStyle}" Click="btnDeletePoint_Click"/>
+                    </StackPanel>
 
                 </StackPanel>
-            </Expander>
+                <Border Background="#FDFDFD" BorderBrush="#E0E0E0" BorderThickness="1" Padding="4" Margin="0,0,0,8" CornerRadius="4">
+                    <WrapPanel Orientation="Horizontal">
+                        <TextBlock Text="CREATE REBAR AVOID SHEARKEY:" FontSize="11" FontWeight="Bold" Foreground="#005A9E" VerticalAlignment="Center" Margin="0,0,15,0"/>
+
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Name="btnQuickRebarMulti" Click="BtnQuickRebarMulti_Click" Height="36" Width="100" Padding="12,0,12,0" Style="{StaticResource PrimaryButtonStyle}">
+                                <TextBlock Text="Pick" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                            </Button>
+                            <TextBox x:Name="txtCover" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="25"/>
+                            <TextBox x:Name="txtSpacingTarget" Width="100" Height="32" Margin="10,0,0,0" VerticalContentAlignment="Center" Text="200"/>
+                        </StackPanel>
+                    </WrapPanel>
+                </Border>
+            </StackPanel>
 
             <Separator DockPanel.Dock="Top" Margin="0,5,0,5"/>
 
-            <!-- ===== Sub-page buttons ===== -->
             <WrapPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
                 <Button Name="btnShowRebarInspector" Content="Open Rebar Manager" Margin="0,0,5,5" Width="170" Height="40" Click="BtnShowRebarInspector_Click" Style="{StaticResource PrimaryButtonStyle}"/>
                 <Button Name="btnCloseSubView" Content="Close Advanced View" Margin="0,0,5,5" Width="150" Height="40" Click="BtnCloseSubView_Click" Background="#FAD7D7" Foreground="#A80000" BorderBrush="#E5AFAF" Visibility="Collapsed"/>
             </WrapPanel>
 
-            <!-- ===== Sub View Container - fills remaining space with its own scroll ===== -->
             <Border BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Padding="0" Background="#FDFDFD">
                 <Grid>
                     <TextBlock x:Name="txtEmptyState" Text="Select an advanced tool to display it here" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#AAAAAA" FontSize="13" FontStyle="Italic"/>

@@ -38,7 +38,7 @@ namespace TeklaApp.Views.Pages
             _viewModel.ReverseRebarDistribution();
         }
 
-   
+
 
         private void BtnSelectRebarsOfPart_Click(object sender, RoutedEventArgs e)
         {
@@ -52,7 +52,15 @@ namespace TeklaApp.Views.Pages
 
         private void BtnSplitRebar_Click(object sender, RoutedEventArgs e)
         {
-            _createVm.SplitRebar();
+            try
+            {
+                _createVm.SplitRebar();
+            }
+            catch
+            {
+                //
+            }
+
         }
 
         private void BtnQuickRebarMulti_Click(object sender, RoutedEventArgs e)
@@ -76,6 +84,42 @@ namespace TeklaApp.Views.Pages
             RebarSubContent.Content = null;
             txtEmptyState.Visibility = Visibility.Visible;
             btnCloseSubView.Visibility = Visibility.Collapsed;
+        }
+
+        private void btnAddPoint_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _createVm.AddPointInRebar();
+            }
+            catch
+            {
+                //
+            }
+        }
+
+        private void BtnReversePointRebar_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _createVm.ReversePointRebar();
+            }
+            catch
+            {
+                //
+            }
+        }
+
+        private void btnDeletePoint_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _createVm.DeletePointRebar();
+            }
+            catch
+            {
+                //
+            }
         }
     }
 }

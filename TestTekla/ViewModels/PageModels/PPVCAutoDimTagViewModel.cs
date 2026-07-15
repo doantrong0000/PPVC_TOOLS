@@ -111,13 +111,6 @@ namespace TeklaApp.ViewModels.PageModels
             }
         }
 
-        private string _statusMessage = "Ready";
-        public string StatusMessage
-        {
-            get => _statusMessage;
-            set { _statusMessage = value; OnPropertyChanged(); }
-        }
-
         private Dictionary<string, List<DimMappingRule>> _allProfiles;
         private Dictionary<string, List<TagMappingRule>> _allTagProfiles;
 
@@ -438,7 +431,6 @@ namespace TeklaApp.ViewModels.PageModels
         {
             try
             {
-                StatusMessage = "Applying profile...";
                 SaveCurrentProfile(false);
 
                 TSD.DrawingHandler dh = new TSD.DrawingHandler();
@@ -447,7 +439,6 @@ namespace TeklaApp.ViewModels.PageModels
 
                 if (activeDrawing == null)
                 {
-                    StatusMessage = "Error: No active drawing.";
                     MessageBox.Show("Please open a drawing first!");
                     return;
                 }
@@ -464,78 +455,65 @@ namespace TeklaApp.ViewModels.PageModels
                     }
                 }
 
-                if (selectedViews.Count == 0)
+                if (selectedViews.Count > 0)
                 {
-                    StatusMessage = "Error: No view selected.";
-                    return;
-                }
+                    TSD.View activeView = selectedViews[0] as TSD.View;
 
-                // Process each configuration (row) in the table sequentially
-                foreach (var rule in DimMappingRules)
-                {
-                    StatusMessage = $"Processing rule: {rule.RebarName} ({rule.Prefix})...";
-                    if (string.IsNullOrEmpty(rule.DimProperty)) continue;
-
-
-                    // Scan rebars in the selected Views
-                    foreach (TSD.View view in selectedViews)
+                    // 1. TẠO "POOL" CHỨA TẤT CẢ THÉP (Chỉ quét bản vẽ 1 lần duy nhất)
+                    List<TSD.ReinforcementGroup> unassignedRebars = new List<TSD.ReinforcementGroup>();
+                    TSD.DrawingObjectEnumerator viewObjects = activeView.GetAllObjects();
+                    while (viewObjects.MoveNext())
                     {
-                        ArrayList rebarsToDim = new ArrayList();
-                        TSD.DrawingObjectEnumerator viewObjects = view.GetAllObjects();
-                        while (viewObjects.MoveNext())
+                        if (viewObjects.Current is TSD.ReinforcementGroup rebar)
                         {
-                            if (viewObjects.Current is TSD.ReinforcementGroup rebar)
+                            unassignedRebars.Add(rebar);
+                        }
+                    }
+
+                    // Process each configuration (row) in the table sequentially
+                    foreach (var rule in DimMappingRules)
+                    {
+                        if (string.IsNullOrEmpty(rule.DimProperty)) continue;
+
+                        // KIỂM TRA DỪNG SỚM: Nếu đã gán hết thép thì không cần chạy các Rule còn lại nữa
+                        if (unassignedRebars.Count == 0) break;
+
+                        ArrayList rebarsToDim = new ArrayList();
+
+                        // 2. DUYỆT NGƯỢC DANH SÁCH ĐỂ AN TOÀN KHI XÓA
+                        for (int i = unassignedRebars.Count - 1; i >= 0; i--)
+                        {
+                            TSD.ReinforcementGroup rebar = unassignedRebars[i];
+
+                            TSM.ModelObject modelObj = myModel.SelectModelObject(rebar.ModelIdentifier);
+
+                            if (modelObj is TSM.Reinforcement modelRebar)
                             {
-                                // 1. Kiểm tra xem Rebar này đã được gán Mark trong bản vẽ chưa
-                                bool hasMark = false;
-                                var associatedObjects = rebar.GetRelatedObjects();
+                                string rName = modelRebar.Name ?? "";
+                                string prefix = "";
+                                modelRebar.GetReportProperty("PREFIX", ref prefix);
 
-                                while (associatedObjects.MoveNext())
+                                bool matchName = rule.RebarName != null && rName.IndexOf(rule.RebarName, StringComparison.OrdinalIgnoreCase) >= 0;
+                                bool matchPrefix = string.IsNullOrEmpty(rule.Prefix) || rule.Prefix.Equals(prefix, StringComparison.OrdinalIgnoreCase);
+
+                                if (matchName && matchPrefix)
                                 {
-                                    // Kiểm tra cả Mark thông thường và RebarMark chuyên dụng của cốt thép
-                                    if (associatedObjects.Current is TSD.DimensionBase mark)
-                                    {
+                                    rebarsToDim.Add(rebar);
 
-                                        hasMark = true;
-                                        break; // Đã tìm thấy thì thoát vòng lặp nhỏ này ngay
-                                    }
-                                }
-
-                                // Nếu ĐÃ CÓ MARK: Cảnh báo người dùng và BỎ QUA không cho vào danh sách đi Dim
-                                if (hasMark)
-                                {
-                                    continue; // Nhảy ngay sang thanh rebar tiếp theo trong view, không chạy code phía dưới nữa
-                                }
-
-                                // 2. Nếu CHƯA CÓ MARK: Tiến hành kết nối xuống mô hình để lọc theo Rule
-                                TSM.ModelObject modelObj = myModel.SelectModelObject(rebar.ModelIdentifier);
-
-                                if (modelObj is TSM.Reinforcement modelRebar)
-                                {
-                                    string rName = modelRebar.Name ?? "";
-                                    string prefix = "";
-                                    modelRebar.GetReportProperty("PREFIX", ref prefix);
-
-                                    bool matchName = rule.RebarName != null && rName.IndexOf(rule.RebarName, StringComparison.OrdinalIgnoreCase) >= 0;
-                                    bool matchPrefix = string.IsNullOrEmpty(rule.Prefix) || rule.Prefix.Equals(prefix, StringComparison.OrdinalIgnoreCase);
-
-                                    if (matchName && matchPrefix)
-                                    {
-                                        rebarsToDim.Add(rebar); // Thêm đối tượng bản vẽ hợp lệ vào danh sách chờ Dim
-                                    }
+                                    // 3. XÓA THÉP NÀY KHỎI POOL (Rule sau sẽ không thấy thanh này nữa)
+                                    unassignedRebars.RemoveAt(i);
                                 }
                             }
                         }
+
                         if (rebarsToDim.Count > 0)
                         {
                             // 1. Highlight rebar objects
-                            // 2. Get Template file path
                             string appFolder = System.AppDomain.CurrentDomain.BaseDirectory;
                             string macroDir = GetMacroDirectory();
-
-                            System.Threading.Thread.Sleep(500);
-
                             objectSelector.UnselectAllObjects();
+
+                            System.Threading.Thread.Sleep(1000);
 
                             string templatePath = Path.Combine(appFolder, "Macro", "ChangeProperty.cs");
                             string macroContent = File.ReadAllText(templatePath);
@@ -547,41 +525,33 @@ namespace TeklaApp.ViewModels.PageModels
 
                             if (rebarsToDim.Count == 1)
                             {
-                                // 1. Explicitly cast to TSD.ReinforcementBase instead of TSD.DrawingObject
                                 TSD.ReinforcementBase theOnlyRebar = rebarsToDim[0] as TSD.ReinforcementBase;
                                 bool foundDummy = false;
 
-                                foreach (TSD.View v in selectedViews)
+                                // Dummy rebar search (Vẫn giữ nguyên lấy GetAllObjects vì Dummy có thể rơi vào các thép không thỏa mãn Rule nào)
+                                TSD.DrawingObjectEnumerator allObjs = activeView.GetAllObjects();
+                                while (allObjs.MoveNext())
                                 {
-                                    TSD.DrawingObjectEnumerator allObjs = v.GetAllObjects();
-                                    while (allObjs.MoveNext())
+                                    if (allObjs.Current is TSD.ReinforcementBase dummyRebar)
                                     {
-                                        if (allObjs.Current is TSD.ReinforcementBase dummyRebar)
+                                        if (dummyRebar.ModelIdentifier.ID != theOnlyRebar.ModelIdentifier.ID)
                                         {
-                                            // 2. Ensure ID is different from the rebar that needs Dim
-                                            if (dummyRebar.ModelIdentifier.ID != theOnlyRebar.ModelIdentifier.ID)
+                                            TSM.ModelObject dummyModelObj = myModel.SelectModelObject(dummyRebar.ModelIdentifier);
+
+                                            if (dummyModelObj is TSM.Reinforcement dummyRebarModel)
                                             {
-                                                // 3. Trace back to Model to check Quantity
-                                                TSM.ModelObject dummyModelObj = myModel.SelectModelObject(dummyRebar.ModelIdentifier);
+                                                int barCount = 0;
+                                                dummyRebarModel.GetReportProperty("NUMBER", ref barCount);
 
-                                                if (dummyModelObj is TSM.Reinforcement dummyRebarModel)
+                                                if (barCount == 1)
                                                 {
-                                                    int barCount = 0;
-                                                    // Get actual number of rebars in the model
-                                                    dummyRebarModel.GetReportProperty("NUMBER", ref barCount);
-
-                                                    // 4. PREREQUISITE: Only take bars with quantity EXACTLY EQUAL to 1
-                                                    if (barCount == 1)
-                                                    {
-                                                        rebarsToDim.Add(dummyRebar); // Add to make Count = 2
-                                                        foundDummy = true;
-                                                        break; // Found one matching bar, exit while loop
-                                                    }
+                                                    rebarsToDim.Add(dummyRebar);
+                                                    foundDummy = true;
+                                                    break;
                                                 }
                                             }
                                         }
                                     }
-                                    if (foundDummy) break; // Exit foreach loop (view)
                                 }
                             }
 
@@ -595,19 +565,20 @@ namespace TeklaApp.ViewModels.PageModels
                             string tempRunPath2 = Path.Combine(macroDir, tempMacroName2);
                             File.WriteAllText(tempRunPath2, macroContent2);
                             TSMO.Operation.RunMacro(@"..\drawings\" + tempMacroName2);
-
                         }
                     }
-
-                    // Run Macro only for the group of rebars matching this setup line
-
                 }
-                StatusMessage = "Completed.";
+                else
+                {
+                    MessageBox.Show("Please select at least one view in the drawing.");
+                    return;
+                }
+
                 MessageBox.Show("Completed creating Dimensions for selected rebars based on profile '" + SelectedProfile + "'.", "Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                StatusMessage = "Error: " + ex.Message;
+                MessageBox.Show(ex.Message);
             }
         }
 
@@ -622,7 +593,6 @@ namespace TeklaApp.ViewModels.PageModels
         {
             try
             {
-                StatusMessage = "Applying tag profile...";
                 SaveCurrentTagProfile(false);
 
                 TSD.DrawingHandler dh = new TSD.DrawingHandler();
@@ -631,7 +601,6 @@ namespace TeklaApp.ViewModels.PageModels
 
                 if (activeDrawing == null)
                 {
-                    StatusMessage = "Error: No active drawing.";
                     MessageBox.Show("Please open a drawing first!");
                     return;
                 }
@@ -650,53 +619,22 @@ namespace TeklaApp.ViewModels.PageModels
 
                 if (selectedViews.Count == 0)
                 {
-                    StatusMessage = "Error: No view selected.";
                     MessageBox.Show("Please select a view first!");
                     return;
                 }
 
-                int totalTagged = 0;
-
                 // Xử lý từng rule (dòng) trong bảng Tag Mapping
                 foreach (var rule in TagMappingRules)
                 {
-                    StatusMessage = $"Processing tag rule: {rule.RebarName} ({rule.Prefix})...";
                     if (string.IsNullOrEmpty(rule.TagProperty)) continue;
 
                     foreach (TSD.View view in selectedViews)
                     {
-                        // Tính tâm và bán kính tỏa tag từ RestrictionBox (tọa độ view)
-                        var viewExtent = view.RestrictionBox;
-                        double viewCenterX = (viewExtent.MinPoint.X + viewExtent.MaxPoint.X) / 2.0;
-                        double viewCenterY = (viewExtent.MinPoint.Y + viewExtent.MaxPoint.Y) / 2.0;
-                        double viewHalfW = (viewExtent.MaxPoint.X - viewExtent.MinPoint.X) / 2.0;
-                        double viewHalfH = (viewExtent.MaxPoint.Y - viewExtent.MinPoint.Y) / 2.0;
-                        double tagRadius = Math.Min(viewHalfW, viewHalfH) * 0.7; // 70% bán kính view
-
-                        int tagCountInView = 0; // Đếm tag trong view để chia đều góc
-
                         TSD.DrawingObjectEnumerator viewObjects = view.GetAllObjects();
                         while (viewObjects.MoveNext())
                         {
                             if (viewObjects.Current is TSD.ReinforcementBase rebar)
                             {
-                                // 1. Kiểm tra xem Rebar này đã có Tag (Mark) trong bản vẽ chưa
-                                bool hasTag = false;
-                                var relatedObjects = rebar.GetRelatedObjects();
-
-                                while (relatedObjects.MoveNext())
-                                {
-                                    if (relatedObjects.Current is TSD.Mark)
-                                    {
-                                        hasTag = true;
-                                        break;
-                                    }
-                                }
-
-                                // Nếu đã có Tag thì bỏ qua
-                                if (hasTag) continue;
-
-                                // 2. Kết nối xuống Model để kiểm tra theo Rule
                                 TSM.ModelObject modelObj = myModel.SelectModelObject(rebar.ModelIdentifier);
 
                                 if (modelObj is TSM.Reinforcement modelRebar)
@@ -705,45 +643,28 @@ namespace TeklaApp.ViewModels.PageModels
                                     string prefix = "";
                                     modelRebar.GetReportProperty("PREFIX", ref prefix);
 
-                                    bool matchName = rule.RebarName != null && rName.IndexOf(rule.RebarName, StringComparison.OrdinalIgnoreCase) >= 0;
+                                    bool matchName = rule.RebarName != null && rName.Contains(rule.RebarName);
                                     bool matchPrefix = string.IsNullOrEmpty(rule.Prefix) || rule.Prefix.Equals(prefix, StringComparison.OrdinalIgnoreCase);
 
                                     if (matchName && matchPrefix)
                                     {
-                                        // 3. Tạo Tag sử dụng Tekla native Mark API
-                                        try
+                                        TSD.Mark.MarkAttributes markAttr = new TSD.Mark.MarkAttributes(rebar, rule.TagProperty);
+                                        TSD.Mark newMark = new TSD.Mark(rebar);
+
+
+                                        if (newMark.Insert())
                                         {
-                                            // Tính góc đặt tag dựa trên index để tỏa đều quanh view
-                                            // Mỗi vòng (ring) chứa 8 tag, các vòng tiếp nhau xoay lệch nửa bước
-                                            int tagsPerRing = 8;
-                                            int ring = tagCountInView / tagsPerRing;
-                                            double angleStep = 2.0 * Math.PI / tagsPerRing;
-                                            double angle = tagCountInView * angleStep + ring * (angleStep / 2.0);
-                                            double radius = tagRadius + ring * 30.0;
-
-                                            // Điểm chèn tag: tỏa ra từ tâm view theo góc, leader line sẽ tự kéo về rebar
-                                            double insertX = viewCenterX + radius * Math.Cos(angle);
-                                            double insertY = viewCenterY + radius * Math.Sin(angle);
-
-                                            TSD.Mark newMark = new TSD.Mark(rebar);
-
-                                            // Load thuộc tính tag từ file .RM attribute
-                                            newMark.Attributes.LoadAttributes(rule.TagProperty);
-
-                                            // Thiết lập vị trí đặt tag text (leader line tự động kéo từ đây về rebar)
-                                            newMark.InsertionPoint = new Tekla.Structures.Geometry3d.Point(insertX, insertY, 0);
-
-                                            // Chèn Mark vào bản vẽ
-                                            newMark.Insert();
-
-                                            tagCountInView++;
-                                            totalTagged++;
+                                            // In ra màn hình Output của Visual Studio để chắc chắn lệnh Insert đã pass
+                                            System.Diagnostics.Debug.WriteLine($"Đã tạo tag thành công cho thép: {rName}");
                                         }
-                                        catch (Exception markEx)
+
+                                        if (newMark.Attributes.LoadAttributes(rule.TagProperty))
                                         {
-                                            // Ghi log lỗi nhưng tiếp tục xử lý các rebar khác
-                                            System.Diagnostics.Debug.WriteLine($"Failed to create tag for rebar '{rName}': {markEx.Message}");
+                                            //
                                         }
+
+                                        newMark.Modify();
+
                                     }
                                 }
                             }
@@ -751,14 +672,14 @@ namespace TeklaApp.ViewModels.PageModels
                     }
                 }
 
+                // BẮT BUỘC PHẢI CÓ DÒNG NÀY ĐỂ BẢN VẼ LƯU VÀ HIỂN THỊ
                 activeDrawing.CommitChanges();
-                StatusMessage = $"Completed. Tagged {totalTagged} rebar(s).";
-                MessageBox.Show($"Completed creating Tags for {totalTagged} rebar(s) based on tag profile '{SelectedTagProfile}'.", "Completed", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                MessageBox.Show($"Completed creating Tags for rebar(s) based on tag profile '{SelectedTagProfile}'.", "Completed", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
-                StatusMessage = "Error: " + ex.Message;
-                MessageBox.Show("Error: " + ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Lỗi: " + ex.Message);
             }
         }
 
