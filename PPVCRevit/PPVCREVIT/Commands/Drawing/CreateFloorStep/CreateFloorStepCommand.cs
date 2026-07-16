@@ -22,7 +22,6 @@ namespace PPVCREVIT.Commands.Drawing
             {
                 List<FloorData> allFloorData = new List<FloorData>();
 
-                // Chọn sàn trong project hiện tại
                 try
                 {
                     IList<Reference> localRefs = uidoc.Selection.PickObjects(ObjectType.Element, new LocalFloorSelectionFilter(), "Quét chọn các Sàn trong project hiện tại");
@@ -46,7 +45,6 @@ namespace PPVCREVIT.Commands.Drawing
                 }
 
                 if (allFloorData.Count < 1)
-
                 {
                     return Result.Cancelled;
                 }

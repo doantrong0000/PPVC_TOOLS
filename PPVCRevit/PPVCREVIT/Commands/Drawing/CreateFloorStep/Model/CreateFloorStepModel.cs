@@ -3,6 +3,7 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PPVCREVIT.Utils.FamiliesUtils;
 
 namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
 {
@@ -30,20 +31,15 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
 
 
             // Thu thập Family Symbols tại File Chủ
-            var stepSymbols = new FilteredElementCollector(doc)
-                .OfClass(typeof(FamilySymbol))
-                .Cast<FamilySymbol>()
-                .Where(x => x.FamilyName.Equals("StepSymbol"))
-                .ToList();
-
-            FamilySymbol symbolRL = stepSymbols.FirstOrDefault(x => x.Name.Equals("RL"));
-            FamilySymbol symbolLR = stepSymbols.FirstOrDefault(x => x.Name.Equals("LR"));
+            FamilySymbol symbolRL = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "RL");
+            FamilySymbol symbolLR = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "LR");
 
             if (symbolRL == null || symbolLR == null)
             {
                 TaskDialog.Show("Lỗi", "Không tìm thấy đủ Type 'RL' và 'LR' trong Family 'StepSymbol' tại File Chủ.");
                 return;
             }
+
 
             int countCreated = 0;
 
@@ -338,10 +334,9 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
             if (topFaces.Count < 2) return;
 
             // 2. Thu thập Symbols
-            var stepSymbols = new FilteredElementCollector(doc).OfClass(typeof(FamilySymbol))
-                .Cast<FamilySymbol>().Where(x => x.FamilyName.Equals("StepSymbol")).ToList();
-            FamilySymbol symbolRL = stepSymbols.FirstOrDefault(x => x.Name.Equals("RL"));
-            FamilySymbol symbolLR = stepSymbols.FirstOrDefault(x => x.Name.Equals("LR"));
+            FamilySymbol symbolRL = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "RL");
+            FamilySymbol symbolLR = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "LR");
+
 
             using (Transaction tx = new Transaction(doc, "Smart Internal Step"))
             {

@@ -13,7 +13,6 @@
     <Project Path="PPVCREVIT/PPVCREVIT.csproj">
       <BuildType Solution="Debug.R25|*" Project="Debug.R26Release" />
       <BuildType Solution="Debug|*" Project="Debug.R25" />
-      <BuildType Solution="Release.R25|*" Project="Release.R26" />
       <BuildType Solution="Release|*" Project="Release.R25" />
       <Build Solution="Debug.R26|*" Project="false" />
     </Project>

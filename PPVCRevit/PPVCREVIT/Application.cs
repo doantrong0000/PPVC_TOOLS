@@ -80,7 +80,39 @@ namespace PPVCREVIT
                 Image = new BitmapImage(iconUri)
             };
 
+            PushButtonData tagFloorData = new PushButtonData(
+                "TagFloorCommand",
+                "Tag Floor",
+                assemblyPath,
+                typeof(TagFloorCommand).FullName)
+            {
+                ToolTip = "Tag Floor Thickness (Host)",
+                Image = new BitmapImage(iconUri)
+            };
+
+            PushButtonData tagFloorLinkData = new PushButtonData(
+                "TagFloorLinkCommand",
+                "Tag Floor Link",
+                assemblyPath,
+                typeof(TagFloorLinkCommand).FullName)
+            {
+                ToolTip = "Tag Floor Thickness (Link)",
+                Image = new BitmapImage(iconUri)
+            };
+
             drawingPanel.AddStackedItems(floorStepData, floorStepLinkData);
+            drawingPanel.AddStackedItems(tagFloorData, tagFloorLinkData);
+
+            PushButtonData createPPVCSectionData = new PushButtonData(
+                "CreatePPVCSectionCommand",
+                "Create PPVC Section",
+                assemblyPath,
+                typeof(CreatePPVCSectionCommand).FullName)
+            {
+                ToolTip = "Tạo 4 hướng nhìn elevation cho cấu kiện",
+                LargeImage = new BitmapImage(iconUri)
+            };
+            drawingPanel.AddItem(createPPVCSectionData);
         }
     }
 }

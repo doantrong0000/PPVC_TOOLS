@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.Attributes;
+using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
@@ -335,14 +335,13 @@ namespace PPVCREVIT.Commands.Model
         }
 
         /// <summary>
-        /// Kiểm tra family COG_Marker đã có trong project chưa.
-        /// Nếu có → trả về FamilySymbol đã activate.
-        /// Nếu chưa → trả về null.
+        /// Lấy hoặc load family COG_Marker và trả về FamilySymbol đã activate.
         /// </summary>
         public static FamilySymbol GetCogMarkerSymbol(Document doc)
         {
-            return GetFamilySymbol(doc, CogMarkerFamilyName);
+            return PPVCREVIT.Utils.FamiliesUtils.LoadFamilyUtils.GetOrLoadFamilySymbol(doc, CogMarkerFamilyName);
         }
+
 
         /// <summary>
         /// Tìm Family trong project theo tên và trả về FamilySymbol đầu tiên (đã activate).
