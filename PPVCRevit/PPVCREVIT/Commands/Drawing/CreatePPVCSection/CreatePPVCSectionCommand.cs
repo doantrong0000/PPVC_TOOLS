@@ -2,6 +2,7 @@ using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
+using PPVCREVIT.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -245,8 +246,8 @@ namespace PPVCREVIT.Commands.Drawing
             view.Name = name;
 
             // Kích hoạt tính năng crop và hiển thị viền crop
-            view.CropBoxActive = true;
-            view.CropBoxVisible = true;
+            view.CropBoxActive = false;
+            view.CropBoxVisible = false;
 
             // Lấy hệ trục tọa độ cục bộ của View (được xác định bởi CropBox.Transform)
             Transform transform = view.CropBox.Transform;
@@ -301,7 +302,7 @@ namespace PPVCREVIT.Commands.Drawing
             Parameter farClipParam = view.get_Parameter(BuiltInParameter.VIEWER_BOUND_OFFSET_FAR);
             if (farClipParam != null && !farClipParam.IsReadOnly)
             {
-                farClipParam.Set(depth);
+                farClipParam.Set(depth / 2.4);
             }
         }
 

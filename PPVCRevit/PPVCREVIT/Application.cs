@@ -56,6 +56,17 @@ namespace PPVCREVIT
 
             modelPanel.AddItem(buttonData);
 
+            PushButtonData loadSharedParamData = new PushButtonData(
+                "LoadSharedParameterCommand",
+                "Load Rebar Params",
+                assemblyPath,
+                typeof(LoadSharedParameterCommand).FullName)
+            {
+                ToolTip = "Load Shared Parameters for Structural Rebar",
+                LargeImage = new BitmapImage(iconUri)
+            };
+            modelPanel.AddItem(loadSharedParamData);
+
 
 
             RibbonPanel drawingPanel = UiApplication.CreateRibbonPanel(tabName, "Drawing");
