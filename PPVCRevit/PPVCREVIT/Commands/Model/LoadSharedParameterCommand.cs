@@ -4,6 +4,7 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Windows;
 
 namespace PPVCREVIT.Commands.Model
 {
@@ -16,6 +17,11 @@ namespace PPVCREVIT.Commands.Model
             UIDocument uidoc = uiapp.ActiveUIDocument;
             Document doc = uidoc.Document;
 
+
+#if RELEASE
+            MessageBox.Show("Tính năng này Trọng chưa cho chạy");
+            return Result.Succeeded;
+#else
             try
             {
                 // 1. Xác định đường dẫn file Shared Parameter (Ưu tiên đường dẫn ổ đĩa chung Z, nếu không tìm thấy sẽ fallback về local)
@@ -39,19 +45,68 @@ namespace PPVCREVIT.Commands.Model
                 string originalSharedParamFile = doc.Application.SharedParametersFilename;
                 doc.Application.SharedParametersFilename = sharedParamPath;
 
-                DefinitionFile spFile = null;
-                DefinitionGroup group = null;
+                var configs = new List<ParameterBindingConfig>
+                {
+                    new ParameterBindingConfig
+                    {
+                        GroupName = "WH_Rebar_Description",
+                        ParameterNames = new List<string> { "WH_Rebar_Type", "WH_Rebar_Prefix" },
+                        TargetCategory = BuiltInCategory.OST_Rebar,
+                        GroupType = GroupTypeId.Text
+                    },
+                    new ParameterBindingConfig
+                    {
+                        GroupName = "WH_View",
+                        ParameterNames = new List<string> { "PPVC", "Project", "Level", "SHEET" },
+                        TargetCategory = BuiltInCategory.OST_Views,
+                        GroupType = GroupTypeId.IdentityData
+                    },
+                    new ParameterBindingConfig
+                    {
+                        GroupName = "WH_Sheet",
+                        ParameterNames = new List<string> { "PPVC_SHEET", "Project_SHEET", "Level_Sheet" },
+                        TargetCategory = BuiltInCategory.OST_Sheets,
+                        GroupType = GroupTypeId.IdentityData
+                    }
+                };
+
+                List<string> loadedParams = new List<string>();
+                List<string> skippedParams = new List<string>();
+                var groupDefinitions = new Dictionary<string, List<Definition>>();
+
                 try
                 {
-                    spFile = doc.Application.OpenSharedParameterFile();
+                    DefinitionFile spFile = doc.Application.OpenSharedParameterFile();
                     if (spFile == null)
                     {
                         TaskDialog.Show("Lỗi", "Không thể mở file Shared Parameter.");
                         return Result.Failed;
                     }
 
-                    // Tìm Group "WH_Rebar_Description"
-                    group = spFile.Groups.get_Item("WH_Rebar_Description");
+                    foreach (var config in configs)
+                    {
+                        DefinitionGroup group = spFile.Groups.get_Item(config.GroupName);
+                        if (group == null)
+                        {
+                            skippedParams.Add($"Group '{config.GroupName}' (Không tìm thấy group)");
+                            continue;
+                        }
+
+                        var defs = new List<Definition>();
+                        foreach (string paramName in config.ParameterNames)
+                        {
+                            Definition def = group.Definitions.get_Item(paramName);
+                            if (def != null)
+                            {
+                                defs.Add(def);
+                            }
+                            else
+                            {
+                                skippedParams.Add($"{paramName} (Không tìm thấy định nghĩa trong group {config.GroupName})");
+                            }
+                        }
+                        groupDefinitions[config.GroupName] = defs;
+                    }
                 }
                 finally
                 {
@@ -59,64 +114,49 @@ namespace PPVCREVIT.Commands.Model
                     doc.Application.SharedParametersFilename = originalSharedParamFile;
                 }
 
-                if (group == null)
-                {
-                    TaskDialog.Show("Lỗi", "Không tìm thấy Group 'WH_Rebar_Description' trong file Shared Parameter.");
-                    return Result.Failed;
-                }
-
-                // Danh sách parameter cần load
-                List<string> paramsToLoad = new List<string> { "WH_Rebar_Type", "WH_Rebar_Prefix" };
-                List<string> loadedParams = new List<string>();
-                List<string> skippedParams = new List<string>();
-
                 using (Transaction tx = new Transaction(doc, "Load Shared Parameters"))
                 {
                     tx.Start();
 
-                    // Chuẩn bị Category Set cho Structural Rebar (OST_Rebar)
-                    CategorySet catSet = doc.Application.Create.NewCategorySet();
-                    Category rebarCat = doc.Settings.Categories.get_Item(BuiltInCategory.OST_Rebar);
-                    if (rebarCat != null)
+                    foreach (var config in configs)
                     {
-                        catSet.Insert(rebarCat);
-                    }
-                    else
-                    {
-                        TaskDialog.Show("Lỗi", "Không tìm thấy Category Structural Rebar (OST_Rebar) trong dự án.");
-                        return Result.Failed;
-                    }
+                        if (!groupDefinitions.TryGetValue(config.GroupName, out var definitions))
+                            continue;
 
-                    Binding binding = doc.Application.Create.NewInstanceBinding(catSet);
-
-                    foreach (string paramName in paramsToLoad)
-                    {
-                        Definition def = group.Definitions.get_Item(paramName);
-                        if (def == null)
+                        // Chuẩn bị Category Set cho Category đích
+                        CategorySet catSet = doc.Application.Create.NewCategorySet();
+                        Category targetCat = doc.Settings.Categories.get_Item(config.TargetCategory);
+                        if (targetCat == null)
                         {
-                            skippedParams.Add($"{paramName} (Không tìm thấy định nghĩa)");
+                            skippedParams.Add($"Category {config.TargetCategory} (Không tìm thấy category trong dự án)");
                             continue;
                         }
+                        catSet.Insert(targetCat);
 
-                        // Kiểm tra xem parameter đã được bind chưa
-                        bool exists = doc.ParameterBindings.Contains(def);
-                        if (exists)
+                        Binding binding = doc.Application.Create.NewInstanceBinding(catSet);
+
+                        foreach (Definition def in definitions)
                         {
-                            // Nếu đã tồn tại, dùng ReInsert để cập nhật (đề phòng đổi category hoặc cấu hình)
-                            doc.ParameterBindings.ReInsert(def, binding, GroupTypeId.Text);
-                            skippedParams.Add($"{paramName} (Đã cập nhật liên kết)");
-                        }
-                        else
-                        {
-                            // Nếu chưa tồn tại, chèn mới
-                            bool bound = doc.ParameterBindings.Insert(def, binding, GroupTypeId.Text);
-                            if (bound)
+                            // Kiểm tra xem parameter đã được bind chưa
+                            bool exists = doc.ParameterBindings.Contains(def);
+                            if (exists)
                             {
-                                loadedParams.Add(paramName);
+                                // Nếu đã tồn tại, dùng ReInsert để cập nhật (đề phòng đổi category hoặc cấu hình)
+                                doc.ParameterBindings.ReInsert(def, binding, config.GroupType);
+                                skippedParams.Add($"{def.Name} (Đã cập nhật liên kết)");
                             }
                             else
                             {
-                                skippedParams.Add($"{paramName} (Thất bại khi bind)");
+                                // Nếu chưa tồn tại, chèn mới
+                                bool bound = doc.ParameterBindings.Insert(def, binding, config.GroupType);
+                                if (bound)
+                                {
+                                    loadedParams.Add(def.Name);
+                                }
+                                else
+                                {
+                                    skippedParams.Add($"{def.Name} (Thất bại khi bind)");
+                                }
                             }
                         }
                     }
@@ -136,12 +176,25 @@ namespace PPVCREVIT.Commands.Model
 
                 TaskDialog.Show("Kết Quả", msg);
                 return Result.Succeeded;
-            }
-            catch (Exception ex)
+                  catch (Exception ex)
             {
                 TaskDialog.Show("Lỗi Hệ Thống", ex.ToString());
                 return Result.Failed;
             }
+    
+    }
+}
+#endif
+
+
+        }
+
+        private class ParameterBindingConfig
+        {
+            public string GroupName { get; set; }
+            public List<string> ParameterNames { get; set; }
+            public BuiltInCategory TargetCategory { get; set; }
+            public ForgeTypeId GroupType { get; set; }
         }
     }
 }

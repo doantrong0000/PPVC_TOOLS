@@ -1,0 +1,49 @@
+<Window x:Class="PPVCREVIT.Commands.Drawing.RebarSchedule.RebarScheduleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Rebar Schedule &amp; Tag Checker"
+        Height="500"
+        Width="700"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <!-- Buttons on top -->
+            <RowDefinition Height="Auto"/>
+            <!-- Table -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Buttons Panel at the top -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button x:Name="GetRebarsButton"
+                    Content="Lấy thép từ View"
+                    Padding="15,6"
+                    Margin="0,0,10,0"
+                    Click="GetRebarsButton_Click"/>
+
+            <Button x:Name="RefreshButton"
+                    Content="Refresh"
+                    Padding="15,6"
+                    Click="RefreshButton_Click"/>
+        </StackPanel>
+
+        <!-- Data Grid -->
+        <DataGrid x:Name="RebarsDataGrid"
+                  Grid.Row="1"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  MouseDoubleClick="RebarsDataGrid_MouseDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="STT" Binding="{Binding No}" Width="50"/>
+                <DataGridTextColumn Header="Type" Binding="{Binding WhRebarType}" Width="150"/>
+                <DataGridTextColumn Header="Prefix" Binding="{Binding WhRebarPrefix}" Width="120"/>
+                <DataGridTextColumn Header="Number" Binding="{Binding RebarNumber}" Width="100"/>
+                <DataGridTextColumn Header="Type" Binding="{Binding TypeName}" Width="180"/>
+                <DataGridTextColumn Header="Tag" Binding="{Binding TagCount}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>

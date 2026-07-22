@@ -4,6 +4,7 @@ using Autodesk.Revit.UI;
 using Nice3point.Revit.Toolkit.External;
 using PPVCREVIT.Commands.Model;
 using PPVCREVIT.Commands.Drawing;
+using PPVCREVIT.Commands.Drawing.RebarSchedule;
 
 namespace PPVCREVIT
 {
@@ -55,6 +56,18 @@ namespace PPVCREVIT
             buttonData.LargeImage = new BitmapImage(iconUri);
 
             modelPanel.AddItem(buttonData);
+
+            PushButtonData buttonWithoutRebarData = new PushButtonData(
+                "FindCOGWithoutRebarCommand",
+                "PPVC-COG\n(No Rebar)",
+                assemblyPath,
+                typeof(FindCOGWithoutRebarCommand).FullName)
+            {
+                ToolTip = "Find Center of Gravity without calculating Rebar weight and centroid",
+                LargeImage = new BitmapImage(iconUri)
+            };
+
+            modelPanel.AddItem(buttonWithoutRebarData);
 
             PushButtonData loadSharedParamData = new PushButtonData(
                 "LoadSharedParameterCommand",
@@ -124,6 +137,17 @@ namespace PPVCREVIT
                 LargeImage = new BitmapImage(iconUri)
             };
             drawingPanel.AddItem(createPPVCSectionData);
+
+            PushButtonData rebarScheduleData = new PushButtonData(
+                "RebarScheduleCommand",
+                "Rebar Schedule",
+                assemblyPath,
+                typeof(RebarScheduleCommand).FullName)
+            {
+                ToolTip = "Check visible rebars and their tag counts in active view",
+                LargeImage = new BitmapImage(iconUri)
+            };
+            drawingPanel.AddItem(rebarScheduleData);
         }
     }
 }

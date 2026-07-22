@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
-		<DeployAddin>false</DeployAddin>
+		<DeployAddin>true</DeployAddin>
 		<LaunchRevit>true</LaunchRevit>
 		<IsRepackable>false</IsRepackable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
@@ -33,8 +33,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Commands\Drawing\RebarSchedule\Models\" />
+		<Folder Include="Commands\Drawing\RebarSchedule\ViewModels\" />
 		<Folder Include="Commands\Rebar\" />
-		<Folder Include="Parameter\" />
 		<Folder Include="Services\" />
 	</ItemGroup>
 
@@ -48,22 +49,22 @@
 
 	<!-- Copy Parameter files (.txt) to output directory -->
 	<ItemGroup>
-		<None Include="Parameter\*.txt">
+		<None Include="ShareParameter\*.txt">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>Parameter\%(Filename)%(Extension)</Link>
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-		<None Remove="Parameter\WH_Rebar_Description.txt" />
-		<None Remove="Parameter\WH_Rebar_Description.txt" />
 		<None Remove="Resources\Icons\icons8-room-16.png" />
 		<None Remove="Resources\Icons\icons8-room-32.png" />
 		<None Remove="Resources\Icons\room16.png" />
 		<None Remove="Resources\Icons\room32.png" />
+		<None Remove="ShareParameter\WH_Rebar_Description.txt" />
 	</ItemGroup>
 	<ItemGroup>
 		<Resource Include="Resources\Icons\room16.png" />
 		<Resource Include="Resources\Icons\room32.png" />
+		<Resource Include="ShareParameter\WH_Rebar_Description.txt" />
 	</ItemGroup>
 
 </Project>
