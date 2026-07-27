@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
-		<DeployAddin>true</DeployAddin>
+		<DeployAddin>false</DeployAddin>
 		<LaunchRevit>true</LaunchRevit>
 		<IsRepackable>false</IsRepackable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
@@ -37,15 +37,10 @@
 		<Folder Include="Commands\Drawing\RebarSchedule\ViewModels\" />
 		<Folder Include="Commands\Rebar\" />
 		<Folder Include="Services\" />
+		<Folder Include="Utils\Geometry\" />
 	</ItemGroup>
 
 	<!-- Copy Family files (.rfa) to output directory -->
-	<ItemGroup>
-		<None Include="Family\*.rfa">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>Family\%(Filename)%(Extension)</Link>
-		</None>
-	</ItemGroup>
 
 	<!-- Copy Parameter files (.txt) to output directory -->
 	<ItemGroup>
@@ -64,7 +59,7 @@
 	<ItemGroup>
 		<Resource Include="Resources\Icons\room16.png" />
 		<Resource Include="Resources\Icons\room32.png" />
-		<Resource Include="ShareParameter\WH_Rebar_Description.txt" />
+		<EmbeddedResource Include="ShareParameter\WH_Rebar_Description.txt" />
 	</ItemGroup>
 
 </Project>

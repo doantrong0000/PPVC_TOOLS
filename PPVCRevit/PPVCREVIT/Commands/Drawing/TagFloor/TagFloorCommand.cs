@@ -7,6 +7,7 @@ using PPVCREVIT.Utils.FamiliesUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static PPVCREVIT.Utils.Filters.FloorFilters;
 
 namespace PPVCREVIT.Commands.Drawing
 {
@@ -22,7 +23,7 @@ namespace PPVCREVIT.Commands.Drawing
 
             try
             {
-                FamilySymbol tagSymbol = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "SlabThicknessTag");
+                FamilySymbol tagSymbol = LoadFamilyUtils.GetFamilySymbol(doc, "SlabThicknessTag");
 
                 if (tagSymbol == null)
                 {
@@ -35,8 +36,8 @@ namespace PPVCREVIT.Commands.Drawing
                 {
                     // Quét chọn sàn trực tiếp ở Host (cho phép quét chọn bằng khung)
                     selectedRefs = uidoc.Selection.PickObjects(
-                        ObjectType.Element, 
-                        new LocalFloorSelectionFilter(), 
+                        ObjectType.Element,
+                        new LocalFloorSelectionFilter(),
                         "Quét chọn các sàn cần gắn tag chiều dày"
                     );
                 }

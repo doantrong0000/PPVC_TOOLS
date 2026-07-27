@@ -61,7 +61,7 @@ namespace PPVCREVIT
                 "FindCOGWithoutRebarCommand",
                 "PPVC-COG\n(No Rebar)",
                 assemblyPath,
-                typeof(FindCOGWithoutRebarCommand).FullName)
+                typeof(FindCOGofPartCommand).FullName)
             {
                 ToolTip = "Find Center of Gravity without calculating Rebar weight and centroid",
                 LargeImage = new BitmapImage(iconUri)

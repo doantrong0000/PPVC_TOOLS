@@ -176,16 +176,13 @@ namespace PPVCREVIT.Commands.Model
 
                 TaskDialog.Show("Kết Quả", msg);
                 return Result.Succeeded;
-                  catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 TaskDialog.Show("Lỗi Hệ Thống", ex.ToString());
                 return Result.Failed;
             }
-    
-    }
-}
 #endif
-
 
         }
 

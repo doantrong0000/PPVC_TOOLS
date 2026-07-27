@@ -6,6 +6,7 @@ using PPVCREVIT.Commands.Drawing.CreateFloorStep.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static PPVCREVIT.Utils.Filters.FloorFilters;
 
 namespace PPVCREVIT.Commands.Drawing
 {
@@ -87,35 +88,5 @@ namespace PPVCREVIT.Commands.Drawing
         }
     }
 
-    public class LinkFloorSelectionFilter : ISelectionFilter
-    {
-        private Document _hostDoc;
-        public LinkFloorSelectionFilter(Document hostDoc)
-        {
-            _hostDoc = hostDoc;
-        }
 
-        public bool AllowElement(Element elem)
-        {
-            return elem is RevitLinkInstance;
-        }
-
-        public bool AllowReference(Reference reference, XYZ position)
-        {
-            if (reference.LinkedElementId != ElementId.InvalidElementId)
-            {
-                RevitLinkInstance linkInst = _hostDoc.GetElement(reference.ElementId) as RevitLinkInstance;
-                if (linkInst != null)
-                {
-                    Document linkDoc = linkInst.GetLinkDocument();
-                    if (linkDoc != null)
-                    {
-                        Element linkedElem = linkDoc.GetElement(reference.LinkedElementId);
-                        return linkedElem is Floor;
-                    }
-                }
-            }
-            return true;
-        }
-    }
 }

@@ -9,7 +9,7 @@ using System.Linq;
 namespace PPVCREVIT.Commands.Model
 {
     [Transaction(TransactionMode.Manual)]
-    public class FindCOGWithoutRebarCommand : IExternalCommand
+    public class FindCOGofPartCommand : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
@@ -52,7 +52,7 @@ namespace PPVCREVIT.Commands.Model
                 }
 
                 // 3. Tính trọng tâm chung (không dùng thép)
-                XYZ globalCog = CalculateCentroidOfMultipleElementsWithoutRebar(selectedElements, doc);
+                XYZ globalCog = CalculateCentroidOfMultipleElements(selectedElements, doc);
 
                 if (globalCog != null)
                 {
@@ -136,7 +136,7 @@ namespace PPVCREVIT.Commands.Model
             return fallback;
         }
 
-        private XYZ CalculateCentroidOfMultipleElementsWithoutRebar(List<Element> elements, Document doc)
+        private XYZ CalculateCentroidOfMultipleElements(List<Element> elements, Document doc)
         {
             double totalWeight = 0;
             XYZ weightedCentroidSum = XYZ.Zero;
@@ -188,7 +188,7 @@ namespace PPVCREVIT.Commands.Model
         /// </summary>
         public static FamilySymbol GetCogMarkerSymbol(Document doc)
         {
-            return PPVCREVIT.Utils.FamiliesUtils.LoadFamilyUtils.GetOrLoadFamilySymbol(doc, CogMarkerFamilyName);
+            return PPVCREVIT.Utils.FamiliesUtils.LoadFamilyUtils.GetFamilySymbol(doc, CogMarkerFamilyName);
         }
     }
 }

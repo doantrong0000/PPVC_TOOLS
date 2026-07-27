@@ -44,52 +44,17 @@ namespace PPVCREVIT.Utils.FamiliesUtils
             }
         }
 
-        /// <summary>
-        /// Gets or loads a family from the project's output Family folder.
-        /// </summary>
-        public static Family GetOrLoadFamily(Document doc, string familyName)
-        {
-            // First search in the document
-            Family family = new FilteredElementCollector(doc)
-                .OfClass(typeof(Family))
-                .Cast<Family>()
-                .FirstOrDefault(f => f.Name.Equals(familyName, StringComparison.OrdinalIgnoreCase));
-
-            if (family != null)
-            {
-                return family;
-            }
-
-            // If not found, look in the assembly's Family folder
-            try
-            {
-                string assemblyPath = typeof(LoadFamilyUtils).Assembly.Location;
-                string assemblyDir = Path.GetDirectoryName(assemblyPath);
-                string familyPath = Path.Combine(assemblyDir, "Family", $"{familyName}.rfa");
-
-                if (File.Exists(familyPath))
-                {
-                    if (LoadFamily(doc, familyPath, out family))
-                    {
-                        return family;
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Fallback / ignore path errors
-            }
-
-            return null;
-        }
 
         /// <summary>
         /// Finds a family symbol by family name and symbol name. Activates it if found.
         /// If the family is not found in the project, it tries to load it from the Family directory.
         /// </summary>
-        public static FamilySymbol GetOrLoadFamilySymbol(Document doc, string familyName, string symbolName = null)
+        public static FamilySymbol GetFamilySymbol(Document doc, string familyName, string symbolName = null)
         {
-            Family family = GetOrLoadFamily(doc, familyName);
+            Family family = new FilteredElementCollector(doc)
+                .OfClass(typeof(Family))
+                .Cast<Family>()
+                .FirstOrDefault(f => f.Name.Equals(familyName, StringComparison.OrdinalIgnoreCase));
             if (family == null)
             {
                 return null;

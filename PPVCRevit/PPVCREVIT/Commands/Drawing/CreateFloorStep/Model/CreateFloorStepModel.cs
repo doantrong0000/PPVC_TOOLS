@@ -31,8 +31,8 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
 
 
             // Thu thập Family Symbols tại File Chủ
-            FamilySymbol symbolRL = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "RL");
-            FamilySymbol symbolLR = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "LR");
+            FamilySymbol symbolRL = LoadFamilyUtils.GetFamilySymbol(doc, "StepSymbol", "RL");
+            FamilySymbol symbolLR = LoadFamilyUtils.GetFamilySymbol(doc, "StepSymbol", "LR");
 
             if (symbolRL == null || symbolLR == null)
             {
@@ -334,8 +334,8 @@ namespace PPVCREVIT.Commands.Drawing.CreateFloorStep.Model
             if (topFaces.Count < 2) return;
 
             // 2. Thu thập Symbols
-            FamilySymbol symbolRL = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "RL");
-            FamilySymbol symbolLR = LoadFamilyUtils.GetOrLoadFamilySymbol(doc, "StepSymbol", "LR");
+            FamilySymbol symbolRL = LoadFamilyUtils.GetFamilySymbol(doc, "StepSymbol", "RL");
+            FamilySymbol symbolLR = LoadFamilyUtils.GetFamilySymbol(doc, "StepSymbol", "LR");
 
 
             using (Transaction tx = new Transaction(doc, "Smart Internal Step"))

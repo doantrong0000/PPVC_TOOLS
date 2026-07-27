@@ -6,6 +6,7 @@ using PPVCREVIT.Commands.Drawing.CreateFloorStep.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static PPVCREVIT.Utils.Filters.FloorFilters;
 
 namespace PPVCREVIT.Commands.Drawing
 {
@@ -72,16 +73,5 @@ namespace PPVCREVIT.Commands.Drawing
         }
     }
 
-    public class LocalFloorSelectionFilter : ISelectionFilter
-    {
-        public bool AllowElement(Element elem)
-        {
-            return elem is Floor;
-        }
 
-        public bool AllowReference(Reference reference, XYZ position)
-        {
-            return true;
-        }
-    }
 }

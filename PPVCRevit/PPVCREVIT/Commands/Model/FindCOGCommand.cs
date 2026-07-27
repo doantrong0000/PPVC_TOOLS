@@ -339,7 +339,7 @@ namespace PPVCREVIT.Commands.Model
         /// </summary>
         public static FamilySymbol GetCogMarkerSymbol(Document doc)
         {
-            return PPVCREVIT.Utils.FamiliesUtils.LoadFamilyUtils.GetOrLoadFamilySymbol(doc, CogMarkerFamilyName);
+            return PPVCREVIT.Utils.FamiliesUtils.LoadFamilyUtils.GetFamilySymbol(doc, CogMarkerFamilyName);
         }
 
 
