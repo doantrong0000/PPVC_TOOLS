@@ -1,9 +1,0 @@
-{
-  "profiles": {
-    "GH_Tekla_Dwg": {
-      "commandName": "Executable",
-      "executablePath": "C:\\Program Files\\Rhino 7\\System\\Rhino.exe",
-      "commandLineArgs": ""
-    }
-  }
-}
