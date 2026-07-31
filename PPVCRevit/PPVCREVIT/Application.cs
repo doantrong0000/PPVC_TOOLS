@@ -128,10 +128,10 @@ namespace PPVCREVIT
             drawingPanel.AddStackedItems(tagFloorData, tagFloorLinkData);
 
             PushButtonData createPPVCSectionData = new PushButtonData(
-                "CreatePPVCSectionCommand",
-                "Create PPVC Section",
+                "CreatePPVCCommand",
+                "Create PPVC",
                 assemblyPath,
-                typeof(CreatePPVCSectionCommand).FullName)
+                typeof(PPVCCommand).FullName)
             {
                 ToolTip = "Tạo 4 hướng nhìn elevation cho cấu kiện",
                 LargeImage = new BitmapImage(iconUri)

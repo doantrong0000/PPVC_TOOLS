@@ -1,0 +1,23 @@
+﻿<Window x:Class="PPVCREVIT.Commands.Drawing.CreatePPVC.Views.PPVCView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PPVCREVIT.Commands.Drawing.CreatePPVC.Views"
+        mc:Ignorable="d"
+        Title="PPVCView" Height="450" Width="600">
+    <Grid Margin="10">
+        <StackPanel HorizontalAlignment="Left">
+            <TextBlock Text="Create View"></TextBlock>
+            <TextBlock Text="Project"></TextBlock>
+            <TextBox Text="{Binding ProjectParameter}"></TextBox>
+            <TextBlock Text="PPVC"></TextBlock>
+            <TextBox Text="{Binding PPVCParameter}"></TextBox>
+            <TextBlock Text="Level"></TextBlock>
+            <TextBox Text="{Binding LevelParameter}"></TextBox>
+            <TextBlock Text="Sheet"></TextBlock>
+            <Button Content="CreateView" Command="{Binding CreateViewCommand}"></Button>
+            <Button Content="CreateDimTag for base slab" Command="{Binding CreateDimTagForBaseSlab}"></Button>
+        </StackPanel>
+    </Grid>
+</Window>
