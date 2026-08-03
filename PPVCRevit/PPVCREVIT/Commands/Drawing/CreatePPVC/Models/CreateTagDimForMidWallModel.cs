@@ -135,11 +135,11 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     if (center == XYZ.Zero) continue;
 
                     XYZ tagPos = center;
-                    double offsetVal = 0.7; // feet
+                    double offsetVal = 1; // feet (tịnh tiến 1.5 feet vào phía trong)
 
                     if (IsWallParallelToDirection(wall, XYZ.BasisX))
                     {
-                        // Tường phương X: đẩy xuống dưới nếu ở nửa trên, đẩy lên trên nếu ở nửa dưới (hướng vào trong)
+                        // Tường phương X: trên thì xuống dưới (-1.5), dưới thì hướng lên trên (+1.5)
                         if (center.Y > midY)
                         {
                             tagPos = new XYZ(center.X, center.Y - offsetVal, center.Z);
@@ -151,7 +151,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     }
                     else if (IsWallParallelToDirection(wall, XYZ.BasisY))
                     {
-                        // Tường phương Y: đẩy sang trái nếu ở nửa phải, đẩy sang phải nếu ở nửa trái (hướng vào trong)
+                        // Tường phương Y: tường bên phải thì tịnh tiến sang trái (-1.5), tường bên trái thì tịnh tiến sang phải (+1.5)
                         if (center.X > midX)
                         {
                             tagPos = new XYZ(center.X - offsetVal, center.Y, center.Z);
@@ -223,9 +223,17 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
 
                     foreach (Wall wall in walls)
                     {
-                        // Lọc các rebar thuộc tường này và có WH_Rebar_Type == "WALL LOOP"
+                        // Lọc các rebar thuộc tường này (kiểm tra cả GetHostId và Host property)
                         List<Autodesk.Revit.DB.Structure.Rebar> wallRebars = visibleRebars
-                            .Where(r => r.GetHostId() == wall.Id)
+                            .Where(r =>
+                            {
+                                ElementId hostId = r.GetHostId();
+                                if (hostId == wall.Id) return true;
+                                // Fallback: kiểm tra qua Host property
+                                Element host = doc.GetElement(hostId);
+                                if (host is Wall hostWall && hostWall.Id == wall.Id) return true;
+                                return false;
+                            })
                             .Where(r =>
                             {
                                 Parameter param = r.LookupParameter(CreatePPVCConfig.RebarTypeParamName);
@@ -255,23 +263,72 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                             XYZ tagPos = GetRebarTagPosition(rebar, view);
                             if (tagPos == XYZ.Zero) continue;
 
+                            // Tịnh tiến vị trí tag thép theo vị trí tường (1.5 feet)
+                            XYZ wallCenter = GetElementCenter(wall, view);
+                            double rebarOffsetVal = 1.5; // feet
+
+                            if (IsWallParallelToDirection(wall, XYZ.BasisX))
+                            {
+                                // Tường phương X: trên thì xuống dưới (-1.5), dưới thì lên trên (+1.5)
+                                if (wallCenter.Y > midY)
+                                {
+                                    tagPos = new XYZ(tagPos.X, tagPos.Y - rebarOffsetVal, tagPos.Z);
+                                }
+                                else
+                                {
+                                    tagPos = new XYZ(tagPos.X, tagPos.Y + rebarOffsetVal, tagPos.Z);
+                                }
+                            }
+                            else if (IsWallParallelToDirection(wall, XYZ.BasisY))
+                            {
+                                // Tường phương Y: tường bên phải thì tịnh tiến sang trái (-1.5), tường bên trái thì tịnh tiến sang phải (+1.5)
+                                if (wallCenter.X > midX)
+                                {
+                                    tagPos = new XYZ(tagPos.X - rebarOffsetVal, tagPos.Y, tagPos.Z);
+                                }
+                                else
+                                {
+                                    tagPos = new XYZ(tagPos.X + rebarOffsetVal + 1, tagPos.Y, tagPos.Z);
+                                }
+                            }
+
+                            if (!rebarTagSymbol.IsActive)
+                            {
+                                rebarTagSymbol.Activate();
+                                doc.Regenerate(); // Yêu cầu Revit cập nhật trạng thái Symbol
+                            }
+
+                            Reference rebarRef = GetRebarReference(rebar, view);
+                            if (rebarRef == null)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[BỎ QUA] Không tạo được Reference cho Rebar ID {rebar.Id}");
+                                continue;
+                            }
+
                             try
                             {
-                                Reference rebarRef = new Reference(rebar);
+                                // Tạo IndependentTag
                                 IndependentTag tag = IndependentTag.Create(
                                     doc,
                                     rebarTagSymbol.Id,
                                     view.Id,
                                     rebarRef,
-                                    true,
+                                    true, // HasLeader
                                     TagOrientation.Horizontal,
                                     tagPos
                                 );
-                                rebarTagCount++;
+
+                                if (tag != null)
+                                {
+                                    // Đặt vị trí đầu mũi tên chỉ (Leader End) vào đúng vị trí thanh thép nếu cần
+                                    tag.LeaderEndCondition = LeaderEndCondition.Free;
+                                    tag.TagHeadPosition = tagPos;
+                                    rebarTagCount++;
+                                }
                             }
                             catch (Exception ex)
                             {
-                                continue;
+                                System.Diagnostics.Debug.WriteLine($"[LỖI TAG THÉP] Wall {wall.Id}, Rebar {rebar.Id}: {ex.Message}");
                             }
                         }
                     }
@@ -734,24 +791,93 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
         {
             try
             {
-                IList<Curve> curves = rebar.GetCenterlineCurves(false, false, false, MultiplanarOption.IncludeAllMultiplanarCurves, 0);
-                if (curves != null && curves.Count > 0)
+                // Ưu tiên dùng BoundingBox của rebar trong view (chính xác hơn cho rebar dạng WALL LOOP)
+                BoundingBoxXYZ rebarBBox = rebar.get_BoundingBox(view);
+                if (rebarBBox == null)
                 {
-                    Curve firstCurve = curves[0];
-                    XYZ rawCenter = (firstCurve.GetEndPoint(0) + firstCurve.GetEndPoint(1)) / 2.0;
-
-                    // Chiếu điểm lên mặt phẳng của View để tránh lệch tọa độ theo phương pháp tuyến của View
-                    XYZ origin = view.Origin;
-                    XYZ normal = view.ViewDirection;
-
-                    XYZ projected = rawCenter - normal.Multiply((rawCenter - origin).DotProduct(normal));
-                    return projected;
+                    rebarBBox = rebar.get_BoundingBox(null);
                 }
+
+                XYZ rawCenter;
+                if (rebarBBox != null)
+                {
+                    rawCenter = (rebarBBox.Min + rebarBBox.Max) / 2.0;
+                }
+                else
+                {
+                    // Fallback: lấy midpoint của curve centerline đầu tiên
+                    IList<Curve> curves = rebar.GetCenterlineCurves(false, false, false, MultiplanarOption.IncludeAllMultiplanarCurves, 0);
+                    if (curves == null || curves.Count == 0) return XYZ.Zero;
+                    Curve firstCurve = curves[0];
+                    rawCenter = (firstCurve.GetEndPoint(0) + firstCurve.GetEndPoint(1)) / 2.0;
+                }
+
+                // Chiếu điểm lên mặt phẳng của View để tránh lệch tọa độ theo phương pháp tuyến của View
+                XYZ origin = view.Origin;
+                XYZ normal = view.ViewDirection;
+
+                XYZ projected = rawCenter - normal.Multiply((rawCenter - origin).DotProduct(normal));
+                return projected;
             }
             catch { }
             return XYZ.Zero;
         }
 
+        /// <summary>
+        /// Lấy Reference hợp lệ cho việc tag rebar trong view cụ thể.
+        /// new Reference(rebar) không hoạt động cho rebar rải theo phương pháp tuyến của view.
+        /// Cần lấy reference từ geometry thực tế của rebar trong view.
+        /// </summary>
+        private static Reference GetRebarReference(Rebar rebar, View view)
+        {
+            // Cấu hình để Revit tính toán hình học trên View hiện tại và sinh ra Reference
+            Options opt = new Options();
+            opt.View = view;
+            opt.ComputeReferences = true; // Bắt buộc phải = true để lấy được Reference
+
+            GeometryElement geomElem = rebar.get_Geometry(opt);
+            if (geomElem != null)
+            {
+                foreach (GeometryObject geomObj in geomElem)
+                {
+                    // Trường hợp 1: Thép hiển thị dạng đường nét (Curve)
+                    if (geomObj is Curve curve && curve.Reference != null)
+                    {
+                        return curve.Reference;
+                    }
+                    // Trường hợp 2: Thép hiển thị dạng khối Solid (thể tích)
+                    else if (geomObj is Solid solid && solid.Faces.Size > 0)
+                    {
+                        foreach (Face face in solid.Faces)
+                        {
+                            if (face.Reference != null) return face.Reference;
+                        }
+                    }
+                    // Trường hợp 3: Hình học bị bọc trong GeometryInstance
+                    else if (geomObj is GeometryInstance geomInst)
+                    {
+                        GeometryElement instGeom = geomInst.GetInstanceGeometry();
+                        foreach (GeometryObject instObj in instGeom)
+                        {
+                            if (instObj is Curve instCurve && instCurve.Reference != null)
+                            {
+                                return instCurve.Reference;
+                            }
+                            if (instObj is Solid instSolid && instSolid.Faces.Size > 0)
+                            {
+                                foreach (Face face in instSolid.Faces)
+                                {
+                                    if (face.Reference != null) return face.Reference;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Nếu quét qua toàn bộ geometry không thấy, fallback về cách cũ (hoặc trả về null)
+            return new Reference(rebar);
+        }
 
     }
 }
