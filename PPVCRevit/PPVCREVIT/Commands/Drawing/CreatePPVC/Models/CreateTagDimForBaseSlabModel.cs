@@ -127,14 +127,13 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                         {
                             IndependentTag tag = IndependentTag.Create(
                                 doc,
+                                slabTagSymbol.Id,
                                 view.Id,
                                 hostRef,
                                 false,
-                                TagMode.TM_ADDBY_CATEGORY,
                                 TagOrientation.Horizontal,
                                 center
                             );
-                            tag.ChangeTypeId(slabTagSymbol.Id);
                             slabTagCount++;
                         }
                         catch (Exception ex)
@@ -188,14 +187,13 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                         {
                             IndependentTag tag = IndependentTag.Create(
                                 doc,
+                                beamTagSymbol.Id,
                                 view.Id,
                                 hostRef,
                                 false,
-                                TagMode.TM_ADDBY_CATEGORY,
                                 TagOrientation.Horizontal,
                                 tagPos
                             );
-                            tag.ChangeTypeId(beamTagSymbol.Id);
                             beamTagCount++;
                         }
                         catch (Exception ex)

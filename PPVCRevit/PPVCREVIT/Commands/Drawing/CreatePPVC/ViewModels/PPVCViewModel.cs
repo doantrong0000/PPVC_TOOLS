@@ -25,6 +25,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
 
         public ICommand CreateViewCommand { get; set; }
         public ICommand CreateDimTagForBaseSlab { get; set; }
+        public ICommand CreateDimTagForMillWall { get; set; }
 
         public PPVCViewModel(PPVCView view, ExternalEvent externalEvent, PPVCEventHandler eventHandler)
         {
@@ -33,6 +34,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
             this._eventHandler = eventHandler;
             CreateViewCommand = new RelayCommand(CreateView);
             CreateDimTagForBaseSlab = new RelayCommand(CreateDetailForBaseSlab);
+            CreateDimTagForMillWall = new RelayCommand(CreateDetailForMillWall);
         }
 
         public void CreateView(object obj)
@@ -54,6 +56,18 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
                 _eventHandler.SetAction(app =>
                 {
                     CreateTagDimForBaseSlabModel.CreateTagDimForBaseSlab();
+                });
+                _externalEvent.Raise();
+            }
+        }
+
+        public void CreateDetailForMillWall(object obj)
+        {
+            if (_externalEvent != null)
+            {
+                _eventHandler.SetAction(app =>
+                {
+                    CreateTagDimForMidWallModel.CreateTagDimForMidWall();
                 });
                 _externalEvent.Raise();
             }
