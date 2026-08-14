@@ -158,6 +158,7 @@
                         <TextBlock Text="QUICK ACTIONS" Foreground="#888888" FontSize="12" FontWeight="Bold" Margin="20,20,0,10"/>
                         <Button Name="btnStepTag" Content="Step Tag (Beams/Slabs)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnStepTag_Click"/>
                         <Button Name="btnOpeningX" Content="Opening Mark" Style="{StaticResource SideMenuButtonStyle}" Click="BtnOpeningX_Click"/>
+                        <Button Name="btnPartHatch" Content="Part Hatch (Polygon)" Style="{StaticResource SideMenuButtonStyle}" Click="BtnPartHatch_Click"/>
                     </StackPanel>
 
                     <!-- Footer -->

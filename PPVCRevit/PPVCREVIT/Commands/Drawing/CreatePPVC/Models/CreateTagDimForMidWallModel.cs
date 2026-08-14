@@ -1,6 +1,7 @@
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
+using PPVCREVIT.Commands.Drawing.CreatePPVC.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -116,7 +117,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             int tagCount = 0;
             int rebarTagCount = 0;
 
-            using (Transaction tx = new Transaction(doc, "Tự động gắn tag và tạo dim tường MillWall"))
+            using (Transaction tx = new Transaction(doc, "Tự động gắn tag và tạo dim tường MidWall"))
             {
                 tx.Start();
 

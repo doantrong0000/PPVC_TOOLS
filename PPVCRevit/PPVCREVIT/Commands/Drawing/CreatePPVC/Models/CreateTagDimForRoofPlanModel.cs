@@ -1,4 +1,5 @@
 using Autodesk.Revit.DB;
+using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using PPVCREVIT.Commands.Drawing.CreatePPVC.Utils;
 using PPVCREVIT.Utils.FamiliesUtils;
@@ -8,13 +9,14 @@ using System.Linq;
 
 namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
 {
-    public static class CreateTagDimForBaseSlabModel
+    public static class CreateTagDimForRoofPlanModel
     {
         /// <summary>
-        /// Thực hiện chức năng tag cho sàn (WH_SlabTag_v26 - Type SFL + THK) và dầm (WH_BeamTag_v26) trong view chỉ định.
+        /// Thực hiện gắn tag sàn (WH_SlabTag_v26), tag dầm (WH_BeamTag_v26) không có leaderline và tạo các đường dim cho Roof Plan:
+        /// - Dim tổng và dim các tường theo các phía (Trái 2 cấp, Phải 1 cấp, Trên 1 cấp tổng)
+        /// - Không tạo dim shearkey (void).
         /// </summary>
-        /// <param name="view">View cần tạo tag, mặc định là Active View nếu truyền null.</param>
-        public static void CreateTagDimForBaseSlab(View view = null)
+        public static void CreateTagDimForRoofPlan(View view = null)
         {
             if (view == null)
             {
@@ -23,7 +25,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
 
             if (view == null)
             {
-                TaskDialog.Show("Lỗi", "Vui lòng mở một View 2D trước khi thực hiện gắn tag.");
+                TaskDialog.Show("Lỗi", "Vui lòng mở một View 2D trước khi thực hiện.");
                 return;
             }
 
@@ -40,17 +42,29 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
 
             Document doc = view.Document;
 
-            // 1. Tìm hoặc load Family Symbol cho Sàn (Type SFL + THK) và Dầm
-            FamilySymbol slabTagSymbol = CreateTagModel.GetSlabTagSymbol(doc, "SFL + THK");
+            // 1. Tìm hoặc load Family Symbol cho Sàn (Type THK) và Dầm
+            FamilySymbol slabTagSymbol = CreateTagModel.GetSlabTagSymbol(doc, "THK");
+
             FamilySymbol beamTagSymbol = LoadFamilyUtils.GetFamilySymbol(doc, "WH_BeamTag_v26");
+            if (beamTagSymbol == null)
+            {
+                beamTagSymbol = new FilteredElementCollector(doc)
+                    .OfCategory(BuiltInCategory.OST_StructuralFramingTags)
+                    .OfClass(typeof(FamilySymbol))
+                    .Cast<FamilySymbol>()
+                    .FirstOrDefault();
+            }
 
             if (slabTagSymbol == null && beamTagSymbol == null)
             {
-                TaskDialog.Show("Lỗi", "Không tìm thấy Family WH_SlabTag_v26 hoặc WH_BeamTag_v26 trong dự án.");
+                TaskDialog.Show("Lỗi", "Không tìm thấy Family Slab Tag (WH_SlabTag_v26) hoặc Beam Tag (WH_BeamTag_v26) trong dự án.");
                 return;
             }
 
-            // 2. Thu thập các đối tượng sàn, dầm và tường đang hiển thị trong View
+            // Tìm hoặc load Family Symbol cho Rebar Tag
+            FamilySymbol rebarTagSymbol = CreateTagModel.GetRebarTagSymbol(doc);
+
+            // 2. Thu thập các đối tượng sàn, dầm và tường trong view hiện tại
             List<Element> floors = new FilteredElementCollector(doc, view.Id)
                 .OfCategory(BuiltInCategory.OST_Floors)
                 .WhereElementIsNotElementType()
@@ -67,7 +81,20 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                 .Cast<Wall>()
                 .ToList();
 
-            // Tính toán BoundingBox bao phủ tất cả tường để làm mốc biên định vị đường Dim
+            if (walls.Count == 0 && beams.Count == 0 && floors.Count == 0)
+            {
+                TaskDialog.Show("Thông báo", "Không tìm thấy sàn, dầm hoặc tường nào trong view hiện tại.");
+                return;
+            }
+
+            // 3. Thu thập các đối tượng rebar (thép) hiển thị trong view hiện tại
+            List<Autodesk.Revit.DB.Structure.Rebar> visibleRebars = new FilteredElementCollector(doc, view.Id)
+                .OfCategory(BuiltInCategory.OST_Rebar)
+                .WhereElementIsNotElementType()
+                .Cast<Autodesk.Revit.DB.Structure.Rebar>()
+                .ToList();
+
+            // Tính toán BoundingBox tổng thể của toàn bộ tường trong view
             BoundingBoxXYZ wallBBox = null;
             foreach (Wall w in walls)
             {
@@ -94,28 +121,28 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                 }
             }
 
-            double midX = RevitClass.PPVCCenter != null ? RevitClass.PPVCCenter.X : (wallBBox != null ? (wallBBox.Min.X + wallBBox.Max.X) / 2.0 : 0.0);
-            double midY = RevitClass.PPVCCenter != null ? RevitClass.PPVCCenter.Y : (wallBBox != null ? (wallBBox.Min.Y + wallBBox.Max.Y) / 2.0 : 0.0);
-
             int slabTagCount = 0;
             int beamTagCount = 0;
+            int rebarTagCount = 0;
 
-            // 3. Thực hiện gắn tag và tạo dim trong Transaction
-            using (Transaction tx = new Transaction(doc, "Tự động gắn tag và tạo dim Sàn, Dầm, Tường"))
+            using (Transaction tx = new Transaction(doc, "Tự động gắn tag Sàn, Dầm và tạo dim RoofPlan"))
             {
                 tx.Start();
 
-                // Kích hoạt các tag symbol nếu chưa kích hoạt
                 if (slabTagSymbol != null && !slabTagSymbol.IsActive)
                 {
                     slabTagSymbol.Activate();
                 }
+
                 if (beamTagSymbol != null && !beamTagSymbol.IsActive)
                 {
                     beamTagSymbol.Activate();
                 }
 
-                // Gắn tag cho sàn
+                double midX = RevitClass.PPVCCenter != null ? RevitClass.PPVCCenter.X : (wallBBox != null ? (wallBBox.Min.X + wallBBox.Max.X) / 2.0 : 0.0);
+                double midY = RevitClass.PPVCCenter != null ? RevitClass.PPVCCenter.Y : (wallBBox != null ? (wallBBox.Min.Y + wallBBox.Max.Y) / 2.0 : 0.0);
+
+                // A. Gắn tag cho sàn (leaderline = false) tại tâm sàn
                 if (slabTagSymbol != null)
                 {
                     foreach (Element floor in floors)
@@ -135,6 +162,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                                 TagOrientation.Horizontal,
                                 center
                             );
+                            tag.HasLeader = false;
                             slabTagCount++;
                         }
                         catch (Exception ex)
@@ -144,7 +172,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     }
                 }
 
-                // Gắn tag cho dầm
+                // B. Gắn tag cho dầm (leaderline = false) với offset động
                 if (beamTagSymbol != null)
                 {
                     foreach (Element beam in beams)
@@ -162,7 +190,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                                 // Dầm phương X: tag đẩy lên trên nếu ở nửa trên, đẩy xuống dưới nếu ở nửa dưới
                                 if (center.Y > midY)
                                 {
-                                    tagPos = new XYZ(center.X, center.Y - offsetVal, center.Z);
+                                    tagPos = new XYZ(center.X, center.Y + offsetVal, center.Z);
                                 }
                                 else
                                 {
@@ -183,9 +211,9 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                             }
                         }
 
-                        Reference hostRef = new Reference(beam);
                         try
                         {
+                            Reference hostRef = new Reference(beam);
                             IndependentTag tag = IndependentTag.Create(
                                 doc,
                                 beamTagSymbol.Id,
@@ -195,6 +223,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                                 TagOrientation.Horizontal,
                                 tagPos
                             );
+                            tag.HasLeader = false;
                             beamTagCount++;
                         }
                         catch (Exception ex)
@@ -204,8 +233,8 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     }
                 }
 
-                // Tạo các đường Dim cho 4 phía của tường bao quanh PPVC
-                if (walls.Count > 0 && wallBBox != null)
+                // C. Tạo các đường Dim cho các phía của tường (Trái 2 cấp, Phải 1 cấp, Trên 1 cấp tổng)
+                if (wallBBox != null)
                 {
                     try
                     {
@@ -217,23 +246,125 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     }
                 }
 
+                // D. Gắn tag thép (Rebar) cho từng tường nếu tìm thấy rebarTagSymbol
+                if (rebarTagSymbol != null)
+                {
+                    if (!rebarTagSymbol.IsActive)
+                    {
+                        rebarTagSymbol.Activate();
+                    }
+
+                    foreach (Wall wall in walls)
+                    {
+                        List<Autodesk.Revit.DB.Structure.Rebar> wallRebars = visibleRebars
+                            .Where(r =>
+                            {
+                                ElementId hostId = r.GetHostId();
+                                if (hostId == wall.Id) return true;
+                                Element host = doc.GetElement(hostId);
+                                if (host is Wall hostWall && hostWall.Id == wall.Id) return true;
+                                return false;
+                            })
+                            .Where(r =>
+                            {
+                                Parameter param = r.LookupParameter(CreatePPVCConfig.RebarTypeParamName);
+                                string val = param?.AsString() ?? param?.AsValueString() ?? "";
+                                return val.Equals(CreatePPVCConfig.RebarTypeParamValue, StringComparison.OrdinalIgnoreCase);
+                            })
+                            .ToList();
+
+                        var groupedRebars = wallRebars.GroupBy(r =>
+                        {
+                            Parameter rebarNumParam = r.get_Parameter(BuiltInParameter.REBAR_NUMBER);
+                            return rebarNumParam?.AsString() ?? rebarNumParam?.AsValueString() ?? "";
+                        });
+
+                        foreach (var group in groupedRebars)
+                        {
+                            var rebar = group.FirstOrDefault();
+                            if (rebar == null) continue;
+
+                            if (rebar.IsHidden(view)) continue;
+
+                            XYZ tagPos = GetRebarTagPosition(rebar, view);
+                            if (tagPos == XYZ.Zero) continue;
+
+                            XYZ wallCenter = GetElementCenter(wall, view);
+                            double rebarOffsetVal = 1.5;
+
+                            if (IsWallParallelToDirection(wall, XYZ.BasisX))
+                            {
+                                if (wallCenter.Y > midY)
+                                {
+                                    tagPos = new XYZ(tagPos.X, tagPos.Y - rebarOffsetVal, tagPos.Z);
+                                }
+                                else
+                                {
+                                    tagPos = new XYZ(tagPos.X, tagPos.Y + rebarOffsetVal, tagPos.Z);
+                                }
+                            }
+                            else if (IsWallParallelToDirection(wall, XYZ.BasisY))
+                            {
+                                if (wallCenter.X > midX)
+                                {
+                                    tagPos = new XYZ(tagPos.X - rebarOffsetVal, tagPos.Y, tagPos.Z);
+                                }
+                                else
+                                {
+                                    tagPos = new XYZ(tagPos.X + rebarOffsetVal + 1, tagPos.Y, tagPos.Z);
+                                }
+                            }
+
+                            if (!rebarTagSymbol.IsActive)
+                            {
+                                rebarTagSymbol.Activate();
+                                doc.Regenerate();
+                            }
+
+                            Reference rebarRef = GetRebarReference(rebar, view);
+                            if (rebarRef == null) continue;
+
+                            try
+                            {
+                                IndependentTag tag = IndependentTag.Create(
+                                    doc,
+                                    rebarTagSymbol.Id,
+                                    view.Id,
+                                    rebarRef,
+                                    true,
+                                    TagOrientation.Horizontal,
+                                    tagPos
+                                );
+
+                                if (tag != null)
+                                {
+                                    tag.LeaderEndCondition = LeaderEndCondition.Free;
+                                    tag.TagHeadPosition = tagPos;
+                                    rebarTagCount++;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"[LỖI TAG THÉP] Wall {wall.Id}, Rebar {rebar.Id}: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+
                 tx.Commit();
             }
 
-            TaskDialog.Show("Kết quả", $"Đã gắn thành công:\n- {slabTagCount} tag sàn (WH_SlabTag_v26)\n- {beamTagCount} tag dầm (WH_BeamTag_v26)\n\nĐã tạo các đường dim chi tiết và tổng thể cho 4 phía tường PPVC.");
+            TaskDialog.Show("Kết quả", $"Đã gắn thành công:\n- {slabTagCount} tag sàn (WH_SlabTag_v26)\n- {beamTagCount} tag dầm (WH_BeamTag_v26)\n- {rebarTagCount} tag thép (category OST_RebarTags)\n\nĐã tạo dim tổng các phía và dim tường cho Roof Plan.");
         }
 
-        /// <summary>
-        /// Tạo các đường Dim cho các hướng bao quanh khối PPVC (Trái 2 cấp, Phải 1 cấp, Trên 1 cấp tổng).
-        /// </summary>
         private static void CreateDimensions(View view, List<Wall> walls, BoundingBoxXYZ bbox)
         {
             if (view == null || walls == null || walls.Count == 0 || bbox == null) return;
             Document doc = view.Document;
 
-            double offsetInner = 2.0; // Khoảng cách từ biên tường đến đường dim chi tiết (feet)
-            double offsetOuter = 3.2; // Khoảng cách từ biên tường đến đường dim tổng (feet)
-            double buffer = 1.0;      // Độ vươn biên của đường thẳng dim (feet)
+            double offsetInner = 2.0;
+            double offsetOuter = 3.2;
+            double buffer = 1.0;
 
             double minX = bbox.Min.X;
             double maxX = bbox.Max.X;
@@ -243,53 +374,9 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             double midX = RevitClass.PPVCCenter != null ? RevitClass.PPVCCenter.X : (minX + maxX) / 2.0;
             double midY = RevitClass.PPVCCenter != null ? RevitClass.PPVCCenter.Y : (minY + maxY) / 2.0;
 
-            // Thu thập sàn và dầm trong view để tính bounding box tổng thể cho cả module
-            List<Element> floors = new FilteredElementCollector(doc, view.Id)
-                .OfCategory(BuiltInCategory.OST_Floors)
-                .WhereElementIsNotElementType()
-                .ToList();
-
-            List<Element> beams = new FilteredElementCollector(doc, view.Id)
-                .OfCategory(BuiltInCategory.OST_StructuralFraming)
-                .WhereElementIsNotElementType()
-                .ToList();
-
-            List<Element> allModuleElements = floors.Concat(beams).Concat(walls.Cast<Element>()).ToList();
-
-            // Tính BoundingBox tổng thể của cả module (sàn + dầm + tường)
-            BoundingBoxXYZ moduleBBox = null;
-            foreach (Element el in allModuleElements)
-            {
-                BoundingBoxXYZ elBbox = el.get_BoundingBox(view);
-                if (elBbox == null) elBbox = el.get_BoundingBox(null);
-                if (elBbox == null) continue;
-
-                if (moduleBBox == null)
-                {
-                    moduleBBox = new BoundingBoxXYZ { Min = elBbox.Min, Max = elBbox.Max };
-                }
-                else
-                {
-                    moduleBBox.Min = new XYZ(
-                        Math.Min(moduleBBox.Min.X, elBbox.Min.X),
-                        Math.Min(moduleBBox.Min.Y, elBbox.Min.Y),
-                        Math.Min(moduleBBox.Min.Z, elBbox.Min.Z)
-                    );
-                    moduleBBox.Max = new XYZ(
-                        Math.Max(moduleBBox.Max.X, elBbox.Max.X),
-                        Math.Max(moduleBBox.Max.Y, elBbox.Max.Y),
-                        Math.Max(moduleBBox.Max.Z, elBbox.Max.Z)
-                    );
-                }
-            }
-
-            double modMinX = moduleBBox != null ? moduleBBox.Min.X : minX;
-            double modMaxX = moduleBBox != null ? moduleBBox.Max.X : maxX;
-            double modMinY = moduleBBox != null ? moduleBBox.Min.Y : minY;
-            double modMaxY = moduleBBox != null ? moduleBBox.Max.Y : maxY;
+            List<Element> wallElements = walls.Cast<Element>().ToList();
 
             // 1. TẠO DIM CẠNH TRÁI (LEFT SIDE) - Phương Y (Có 2 cấp Dim)
-            // Lấy các tường song song phương Y và nằm ở nửa bên trái
             List<Wall> leftYWalls = walls
                 .Where(w => IsWallParallelToDirection(w, XYZ.BasisY))
                 .Where(w =>
@@ -304,30 +391,28 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
 
             if (leftYFacesUnique.Count >= 2)
             {
-                // Đường dim chi tiết (Inner)
                 ReferenceArray leftInnerArray = new ReferenceArray();
                 foreach (var face in leftYFacesUnique)
                 {
                     leftInnerArray.Append(face.Reference);
                 }
                 Line leftInnerLine = Line.CreateBound(
-                    new XYZ(modMinX - offsetInner, modMinY - buffer, 0),
-                    new XYZ(modMinX - offsetInner, modMaxY + buffer, 0)
+                    new XYZ(minX - offsetInner, minY - buffer, 0),
+                    new XYZ(minX - offsetInner, maxY + buffer, 0)
                 );
                 doc.Create.NewDimension(view, leftInnerLine, leftInnerArray);
             }
 
-            // Đường dim tổng (Outer) cho bên trái - Đo từ 2 cạnh xa nhau nhất của toàn bộ Module
-            Reference southRef = GetFurthestFace(allModuleElements, view, XYZ.BasisY, modMinY, false);
-            Reference northRef = GetFurthestFace(allModuleElements, view, XYZ.BasisY, modMaxY, false);
+            Reference southRef = GetFurthestFace(wallElements, view, XYZ.BasisY, minY, false);
+            Reference northRef = GetFurthestFace(wallElements, view, XYZ.BasisY, maxY, false);
             if (southRef != null && northRef != null)
             {
                 ReferenceArray leftOuterArray = new ReferenceArray();
                 leftOuterArray.Append(southRef);
                 leftOuterArray.Append(northRef);
                 Line leftOuterLine = Line.CreateBound(
-                    new XYZ(modMinX - offsetOuter, modMinY - buffer, 0),
-                    new XYZ(modMinX - offsetOuter, modMaxY + buffer, 0)
+                    new XYZ(minX - offsetOuter, minY - buffer, 0),
+                    new XYZ(minX - offsetOuter, maxY + buffer, 0)
                 );
                 Dimension leftOuterDim = doc.Create.NewDimension(view, leftOuterLine, leftOuterArray);
                 if (leftOuterDim != null)
@@ -336,8 +421,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                 }
             }
 
-            // 2. TẠO DIM CẠNH PHẢI (RIGHT SIDE) - Phương Y (Chỉ có 1 cấp chi tiết)
-            // Lấy các tường song song phương Y và nằm ở nửa bên phải
+            // 2. TẠO DIM CẠNH PHẢI (RIGHT SIDE) - Phương Y (1 cấp chi tiết)
             List<Wall> rightYWalls = walls
                 .Where(w => IsWallParallelToDirection(w, XYZ.BasisY))
                 .Where(w =>
@@ -352,23 +436,21 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
 
             if (rightYFacesUnique.Count >= 2)
             {
-                // Đường dim chi tiết (Inner)
                 ReferenceArray rightInnerArray = new ReferenceArray();
                 foreach (var face in rightYFacesUnique)
                 {
                     rightInnerArray.Append(face.Reference);
                 }
                 Line rightInnerLine = Line.CreateBound(
-                    new XYZ(modMaxX + offsetInner, modMinY - buffer, 0),
-                    new XYZ(modMaxX + offsetInner, modMaxY + buffer, 0)
+                    new XYZ(maxX + offsetInner, minY - buffer, 0),
+                    new XYZ(maxX + offsetInner, maxY + buffer, 0)
                 );
                 doc.Create.NewDimension(view, rightInnerLine, rightInnerArray);
             }
 
-            // 3. TẠO DIM CẠNH TRÊN (TOP SIDE) - Phương X (Chỉ có 1 cấp tổng)
-            // Lấy 2 mặt phẳng đứng xa nhất theo phương X (Đông/Tây) của toàn bộ Module
-            Reference westRef = GetFurthestFace(allModuleElements, view, XYZ.BasisX, modMinX, true);
-            Reference eastRef = GetFurthestFace(allModuleElements, view, XYZ.BasisX, modMaxX, true);
+            // 3. TẠO DIM CẠNH TRÊN (TOP SIDE) - Phương X (1 cấp tổng)
+            Reference westRef = GetFurthestFace(wallElements, view, XYZ.BasisX, minX, true);
+            Reference eastRef = GetFurthestFace(wallElements, view, XYZ.BasisX, maxX, true);
 
             if (westRef != null && eastRef != null)
             {
@@ -376,8 +458,8 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                 topOuterArray.Append(westRef);
                 topOuterArray.Append(eastRef);
                 Line topOuterLine = Line.CreateBound(
-                    new XYZ(modMinX - buffer, modMaxY + offsetOuter, 0),
-                    new XYZ(modMaxX + buffer, modMaxY + offsetOuter, 0)
+                    new XYZ(minX - buffer, maxY + offsetOuter, 0),
+                    new XYZ(maxX + buffer, maxY + offsetOuter, 0)
                 );
                 Dimension topOuterDim = doc.Create.NewDimension(view, topOuterLine, topOuterArray);
                 if (topOuterDim != null)
@@ -387,9 +469,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             }
         }
 
-        /// <summary>
-        /// Kiểm tra tim tường (Center Line) có song song với hướng chỉ định hay không.
-        /// </summary>
         private static bool IsWallParallelToDirection(Wall wall, XYZ direction)
         {
             LocationCurve locCurve = wall.Location as LocationCurve;
@@ -402,7 +481,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     XYZ p1 = curve.GetEndPoint(1);
                     XYZ wallDir = (p1 - p0).Normalize();
 
-                    // Hai vector song song khi tích vô hướng tuyệt đối xấp xỉ 1
                     if (Math.Abs(wallDir.DotProduct(direction)) > 0.99)
                     {
                         return true;
@@ -412,9 +490,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return false;
         }
 
-        /// <summary>
-        /// Nhóm các mặt phẳng trùng nhau theo tọa độ (dung sai 0.01 feet ~ 3mm) và sắp xếp tăng dần.
-        /// </summary>
         private static List<(Reference Reference, double Position)> GroupAndSortFaces(List<(Reference Reference, double Position)> rawFaces)
         {
             var uniqueFaces = new List<(Reference Reference, double Position)>();
@@ -428,16 +503,13 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return uniqueFaces;
         }
 
-        /// <summary>
-        /// Lọc tất cả các mặt phẳng của tường song song với hướng vector chỉ định và lấy tọa độ chiếu của nó.
-        /// </summary>
         private static List<(Reference Reference, double Position)> GetWallFacesInDirection(List<Wall> walls, View view, XYZ direction)
         {
             List<(Reference Reference, double Position)> result = new List<(Reference Reference, double Position)>();
             Options opt = new Options
             {
-                ComputeReferences = true, // Bắt buộc phải có để face.Reference không bị null
-                View = view               // Lấy hình học cắt qua View hiện tại (Revit tự động dùng DetailLevel của View)
+                ComputeReferences = true,
+                View = view
             };
 
             foreach (Wall wall in walls)
@@ -452,7 +524,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                         foreach (Face face in solid.Faces)
                         {
                             XYZ normal = face.ComputeNormal(UV.Zero).Normalize();
-                            // Kiểm tra vector pháp tuyến của mặt phẳng có trùng hướng với hướng cần dim không
                             if (Math.Abs(normal.DotProduct(direction)) > 0.99)
                             {
                                 double pos = face.Evaluate(UV.Zero).DotProduct(direction);
@@ -465,9 +536,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return result;
         }
 
-        /// <summary>
-        /// Lấy tọa độ trung tâm của cấu kiện trong View chỉ định.
-        /// </summary>
         private static XYZ GetElementCenter(Element el, View view)
         {
             BoundingBoxXYZ bbox = el.get_BoundingBox(view);
@@ -482,9 +550,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return XYZ.Zero;
         }
 
-        /// <summary>
-        /// Tìm mặt phẳng ngoài cùng của danh sách cấu kiện theo phương và tọa độ mục tiêu.
-        /// </summary>
         private static Reference GetFurthestFace(List<Element> elements, View view, XYZ normalDirection, double targetValue, bool checkX)
         {
             Reference bestRef = null;
@@ -493,7 +558,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             Options opt = new Options
             {
                 ComputeReferences = true,
-                View = view               // Lấy hình học cắt qua View hiện tại (đáp ứng đúng Revit API khi view được chỉ định)
+                View = view
             };
 
             foreach (Element el in elements)
@@ -508,7 +573,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                         foreach (Face face in solid.Faces)
                         {
                             XYZ normal = face.ComputeNormal(UV.Zero).Normalize();
-                            // Kiểm tra pháp tuyến có song song/trùng với hướng chỉ định không
                             if (Math.Abs(normal.DotProduct(normalDirection)) > 0.99)
                             {
                                 XYZ pt = face.Evaluate(UV.Zero);
@@ -527,6 +591,84 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return bestRef;
         }
 
+        private static XYZ GetRebarTagPosition(Autodesk.Revit.DB.Structure.Rebar rebar, View view)
+        {
+            try
+            {
+                BoundingBoxXYZ rebarBBox = rebar.get_BoundingBox(view);
+                if (rebarBBox == null)
+                {
+                    rebarBBox = rebar.get_BoundingBox(null);
+                }
+
+                XYZ rawCenter;
+                if (rebarBBox != null)
+                {
+                    rawCenter = (rebarBBox.Min + rebarBBox.Max) / 2.0;
+                }
+                else
+                {
+                    IList<Curve> curves = rebar.GetCenterlineCurves(false, false, false, MultiplanarOption.IncludeAllMultiplanarCurves, 0);
+                    if (curves == null || curves.Count == 0) return XYZ.Zero;
+                    Curve firstCurve = curves[0];
+                    rawCenter = (firstCurve.GetEndPoint(0) + firstCurve.GetEndPoint(1)) / 2.0;
+                }
+
+                XYZ origin = view.Origin;
+                XYZ normal = view.ViewDirection;
+                XYZ projected = rawCenter - normal.Multiply((rawCenter - origin).DotProduct(normal));
+                return projected;
+            }
+            catch { }
+            return XYZ.Zero;
+        }
+
+        private static Reference GetRebarReference(Rebar rebar, View view)
+        {
+            Options opt = new Options();
+            opt.View = view;
+            opt.ComputeReferences = true;
+
+            GeometryElement geomElem = rebar.get_Geometry(opt);
+            if (geomElem != null)
+            {
+                foreach (GeometryObject geomObj in geomElem)
+                {
+                    if (geomObj is Curve curve && curve.Reference != null)
+                    {
+                        return curve.Reference;
+                    }
+                    else if (geomObj is Solid solid && solid.Faces.Size > 0)
+                    {
+                        foreach (Face face in solid.Faces)
+                        {
+                            if (face.Reference != null) return face.Reference;
+                        }
+                    }
+                    else if (geomObj is GeometryInstance geomInst)
+                    {
+                        GeometryElement instGeom = geomInst.GetInstanceGeometry();
+                        foreach (GeometryObject instObj in instGeom)
+                        {
+                            if (instObj is Curve instCurve && instCurve.Reference != null)
+                            {
+                                return instCurve.Reference;
+                            }
+                            if (instObj is Solid instSolid && instSolid.Faces.Size > 0)
+                            {
+                                foreach (Face face in instSolid.Faces)
+                                {
+                                    if (face.Reference != null) return face.Reference;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return new Reference(rebar);
+        }
+
         /// <summary>
         /// Kiểm tra tim dầm (Center Line) có song song với hướng chỉ định hay không.
         /// </summary>
@@ -543,7 +685,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     XYZ p1 = curve.GetEndPoint(1);
                     XYZ beamDir = (p1 - p0).Normalize();
 
-                    // Hai vector song song khi tích vô hướng tuyệt đối xấp xỉ 1
                     if (Math.Abs(beamDir.DotProduct(direction)) > 0.99)
                     {
                         return true;

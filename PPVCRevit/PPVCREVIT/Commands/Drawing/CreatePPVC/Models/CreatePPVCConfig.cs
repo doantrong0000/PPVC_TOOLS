@@ -19,9 +19,15 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             // Danh sách các Type của Rebar Tag
             public const string Type1 = "";
             public const string Type2 = "";
-            public const string Type3 = "";
+            public const string Type3 = "Type 3";
             public const string Type4 = "10-H20-TEXT"; // WALL LOOP TAG
 
+            // Danh sách từ khoá hoặc tên type cho MultiReferenceAnnotation (Multi-tag)
+            // Ưu tiên chọn Type có tên chứa các chuỗi sau (Ví dụ: "1_Multi_tag_for_SlabRebar_BaseView")
+            public static readonly string[] MRATypes = new string[]
+            {
+                "1_"
+            };
         }
     }
 }

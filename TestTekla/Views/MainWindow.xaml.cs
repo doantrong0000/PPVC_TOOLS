@@ -101,6 +101,19 @@ namespace TeklaApp.Views
             }
         }
 
+        private void BtnPartHatch_Click(object sender, RoutedEventArgs e)
+        {
+            this.Hide();
+            try
+            {
+                _viewModel.DrawPartHatchPolygon();
+            }
+            finally
+            {
+                this.Show();
+            }
+        }
+
         private void BtnFindRebar_Click(object sender, RoutedEventArgs e)
         {
             _createVm.RunFindRebar();

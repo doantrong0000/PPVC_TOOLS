@@ -26,6 +26,8 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
         public ICommand CreateViewCommand { get; set; }
         public ICommand CreateDimTagForBaseSlab { get; set; }
         public ICommand CreateDimTagForMillWall { get; set; }
+        public ICommand CreateDimTagForRoofPlan { get; set; }
+        public ICommand CreateRebarTagForSlabCommand { get; set; }
 
         public PPVCViewModel(PPVCView view, ExternalEvent externalEvent, PPVCEventHandler eventHandler)
         {
@@ -35,6 +37,8 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
             CreateViewCommand = new RelayCommand(CreateView);
             CreateDimTagForBaseSlab = new RelayCommand(CreateDetailForBaseSlab);
             CreateDimTagForMillWall = new RelayCommand(CreateDetailForMillWall);
+            CreateDimTagForRoofPlan = new RelayCommand(CreateDetailForRoofPlan);
+            CreateRebarTagForSlabCommand = new RelayCommand(CreateRebarTagForSlabAction);
         }
 
         public void CreateView(object obj)
@@ -68,6 +72,30 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
                 _eventHandler.SetAction(app =>
                 {
                     CreateTagDimForMidWallModel.CreateTagDimForMidWall();
+                });
+                _externalEvent.Raise();
+            }
+        }
+
+        public void CreateDetailForRoofPlan(object obj)
+        {
+            if (_externalEvent != null)
+            {
+                _eventHandler.SetAction(app =>
+                {
+                    CreateTagDimForRoofPlanModel.CreateTagDimForRoofPlan();
+                });
+                _externalEvent.Raise();
+            }
+        }
+
+        public void CreateRebarTagForSlabAction(object obj)
+        {
+            if (_externalEvent != null)
+            {
+                _eventHandler.SetAction(app =>
+                {
+                    CreateSlabRebarTagModel.CreateRebarTagForSlab("SLAB Bottom bars", "Type 3");
                 });
                 _externalEvent.Raise();
             }

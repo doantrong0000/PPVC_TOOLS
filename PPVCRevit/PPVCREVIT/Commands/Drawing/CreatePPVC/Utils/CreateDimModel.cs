@@ -2,7 +2,7 @@ using Autodesk.Revit.DB;
 using System;
 using System.Collections.Generic;
 
-namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
+namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Utils
 {
     public static class CreateDimModel
     {

@@ -190,6 +190,194 @@ namespace TeklaApp.ViewModels
             catch { return; }
         }
 
+        public void DrawPartHatchPolygon()
+        {
+            var dh = new Tekla.Structures.Drawing.DrawingHandler();
+            if (dh.GetActiveDrawing() == null)
+            {
+                Tekla.Structures.Model.Operations.Operation.DisplayPrompt("Error: Please open a drawing first.");
+                return;
+            }
+
+            try
+            {
+                var selector = dh.GetDrawingObjectSelector();
+                var selectedObjects = selector.GetSelected();
+                var dParts = new List<Tekla.Structures.Drawing.Part>();
+
+                foreach (var obj in selectedObjects)
+                {
+                    if (obj is Tekla.Structures.Drawing.Part dp)
+                        dParts.Add(dp);
+                }
+
+                Tekla.Structures.Model.Model model = new Tekla.Structures.Model.Model();
+
+                if (dParts.Count > 0)
+                {
+                    int createdCount = 0;
+                    foreach (var dp in dParts)
+                    {
+                        if (CreateHatchPolygonForDrawingPart(dp, model))
+                            createdCount++;
+                    }
+                    if (createdCount > 0)
+                    {
+                        dh.GetActiveDrawing().CommitChanges();
+                        Tekla.Structures.Model.Operations.Operation.DisplayPrompt($"Success: Created hatch polygon for {createdCount} part(s).");
+                    }
+                    return;
+                }
+
+                // Interactive picker mode if no parts were pre-selected
+                var picker = dh.GetPicker();
+                int pickedHatchCount = 0;
+                while (true)
+                {
+                    var pickResult = picker.PickObject("Select part in drawing to draw hatch polygon");
+                    if (pickResult == null || pickResult.Item1 == null) break;
+
+                    if (pickResult.Item1 is Tekla.Structures.Drawing.Part pickedPart)
+                    {
+                        if (CreateHatchPolygonForDrawingPart(pickedPart, model))
+                        {
+                            pickedHatchCount++;
+                            dh.GetActiveDrawing().CommitChanges();
+                            Tekla.Structures.Model.Operations.Operation.DisplayPrompt($"Created hatch polygon ({pickedHatchCount}). Pick next part or press Esc to finish.");
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                // User pressed Esc or finished picking
+                return;
+            }
+        }
+
+        private bool CreateHatchPolygonForDrawingPart(Tekla.Structures.Drawing.Part dp, Tekla.Structures.Model.Model model)
+        {
+            if (dp == null || model == null) return false;
+
+            var mPart = model.SelectModelObject(dp.ModelIdentifier) as Tekla.Structures.Model.Part;
+            if (mPart == null) return false;
+
+            Solid solid = mPart.GetSolid();
+            if (solid == null) return false;
+
+            Tekla.Structures.Drawing.ViewBase view = dp.GetView();
+            if (view == null) return false;
+
+            Matrix toViewMatrix = null;
+            if (view is Tekla.Structures.Drawing.View realView)
+            {
+                toViewMatrix = MatrixFactory.ToCoordinateSystem(realView.DisplayCoordinateSystem);
+            }
+
+            var viewPoints = new List<Point>();
+            var faceEnum = solid.GetFaceEnumerator();
+            while (faceEnum.MoveNext())
+            {
+                if (faceEnum.Current is Face face)
+                {
+                    var loopEnum = face.GetLoopEnumerator();
+                    while (loopEnum.MoveNext())
+                    {
+                        if (loopEnum.Current is Loop loop)
+                        {
+                            var vertEnum = loop.GetVertexEnumerator();
+                            while (vertEnum != null && vertEnum.MoveNext())
+                            {
+                                if (vertEnum.Current is Point p3d)
+                                {
+                                    Point pView = toViewMatrix != null ? toViewMatrix.Transform(p3d) : p3d;
+                                    viewPoints.Add(new Point(pView.X, pView.Y, 0));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (viewPoints.Count < 3) return false;
+
+            var hull = ComputeConvexHull2D(viewPoints);
+            if (hull.Count < 3) return false;
+
+            var pointList = new Tekla.Structures.Drawing.PointList();
+            foreach (var pt in hull)
+            {
+                pointList.Add(new Point(pt.X, pt.Y, 0));
+            }
+            pointList.Add(new Point(hull[0].X, hull[0].Y, 0)); // Close polygon loop
+
+            var polygon = new Tekla.Structures.Drawing.Polygon(view, pointList);
+            polygon.Attributes.Hatch.Name = "ANSI31";
+            polygon.Attributes.Hatch.ScaleX = 1.0;
+            polygon.Attributes.Hatch.ScaleY = 1.0;
+            polygon.Attributes.Hatch.Color = DrawingHatchColors.Black;
+            polygon.Attributes.Line.Color = DrawingColors.Black;
+            polygon.Attributes.Line.Type = Tekla.Structures.Drawing.LineTypes.SolidLine;
+            return polygon.Insert();
+        }
+
+        private static List<Point> ComputeConvexHull2D(List<Point> points)
+        {
+            if (points == null || points.Count <= 2)
+                return points != null ? new List<Point>(points) : new List<Point>();
+
+            var uniquePoints = new List<Point>();
+            foreach (var pt in points)
+            {
+                if (!uniquePoints.Exists(p => Math.Abs(p.X - pt.X) < 0.1 && Math.Abs(p.Y - pt.Y) < 0.1))
+                {
+                    uniquePoints.Add(pt);
+                }
+            }
+
+            if (uniquePoints.Count <= 2)
+                return uniquePoints;
+
+            uniquePoints.Sort((a, b) =>
+            {
+                int cmpX = a.X.CompareTo(b.X);
+                if (cmpX != 0) return cmpX;
+                return a.Y.CompareTo(b.Y);
+            });
+
+            int n = uniquePoints.Count;
+            var hull = new List<Point>();
+
+            for (int i = 0; i < n; i++)
+            {
+                while (hull.Count >= 2 && CrossProduct2D(hull[hull.Count - 2], hull[hull.Count - 1], uniquePoints[i]) <= 0)
+                {
+                    hull.RemoveAt(hull.Count - 1);
+                }
+                hull.Add(uniquePoints[i]);
+            }
+
+            int t = hull.Count + 1;
+            for (int i = n - 2; i >= 0; i--)
+            {
+                while (hull.Count >= t && CrossProduct2D(hull[hull.Count - 2], hull[hull.Count - 1], uniquePoints[i]) <= 0)
+                {
+                    hull.RemoveAt(hull.Count - 1);
+                }
+                hull.Add(uniquePoints[i]);
+            }
+
+            if (hull.Count > 1)
+                hull.RemoveAt(hull.Count - 1);
+
+            return hull;
+        }
+
+        private static double CrossProduct2D(Point o, Point a, Point b)
+        {
+            return (a.X - o.X) * (b.Y - o.Y) - (a.Y - o.Y) * (b.X - o.X);
+        }
+
         public bool DeleteObjectById(string idInput)
         {
             if (string.IsNullOrWhiteSpace(idInput) || !_teklaModel.IsConnected()) return false;

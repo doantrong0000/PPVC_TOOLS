@@ -18,7 +18,9 @@
             <TextBlock Text="Sheet"></TextBlock>
             <Button Content="CreateView" Command="{Binding CreateViewCommand}"></Button>
             <Button Content="CreateDimTag for base slab" Command="{Binding CreateDimTagForBaseSlab}"></Button>
-            <Button Content="CreateDimTag for mill wall" Command="{Binding CreateDimTagForMillWall}"></Button>
+            <Button Content="CreateDimTag for mid wall" Command="{Binding CreateDimTagForMillWall}"></Button>
+            <Button Content="CreateDimTag for roof plan" Command="{Binding CreateDimTagForRoofPlan}"></Button>
+            <Button Content="CreateRebarTag for slab" Command="{Binding CreateRebarTagForSlabCommand}"></Button>
         </StackPanel>
     </Grid>
 </Window>
