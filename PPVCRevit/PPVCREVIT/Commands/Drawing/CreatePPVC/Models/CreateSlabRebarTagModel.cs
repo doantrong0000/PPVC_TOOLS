@@ -3,6 +3,7 @@ using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using PPVCREVIT.Commands.Drawing.CreatePPVC.Utils;
 using PPVCREVIT.Utils.FamiliesUtils;
+using PPVCREVIT.Utils.Tag;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
         private static readonly string[] TrimmerKeywords = { "TRIMMER" };
 
         // Từ khóa phân loại thanh thép sàn rải (dùng multi tag)
-        private static readonly string[] SlabDistributedKeywords = { "SLAB", "LEDGE" };
+        private static readonly string[] SlabDistributedKeywords = { "SLAB", "LEDGE", "KERB", "ROOF", "STIRRUP" };
 
         // Từ khóa phân loại thanh starter bar (dùng multi tag)
         private static readonly string[] StarterKeywords = { "START", "TIE" };
@@ -26,12 +27,12 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
         ///   - Tag đơn (IndependentTag): thanh trimmer hoặc thanh có Quantity == 1 (không rải).
         ///   - Multi tag (MultiReferenceAnnotation): thép sàn rải + starter bar có Quantity > 1.
         /// </summary>
-        /// <param name="rebarTypeName">Không dùng để lọc, chỉ dùng để hiển thị kết quả</param>
         /// <param name="tagTypeName">Tên loại tag (ví dụ: "Type 3")</param>
         /// <param name="view">View 2D cần thực hiện (mặc định null -> ActiveView)</param>
-        public static void CreateRebarTagForSlab(string rebarTypeName = "BOT", string tagTypeName = "Type 3", View view = null)
+        public static void CreateRebarTagForSlab()
         {
-            view = view ?? RevitClass.UiDoc.ActiveView;
+            string tagTypeName = "Type 3";
+            var view = RevitClass.UiDoc.ActiveView;
             if (view == null)
             {
                 TaskDialog.Show("Lỗi", "Vui lòng mở một View 2D trước khi thực hiện.");
@@ -73,7 +74,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                 tx.Start();
 
                 // --- Bước 4: Set Unobscured + PresentationMode cho tất cả rebar ---
-                SetRebarViewProperties(view, viewRebars, ref unobscuredCount, ref presentationModeCount);
+                SetRebarViewProperties(view, viewRebars);
 
                 if (!rebarTagSymbol.IsActive)
                 {
@@ -88,11 +89,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     minX, maxX, minY, maxY, midX, midY);
 
                 tx.Commit();
-
-                TaskDialog.Show("Kết quả",
-                    $"Đã set Unobscured ({unobscuredCount} thanh), " +
-                    $"set Presentation Mode ({presentationModeCount} thanh) và gắn tag thành công " +
-                    $"cho thép sàn ({rebarTypeName} - Type: {tagTypeName}).");
             }
         }
 
@@ -133,8 +129,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
         ///   - SLAB / LEDGE → Middle
         ///   - TIE / START  → FirstLast
         /// </summary>
-        private static void SetRebarViewProperties(View view, List<Rebar> rebars,
-            ref int unobscuredCount, ref int presentationModeCount)
+        private static void SetRebarViewProperties(View view, List<Rebar> rebars)
         {
             foreach (Rebar rebar in rebars)
             {
@@ -144,7 +139,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     if (!rebar.IsUnobscuredInView(view))
                     {
                         rebar.SetUnobscuredInView(view, true);
-                        unobscuredCount++;
                     }
                 }
                 catch (Exception ex)
@@ -161,12 +155,10 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                     if (ContainsAny(rebarType, SlabDistributedKeywords))
                     {
                         rebar.SetPresentationMode(view, RebarPresentationMode.Middle);
-                        presentationModeCount++;
                     }
                     else if (ContainsAny(rebarType, StarterKeywords))
                     {
                         rebar.SetPresentationMode(view, RebarPresentationMode.FirstLast);
-                        presentationModeCount++;
                     }
                 }
                 catch (Exception ex)
@@ -263,7 +255,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             XYZ tagPos = GetRebarTagPosition(rebar, view);
             if (tagPos == XYZ.Zero) return;
 
-            Reference rebarRef = GetRebarReference(rebar, view);
+            Reference rebarRef = RebarTagUltis.GetRebarReference(rebar, view);
             if (rebarRef == null) return;
 
             try
@@ -365,7 +357,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             // Fallback: dùng IndependentTag không leader nếu MRA thất bại
             if (!createdMra && rebarTagSymbol != null)
             {
-                Reference rebarRef = GetRebarReference(rebar, view);
+                Reference rebarRef = RebarTagUltis.GetRebarReference(rebar, view);
                 if (rebarRef == null) return;
 
                 try
@@ -629,48 +621,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return point - viewNormal.Multiply((point - viewOrigin).DotProduct(viewNormal));
         }
 
-        private static Reference GetRebarReference(Rebar rebar, View view)
-        {
-            Options opt = new Options { View = view, ComputeReferences = true };
-
-            GeometryElement geomElem = rebar.get_Geometry(opt);
-            if (geomElem != null)
-            {
-                foreach (GeometryObject geomObj in geomElem)
-                {
-                    if (geomObj is Curve curve && curve.Reference != null)
-                        return curve.Reference;
-
-                    if (geomObj is Solid solid && solid.Faces.Size > 0)
-                    {
-                        foreach (Face face in solid.Faces)
-                        {
-                            if (face.Reference != null) return face.Reference;
-                        }
-                    }
-
-                    if (geomObj is GeometryInstance geomInst)
-                    {
-                        GeometryElement instGeom = geomInst.GetInstanceGeometry();
-                        foreach (GeometryObject instObj in instGeom)
-                        {
-                            if (instObj is Curve instCurve && instCurve.Reference != null)
-                                return instCurve.Reference;
-
-                            if (instObj is Solid instSolid && instSolid.Faces.Size > 0)
-                            {
-                                foreach (Face face in instSolid.Faces)
-                                {
-                                    if (face.Reference != null) return face.Reference;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return new Reference(rebar);
-        }
 
         #endregion
 
@@ -721,7 +671,6 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                         System.Diagnostics.Debug.WriteLine($"Lỗi set PresentationMode cho Rebar ID {rebar.Id}: {ex.Message}");
                     }
                 }
-
                 tx.Commit();
             }
         }

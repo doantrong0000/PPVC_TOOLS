@@ -3,6 +3,7 @@ using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using PPVCREVIT.Commands.Drawing.CreatePPVC.Utils;
 using PPVCREVIT.Utils.FamiliesUtils;
+using PPVCREVIT.Utils.Tag;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -214,6 +215,8 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                         try
                         {
                             Reference hostRef = new Reference(beam);
+
+
                             IndependentTag tag = IndependentTag.Create(
                                 doc,
                                 beamTagSymbol.Id,
@@ -321,7 +324,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                                 doc.Regenerate();
                             }
 
-                            Reference rebarRef = GetRebarReference(rebar, view);
+                            Reference rebarRef = RebarTagUltis.GetRebarReference(rebar, view);
                             if (rebarRef == null) continue;
 
                             try
@@ -623,51 +626,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return XYZ.Zero;
         }
 
-        private static Reference GetRebarReference(Rebar rebar, View view)
-        {
-            Options opt = new Options();
-            opt.View = view;
-            opt.ComputeReferences = true;
 
-            GeometryElement geomElem = rebar.get_Geometry(opt);
-            if (geomElem != null)
-            {
-                foreach (GeometryObject geomObj in geomElem)
-                {
-                    if (geomObj is Curve curve && curve.Reference != null)
-                    {
-                        return curve.Reference;
-                    }
-                    else if (geomObj is Solid solid && solid.Faces.Size > 0)
-                    {
-                        foreach (Face face in solid.Faces)
-                        {
-                            if (face.Reference != null) return face.Reference;
-                        }
-                    }
-                    else if (geomObj is GeometryInstance geomInst)
-                    {
-                        GeometryElement instGeom = geomInst.GetInstanceGeometry();
-                        foreach (GeometryObject instObj in instGeom)
-                        {
-                            if (instObj is Curve instCurve && instCurve.Reference != null)
-                            {
-                                return instCurve.Reference;
-                            }
-                            if (instObj is Solid instSolid && instSolid.Faces.Size > 0)
-                            {
-                                foreach (Face face in instSolid.Faces)
-                                {
-                                    if (face.Reference != null) return face.Reference;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return new Reference(rebar);
-        }
 
         /// <summary>
         /// Kiểm tra tim dầm (Center Line) có song song với hướng chỉ định hay không.

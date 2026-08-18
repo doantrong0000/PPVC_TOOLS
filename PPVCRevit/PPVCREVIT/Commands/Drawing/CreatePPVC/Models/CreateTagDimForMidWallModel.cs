@@ -2,6 +2,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Structure;
 using Autodesk.Revit.UI;
 using PPVCREVIT.Commands.Drawing.CreatePPVC.Utils;
+using PPVCREVIT.Utils.Tag;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -299,7 +300,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
                                 doc.Regenerate(); // Yêu cầu Revit cập nhật trạng thái Symbol
                             }
 
-                            Reference rebarRef = GetRebarReference(rebar, view);
+                            Reference rebarRef = RebarTagUltis.GetRebarReference(rebar, view);
                             if (rebarRef == null)
                             {
                                 System.Diagnostics.Debug.WriteLine($"[BỎ QUA] Không tạo được Reference cho Rebar ID {rebar.Id}");
@@ -824,61 +825,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return XYZ.Zero;
         }
 
-        /// <summary>
-        /// Lấy Reference hợp lệ cho việc tag rebar trong view cụ thể.
-        /// new Reference(rebar) không hoạt động cho rebar rải theo phương pháp tuyến của view.
-        /// Cần lấy reference từ geometry thực tế của rebar trong view.
-        /// </summary>
-        private static Reference GetRebarReference(Rebar rebar, View view)
-        {
-            // Cấu hình để Revit tính toán hình học trên View hiện tại và sinh ra Reference
-            Options opt = new Options();
-            opt.View = view;
-            opt.ComputeReferences = true; // Bắt buộc phải = true để lấy được Reference
 
-            GeometryElement geomElem = rebar.get_Geometry(opt);
-            if (geomElem != null)
-            {
-                foreach (GeometryObject geomObj in geomElem)
-                {
-                    // Trường hợp 1: Thép hiển thị dạng đường nét (Curve)
-                    if (geomObj is Curve curve && curve.Reference != null)
-                    {
-                        return curve.Reference;
-                    }
-                    // Trường hợp 2: Thép hiển thị dạng khối Solid (thể tích)
-                    else if (geomObj is Solid solid && solid.Faces.Size > 0)
-                    {
-                        foreach (Face face in solid.Faces)
-                        {
-                            if (face.Reference != null) return face.Reference;
-                        }
-                    }
-                    // Trường hợp 3: Hình học bị bọc trong GeometryInstance
-                    else if (geomObj is GeometryInstance geomInst)
-                    {
-                        GeometryElement instGeom = geomInst.GetInstanceGeometry();
-                        foreach (GeometryObject instObj in instGeom)
-                        {
-                            if (instObj is Curve instCurve && instCurve.Reference != null)
-                            {
-                                return instCurve.Reference;
-                            }
-                            if (instObj is Solid instSolid && instSolid.Faces.Size > 0)
-                            {
-                                foreach (Face face in instSolid.Faces)
-                                {
-                                    if (face.Reference != null) return face.Reference;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Nếu quét qua toàn bộ geometry không thấy, fallback về cách cũ (hoặc trả về null)
-            return new Reference(rebar);
-        }
 
     }
 }

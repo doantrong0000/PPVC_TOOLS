@@ -95,7 +95,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.ViewModels
             {
                 _eventHandler.SetAction(app =>
                 {
-                    CreateSlabRebarTagModel.CreateRebarTagForSlab("SLAB Bottom bars", "Type 3");
+                    CreateSlabRebarTagModel.CreateRebarTagForSlab();
                 });
                 _externalEvent.Raise();
             }

@@ -1,0 +1,26 @@
+<Window x:Class="PPVCREVIT.Commands.Drawing.Clone.Views.CloneDetailWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Clone 2D Details" Height="150" Width="400"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <TextBlock Text="Chọn View mẫu để copy (Dims, Tags):" FontWeight="Bold" Margin="0,0,0,5"/>
+        
+        <ComboBox x:Name="CmbViews" Grid.Row="1" DisplayMemberPath="Name" Margin="0,0,0,15" Height="25"/>
+        
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="BtnClone" Content="Clone" Width="80" Height="25" Margin="0,0,10,0" Click="BtnClone_Click"/>
+            <Button x:Name="BtnCancel" Content="Cancel" Width="80" Height="25" Click="BtnCancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -25,7 +25,7 @@ namespace PPVCREVIT.Commands.Model
             try
             {
                 // 1. Xác định đường dẫn file Shared Parameter (Ưu tiên đường dẫn ổ đĩa chung Z, nếu không tìm thấy sẽ fallback về local)
-                string sharedParamPath = @"Z:\05 Prefab\00 REVIT tools\ShareParameter\WH_Rebar_Description.txt";
+                string sharedParamPath = @"C:\Users\doan_ductrong\Desktop\PPVCTest\WH_Rebar_Description.txt";
 
                 if (!File.Exists(sharedParamPath))
                 {
@@ -49,10 +49,17 @@ namespace PPVCREVIT.Commands.Model
                 {
                     new ParameterBindingConfig
                     {
-                        GroupName = "WH_Rebar_Description",
+                        GroupName = "WH_Rebar",
                         ParameterNames = new List<string> { "WH_Rebar_Type", "WH_Rebar_Prefix" },
                         TargetCategory = BuiltInCategory.OST_Rebar,
                         GroupType = GroupTypeId.Text
+                    },
+                     new ParameterBindingConfig
+                    {
+                        GroupName = "WH_Rebar",
+                        ParameterNames = new List<string> { "WH_Rebar_Dimension_BarLength"},
+                        TargetCategory = BuiltInCategory.OST_Rebar,
+                        GroupType = GroupTypeId.Geometry
                     },
                     new ParameterBindingConfig
                     {

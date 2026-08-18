@@ -33,10 +33,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Folder Include="Commands\Drawing\Clone\" />
 		<Folder Include="Commands\Drawing\RebarSchedule\Models\" />
 		<Folder Include="Commands\Drawing\RebarSchedule\ViewModels\" />
 		<Folder Include="Commands\Rebar\" />
-		<Folder Include="Services\" />
 		<Folder Include="Utils\Geometry\" />
 	</ItemGroup>
 
@@ -48,6 +48,12 @@
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>Parameter\%(Filename)%(Extension)</Link>
 		</None>
+	</ItemGroup>
+	<ItemGroup>
+	  <Compile Remove="Services\**" />
+	  <EmbeddedResource Remove="Services\**" />
+	  <None Remove="Services\**" />
+	  <Page Remove="Services\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Remove="Resources\Icons\icons8-room-16.png" />
