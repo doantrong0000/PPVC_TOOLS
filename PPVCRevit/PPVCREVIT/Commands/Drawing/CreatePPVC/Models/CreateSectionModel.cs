@@ -636,7 +636,7 @@ namespace PPVCREVIT.Commands.Drawing.CreatePPVC.Models
             return new FilteredElementCollector(RevitClass.Doc)
                 .OfClass(typeof(View))
                 .Cast<View>()
-                .FirstOrDefault(v => v.IsTemplate && v.Name.Contains(templateName, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(v => v.IsTemplate && v.Name.IndexOf(templateName, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         /// <summary>

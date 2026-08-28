@@ -1,0 +1,44 @@
+<Window x:Class="PPVCREVIT.Commands.Model.CheckRebar.CheckRebarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Check Rebar"
+        Height="140" Width="320"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="10"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBox x:Name="SearchTextBox" 
+                 Grid.Row="0"
+                 FontSize="13" 
+                 Padding="5" 
+                 GotFocus="SearchTextBox_GotFocus"
+                 KeyDown="SearchTextBox_KeyDown"/>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="SelectButton" 
+                    Grid.Column="0"
+                    Content="Select" 
+                    Height="28" 
+                    Click="SelectButton_Click"/>
+
+            <Button x:Name="ShowOnlyButton" 
+                    Grid.Column="2"
+                    Content="Show Only" 
+                    Height="28" 
+                    Click="ShowOnlyButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>

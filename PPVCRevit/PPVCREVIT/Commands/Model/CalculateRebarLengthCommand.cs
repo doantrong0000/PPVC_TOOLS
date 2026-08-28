@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
+using Autodesk.Revit.UI.Selection;
+using PPVCREVIT.Utils.Filters;
+
 namespace PPVCREVIT.Commands.Model
 {
     // To create the length of bar same in the Tekla
@@ -18,15 +21,48 @@ namespace PPVCREVIT.Commands.Model
             UIDocument uidoc = commandData.Application.ActiveUIDocument;
             Document doc = uidoc.Document;
 
-            List<Rebar> rebars = new FilteredElementCollector(doc)
-                .OfCategory(BuiltInCategory.OST_Rebar)
-                .WhereElementIsNotElementType()
-                .Cast<Rebar>()
-                .ToList();
+            List<Rebar> rebars = new List<Rebar>();
+
+            // 1. Kiểm tra đối tượng đang chọn trước khi gọi lệnh
+            ICollection<ElementId> currentSelectedIds = uidoc.Selection.GetElementIds();
+            if (currentSelectedIds != null && currentSelectedIds.Count > 0)
+            {
+                foreach (ElementId id in currentSelectedIds)
+                {
+                    Element elem = doc.GetElement(id);
+                    if (elem is Rebar rebar)
+                    {
+                        rebars.Add(rebar);
+                    }
+                }
+            }
+
+            // 2. Nếu chưa chọn thanh thép nào, yêu cầu người dùng quét chọn trên màn hình
+            if (rebars.Count == 0)
+            {
+                try
+                {
+                    IList<Element> pickedElements = uidoc.Selection.PickElementsByRectangle(
+                        new RebarFilter.RebarSelectionFilter(),
+                        "Quét chọn các thanh thép cần tính chiều dài");
+
+                    foreach (Element elem in pickedElements)
+                    {
+                        if (elem is Rebar rebar)
+                        {
+                            rebars.Add(rebar);
+                        }
+                    }
+                }
+                catch (Autodesk.Revit.Exceptions.OperationCanceledException)
+                {
+                    return Result.Cancelled;
+                }
+            }
 
             if (rebars.Count == 0)
             {
-                TaskDialog.Show("Thông báo", "Không tìm thấy thanh thép nào trong dự án.");
+                TaskDialog.Show("Thông báo", "Không có thanh thép nào được chọn.");
                 return Result.Cancelled;
             }
 
@@ -66,7 +102,7 @@ namespace PPVCREVIT.Commands.Model
                     RebarBarType barType = doc.GetElement(rebar.GetTypeId()) as RebarBarType;
                     if (barType != null)
                     {
-                        barDiameter = barType.BarNominalDiameter;
+                        barDiameter = barType.BarModelDiameter;
                     }
 
                     double totalOutToOutLength = 0;
@@ -110,6 +146,7 @@ namespace PPVCREVIT.Commands.Model
                 tx.Commit();
             }
 
+            TaskDialog.Show("Hoàn tất", $"Đã tính toán chiều dài cho {rebars.Count} thanh thép.");
             return Result.Succeeded;
         }
 
@@ -123,17 +160,23 @@ namespace PPVCREVIT.Commands.Model
             double arcLength = arc.Length;
             double centralAngle = arcLength / rCenter;    // Góc ở tâm (radian)
 
-            // 1. Góc uốn <= 135 độ: Tính theo đỉnh giao điểm 2 tiếp tuyến
+            // 1. Góc uốn chuẩn hình học (<= 135 độ hay 3*PI/4 rad): Tính giao điểm 2 tiếp tuyến mép ngoài
             if (centralAngle <= (3.0 * Math.PI / 4.0) + 1e-4)
             {
                 return 2.0 * rOut * Math.Tan(centralAngle / 2.0);
             }
-            // 2. Góc uốn > 135 độ (Bao gồm móc 180 độ, móc 270 độ, vòng lặp 360 độ)
-            // Khoảng cách phủ bì bao ngoài lớn nhất chính là đường kính uốn ngoài (2 * R_out)
-            else
+            // 2. Góc xoay móc Hook 180 độ (Bán nguyệt: từ 135 độ đến 180 độ)
+            else if (centralAngle <= Math.PI + 1e-4)
             {
                 return 2.0 * rOut;
             }
+            // 3. Góc xoay uốn Hook 270 độ (3*PI/2 rad) hoặc vòng lặp:
+            else
+            {
+                return 2.0 * rOut * Math.Tan(centralAngle / 2.0);
+            }
         }
     }
+
+
 }

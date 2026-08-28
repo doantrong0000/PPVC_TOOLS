@@ -4,6 +4,7 @@ using Autodesk.Revit.UI;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 
 namespace PPVCREVIT.Commands.Model
@@ -18,26 +19,23 @@ namespace PPVCREVIT.Commands.Model
             Document doc = uidoc.Document;
 
 
-#if RELEASE
-            MessageBox.Show("Tính năng này Trọng chưa cho chạy");
-            return Result.Succeeded;
-#else
+            //#if RELEASE
+            //            MessageBox.Show("Tính năng này Trọng chưa cho chạy");
+            //            return Result.Succeeded;
+            //#else
             try
             {
                 // 1. Xác định đường dẫn file Shared Parameter (Ưu tiên đường dẫn ổ đĩa chung Z, nếu không tìm thấy sẽ fallback về local)
-                string sharedParamPath = @"C:\Users\doan_ductrong\Desktop\PPVCTest\WH_Rebar_Description.txt";
+                string dllPath = Assembly.GetExecutingAssembly().Location;
+
+                // 2. Lấy thư mục chứa file DLL
+                string dllFolder = Path.GetDirectoryName(dllPath);
+
+                // 3. Nối chuỗi để tạo đường dẫn tuyệt đối tới file txt
+                string sharedParamPath = Path.Combine(dllFolder, "ShareParameter", "WH_Rebar_Description.txt");
 
                 if (!File.Exists(sharedParamPath))
                 {
-                    string assemblyDir = Path.GetDirectoryName(typeof(LoadSharedParameterCommand).Assembly.Location);
-                    sharedParamPath = Path.Combine(assemblyDir, "Parameter", "WH_Rebar_Description.txt");
-                }
-
-                if (!File.Exists(sharedParamPath))
-                {
-                    TaskDialog.Show("Lỗi", "Không tìm thấy file Shared Parameter tại cả hai đường dẫn:\n" +
-                                           "- Đường dẫn mạng: Z:\\05 Prefab\\00 REVIT tools\\ShareParameter\\WH_Rebar_Description.txt\n" +
-                                           $"- Đường dẫn local: {sharedParamPath}");
                     return Result.Failed;
                 }
 
@@ -189,7 +187,7 @@ namespace PPVCREVIT.Commands.Model
                 TaskDialog.Show("Lỗi Hệ Thống", ex.ToString());
                 return Result.Failed;
             }
-#endif
+            //#endif
 
         }
 

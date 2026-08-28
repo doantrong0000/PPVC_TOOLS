@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<UseWPF>true</UseWPF>
-		<DeployAddin>false</DeployAddin>
+		<DeployAddin>true</DeployAddin>
 		<LaunchRevit>true</LaunchRevit>
 		<IsRepackable>false</IsRepackable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
@@ -50,10 +50,10 @@
 		</None>
 	</ItemGroup>
 	<ItemGroup>
-	  <Compile Remove="Services\**" />
-	  <EmbeddedResource Remove="Services\**" />
-	  <None Remove="Services\**" />
-	  <Page Remove="Services\**" />
+		<Compile Remove="Services\**" />
+		<EmbeddedResource Remove="Services\**" />
+		<None Remove="Services\**" />
+		<Page Remove="Services\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<None Remove="Resources\Icons\icons8-room-16.png" />
@@ -65,7 +65,9 @@
 	<ItemGroup>
 		<Resource Include="Resources\Icons\room16.png" />
 		<Resource Include="Resources\Icons\room32.png" />
-		<EmbeddedResource Include="ShareParameter\WH_Rebar_Description.txt" />
+		<EmbeddedResource Include="ShareParameter\WH_Rebar_Description.txt">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</EmbeddedResource>
 	</ItemGroup>
 
 </Project>

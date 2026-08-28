@@ -3,6 +3,7 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using Nice3point.Revit.Toolkit.External;
 using PPVCREVIT.Commands.Model;
+using PPVCREVIT.Commands.Model.CheckRebar;
 using PPVCREVIT.Commands.Drawing;
 using PPVCREVIT.Commands.Drawing.RebarSchedule;
 
@@ -47,7 +48,7 @@ namespace PPVCREVIT
                 "FindCOGCommand",
                 "PPVC-COG",
                 assemblyPath,
-                typeof(FindCOGCommand).FullName)
+                typeof(FindCOG2Command).FullName)
             {
                 ToolTip = "Find Center of Gravity"
             };
@@ -56,18 +57,6 @@ namespace PPVCREVIT
             buttonData.LargeImage = new BitmapImage(iconUri);
 
             modelPanel.AddItem(buttonData);
-
-            PushButtonData buttonWithoutRebarData = new PushButtonData(
-                "FindCOGWithoutRebarCommand",
-                "PPVC-COG\n(No Rebar)",
-                assemblyPath,
-                typeof(FindCOGofPartCommand).FullName)
-            {
-                ToolTip = "Find Center of Gravity without calculating Rebar weight and centroid",
-                LargeImage = new BitmapImage(iconUri)
-            };
-
-            modelPanel.AddItem(buttonWithoutRebarData);
 
             PushButtonData loadSharedParamData = new PushButtonData(
                 "LoadSharedParameterCommand",
@@ -79,6 +68,39 @@ namespace PPVCREVIT
                 LargeImage = new BitmapImage(iconUri)
             };
             modelPanel.AddItem(loadSharedParamData);
+
+            PushButtonData calRebarLengthData = new PushButtonData(
+                "CalculateRebarLengthCommand",
+                "Cal Real Length",
+                assemblyPath,
+                typeof(CalculateRebarLengthCommand).FullName)
+            {
+                ToolTip = "Tính toán chiều dài phủ bì (Out-to-Out) cho thanh thép",
+                LargeImage = new BitmapImage(iconUri)
+            };
+            modelPanel.AddItem(calRebarLengthData);
+
+            PushButtonData checkVolumFromLink = new PushButtonData(
+             "GetVolumeFromLinkCommand",
+             "Check Volum",
+             assemblyPath,
+             typeof(GetVolumeFromLinkCommand).FullName)
+            {
+                ToolTip = "Lấy thể tích từ link",
+                LargeImage = new BitmapImage(iconUri)
+            };
+            modelPanel.AddItem(checkVolumFromLink);
+
+            PushButtonData checkRebarData = new PushButtonData(
+                "CheckRebarCommand",
+                "Check Rebar",
+                assemblyPath,
+                typeof(CheckRebarCommand).FullName)
+            {
+                ToolTip = "Tìm kiếm, chọn hoặc hiện riêng thanh thép theo số hiệu",
+                LargeImage = new BitmapImage(iconUri)
+            };
+            modelPanel.AddItem(checkRebarData);
 
 
 
