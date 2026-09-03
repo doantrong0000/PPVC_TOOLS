@@ -288,8 +288,41 @@ namespace PPVCApp
             ValidateServerPath(DefaultServerPath);
         }
 
+        // Cường độ âm thanh nút bấm (từ 0.0f = 0% đến 1.0f = 100%, ví dụ 0.3f là 30% âm lượng)
+        private static float SoundVolume = 0.3f;
+
+        [DllImport("winmm.dll")]
+        private static extern int waveOutSetVolume(IntPtr hwo, uint dwVolume);
+
+        private static void PlayClickSound()
+        {
+            try
+            {
+                // Cài đặt cường độ âm thanh (Volume)
+                ushort vol = (ushort)(Math.Max(0.0f, Math.Min(1.0f, SoundVolume)) * 0xFFFF);
+                uint dwVolume = (uint)(vol | (vol << 16));
+                waveOutSetVolume(IntPtr.Zero, dwVolume);
+
+                // Play standard Windows click sound (non-blocking)
+                string navSound = @"C:\Windows\Media\Windows Pop-up Blocked.wav";
+                if (File.Exists(navSound))
+                {
+                    using (var player = new System.Media.SoundPlayer(navSound))
+                    {
+                        player.Play();
+                    }
+                }
+                else
+                {
+                    System.Media.SystemSounds.Asterisk.Play();
+                }
+            }
+            catch { }
+        }
+
         private void ChkSelectAll_CheckedChanged(object sender, EventArgs e)
         {
+            PlayClickSound();
             bool isChecked = chkSelectAll.Checked;
             chk2024.Checked = isChecked;
             chk2025.Checked = isChecked;
@@ -342,6 +375,7 @@ namespace PPVCApp
 
         private async void BtnInstall_Click(object sender, EventArgs e)
         {
+            PlayClickSound();
             List<string> selectedYears = GetSelectedYears();
             if (selectedYears.Count == 0)
             {
@@ -470,6 +504,7 @@ namespace PPVCApp
 
         private async void BtnUninstallAll_Click(object sender, EventArgs e)
         {
+            PlayClickSound();
             DialogResult confirm = MessageBox.Show(
                 "Xác nhận gỡ bỏ các Tool Revit PPVC trong thư mục %APPDATA%?\n\nLưu ý: Chỉ các file và thư mục có tên chứa 'PPVC' mới bị xóa. Các tool khác của hãng khác sẽ được giữ nguyên.",
                 "Xác nhận gỡ bỏ PPVC Tool",
